@@ -914,10 +914,10 @@
 
     // Level settings based on points (Chicken series with custom thresholds)
     const LEVEL_CONFIG = [
-      { max: 1000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~1000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야. 매일 건강 미션을 달성해서 나를 무럭무럭 키워줘! 🌱", bgClass: '#fde2e4' },
-      { max: 2000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~2000p)", img: "assets/level2.png?v=2", dialog: "삐약삐약! 껍질을 깨고 나온 삐약이야! 운동장 세 바퀴 뛰고 올까? 🏃", bgClass: '#fffdf0' },
-      { max: 3000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~3000p)", img: "assets/level3.png?v=2", dialog: "날개를 힘껏 퍼덕퍼덕! 이제 튼튼해졌어! 채소도 잘 먹어야 대장이 될 수 있어! 🥦", bgClass: '#d8f3dc' },
-      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(3001p~)", img: "assets/level4.png?v=2", dialog: "와아! 멋진 왕관과 망토를 쓴 꼬꼬대장 완성! 건강대장이 된 소감이 어때? 👑✨", bgClass: '#cddafd' }
+      { max: 1000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~1000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야.<br>매일 건강 미션을 달성해서 나를 무럭무럭 키워줘! 🌱", bgClass: '#fde2e4' },
+      { max: 2000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~2000p)", img: "assets/level2.png?v=2", dialog: "삐약삐약! 껍질을 깨고 나온 삐약이야!<br>운동장 세 바퀴 뛰고 올까? 🏃", bgClass: '#fffdf0' },
+      { max: 3000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~3000p)", img: "assets/level3.png?v=2", dialog: "날개를 힘껏 퍼덕퍼덕! 이제 튼튼해졌어!<br>채소도 잘 먹어야 대장이 될 수 있어! 🥦", bgClass: '#d8f3dc' },
+      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(3001p~)", img: "assets/level4.png?v=2", dialog: "와아! 멋진 왕관과 망토를 쓴 꼬꼬대장 완성!<br>건강대장이 된 소감이 어때? 👑✨", bgClass: '#cddafd' }
     ];
 
     function getLevelData(points) {
@@ -2022,7 +2022,7 @@
       // Update character speech bubble dialog dynamically
       const charSpeech = document.getElementById('character-speech-bubble');
       if (charSpeech) {
-        charSpeech.innerText = levelInfo.dialog;
+        charSpeech.innerHTML = levelInfo.dialog;
       }
       
       // Update current points in the separate bottom right badge
