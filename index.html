@@ -169,7 +169,7 @@
           <div id="main-character-emoji" class="text-[180px] z-10 char-float transition-all duration-500 hidden select-none">🥚</div>
           
           <!-- Badge overlay -->
-          <div class="absolute top-5 left-1/2 transform -translate-x-1/2 bg-slate-800/85 text-white text-sm px-5 py-2.5 rounded-2xl font-bold z-20 shadow-md whitespace-nowrap" id="character-level-badge">
+          <div class="absolute top-5 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm text-sm px-5 py-2.5 rounded-2xl font-black z-20 shadow-md border-2 whitespace-nowrap transition-all duration-300" id="character-level-badge">
             🥚 1단계: 알콩이(0~1000p)
           </div>
 
@@ -2019,6 +2019,21 @@
       if (charLvlBadge) {
         charLvlBadge.innerText = levelInfo.badge;
         charLvlBadge.style.display = 'block';
+        
+        // Dynamic badge color styling matching the level theme
+        if (levelInfo.level === 1) {
+          charLvlBadge.style.borderColor = '#ffcad4'; // pastelPink
+          charLvlBadge.style.color = '#db2777'; // text-pink-600
+        } else if (levelInfo.level === 2) {
+          charLvlBadge.style.borderColor = '#ffe5d9'; // pastelPeach/Yellow
+          charLvlBadge.style.color = '#d97706'; // text-amber-600
+        } else if (levelInfo.level === 3) {
+          charLvlBadge.style.borderColor = '#b7e4c7'; // pastelMint-dark
+          charLvlBadge.style.color = '#059669'; // text-emerald-600
+        } else {
+          charLvlBadge.style.borderColor = '#a3bdfd'; // pastelBlue-dark
+          charLvlBadge.style.color = '#4f46e5'; // text-indigo-600
+        }
       }
 
       // Update character speech bubble dialog dynamically
