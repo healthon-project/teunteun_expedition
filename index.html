@@ -1,0 +1,3002 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>튼튼탐험대 - 스스로 체중관리 챌린지 🏕️</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase Compat Web SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+  <!-- CookieRun Webfont from Project Noonnu -->
+  <style>
+    @font-face {
+      font-family: 'CookieRun';
+      src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/CookieRun-Regular.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+    
+    body {
+      font-family: 'CookieRun', 'Maplestory', 'Jua', sans-serif;
+      background: radial-gradient(circle, #fbc5d8 0%, #e2f0d9 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar style */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #ffd1d1;
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #ffb3b3;
+    }
+
+    /* Hide scrollbars but keep functionality */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Card Flip Animation for Playground */
+    .card-perspective {
+      perspective: 1000px;
+    }
+    .card-inner {
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+    .card-flipped {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      backface-visibility: hidden;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+    }
+
+    /* Bounce Animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(1deg); }
+    }
+    .char-float {
+      animation: float 4s ease-in-out infinite;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pastelPink: { light: '#fff0f3', DEFAULT: '#ffcad4', dark: '#ffb3c1' },
+            pastelMint: { light: '#f4fbf7', DEFAULT: '#d8f3dc', dark: '#b7e4c7' },
+            pastelYellow: { light: '#fffdf0', DEFAULT: '#fde2e4', dark: '#ffb5a7' }, // Custom kids pastel colors
+            pastelBlue: { light: '#f0f3ff', DEFAULT: '#cddafd', dark: '#a3bdfd' },
+            pastelPeach: { light: '#fff4f0', DEFAULT: '#ffe5d9', dark: '#ffcad4' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="select-none">
+
+  <!-- Mobile phone wrapper (Enlarged) -->
+  <div class="relative w-full max-w-[500px] h-[920px] bg-white rounded-[50px] shadow-2xl border-[12px] border-slate-800 overflow-hidden flex flex-col justify-between">
+    
+    <!-- Phone top speaker / camera notch -->
+    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-48 h-5 bg-slate-800 rounded-b-2xl z-50 flex justify-center items-center">
+      <div class="w-16 h-1 bg-slate-600 rounded-full mb-1"></div>
+    </div>
+
+    <!-- Background Confetti Canvas -->
+    <canvas id="confetti-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-40"></canvas>
+
+    <!-- App Header -->
+    <div id="app-header" class="pt-24 pb-6 px-6 bg-gradient-to-r from-pastelPink-light via-pastelYellow-light to-pastelMint-light border-b border-pastelPink/30 flex flex-col justify-center items-center gap-2 z-10 relative">
+      <button onclick="switchTab('home')" class="flex items-center justify-center cursor-pointer active:scale-95 transition-transform" title="홈으로 이동">
+        <!-- 1,2페이지용 원래 텍스트 타이틀 -->
+        <h1 id="header-title-text" class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-amber-500 to-emerald-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.15)] tracking-wide text-center">튼튼탐험대</h1>
+        
+        <!-- 미션인증 등 다른 페이지용 동적 캐릭터 아바타 (기본 hidden) -->
+        <div id="header-avatar-box" class="hidden relative w-20 h-20 rounded-full bg-white border-4 border-pastelPink shadow-md flex justify-center items-center overflow-hidden">
+          <!-- Soft glowing backdrop -->
+          <div id="header-character-backdrop" class="absolute w-12 h-12 rounded-full bg-pastelYellow opacity-60 blur-md"></div>
+          <!-- Avatar Character Image -->
+          <img id="header-character-img" src="assets/level1.png" alt="레벨 캐릭터" class="w-16 h-16 object-contain z-10 char-float" style="animation-duration: 3s;" onerror="handleHeaderImageError(this)">
+          <!-- Fallback Avatar Emoji -->
+          <div id="header-character-emoji" class="text-3xl z-10 char-float hidden select-none">🥚</div>
+        </div>
+      </button>
+
+      <!-- 상시 고정 레벨 단계 뱃지 -->
+      <div id="header-level-badge" class="bg-slate-800/85 text-white text-[11px] px-4 py-1.5 rounded-full font-bold shadow-sm z-20">
+        🥚 1단계 알콩이(0~1000p)
+      </div>
+      
+      <!-- Settings Icon for Teacher Link -->
+      <button onclick="toggleModal('settings-modal')" class="absolute right-4 top-24 p-2 rounded-full hover:bg-pastelPink/30 active:scale-95 transition-transform" title="보건교사 설정">
+        <svg class="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- APP CONTENT (Scrollable area) -->
+    <div class="flex-1 overflow-y-auto custom-scrollbar bg-[#FDFBF7] relative pb-6">
+
+      <!-- ==================== PAGE 1: HOME ==================== -->
+      <section id="tab-home" class="tab-content pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800 flex flex-col items-center justify-start min-h-[580px]">
+        
+        <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-amber-500 to-emerald-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.15)] tracking-wide text-center mb-6">튼튼탐험대</h1>
+
+        <!-- Character display area (Enlarged) -->
+        <div id="character-card-container" class="w-[420px] h-[420px] rounded-[60px] border-[5px] border-pastelPink shadow-md flex justify-center items-center relative overflow-hidden mb-8 transition-all duration-500" style="background-image: url('assets/cute_farm_bg.png'); background-size: cover; background-position: center;">
+          <!-- Soft glowing backdrop -->
+          <div id="character-backdrop" class="absolute w-72 h-72 rounded-full bg-pastelYellow opacity-30 blur-xl"></div>
+          
+          <!-- Big Character Image -->
+          <img id="main-character-img" src="assets/level1.png" alt="알콩이" class="w-[320px] h-[320px] object-contain z-10 char-float transition-all duration-500" onerror="handleImageError(this)">
+          
+          <!-- Fallback Big Emoji (shown if image fails to load) -->
+          <div id="main-character-emoji" class="text-[180px] z-10 char-float transition-all duration-500 hidden select-none">🥚</div>
+          
+          <!-- Badge overlay -->
+          <div class="absolute top-5 left-5 bg-slate-800/85 text-white text-sm px-5 py-2.5 rounded-2xl font-bold z-20 shadow-md" id="character-level-badge">
+            🥚 1단계: 알콩이(0~1000p)
+          </div>
+
+          
+          <!-- Question Pill (Centered) -->
+          <div id="character-speech-bubble" class="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-pastelPink text-slate-800 text-sm px-6 py-2.5 rounded-2xl font-black z-20 shadow-md border-2 border-white text-center whitespace-nowrap animate-pulse">
+            나는 누구일까요?
+          </div>
+        </div>
+
+        <!-- Level-up Gift Pangs Button -->
+        <button onclick="triggerGiftPangs()" class="group relative w-full max-w-[360px] bg-gradient-to-r from-red-400 via-pink-400 to-yellow-400 hover:from-red-500 hover:to-yellow-500 text-white font-black py-6 px-8 rounded-[36px] shadow-lg transform transition active:scale-95 duration-200 hover:-translate-y-0.5 flex items-center justify-center">
+          <span class="text-2xl tracking-wider drop-shadow-md text-center">레벨업! 선물팡팡</span>
+          <div class="absolute right-6 top-1/2 transform -translate-y-1/2 flex items-center justify-center leading-none">
+            <span class="text-5xl inline-block animate-bounce" style="animation-duration: 1.5s;">🎁</span>
+          </div>
+        </button>
+      </section>
+      <!-- ==================== TABS 1: 신청서 (REGISTER) ==================== -->
+      <section id="tab-register" class="tab-content hidden py-8 px-6">
+        <h3 class="text-2xl font-black text-slate-800 mb-4 flex items-center gap-1.5">📋 튼튼 모험가 신청서</h3>
+
+        <!-- Step 1: Open Google Form (Enlarged) -->
+        <div class="bg-pastelPink-light border-4 border-pastelPink rounded-[36px] p-8 mb-8 text-center shadow-md">
+          <span class="text-5xl mb-4 block">📝 1단계</span>
+          <a href="https://docs.google.com/forms/d/1CM5T2XH1zjE9JcnnzexwrfiV6pdPIzS1cbHvn47UXt4/edit" id="open-google-form-btn" target="_blank" class="inline-block w-full bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-6 px-10 rounded-[28px] shadow-lg transition active:scale-95 text-lg text-center border-2 border-white">
+            신청서/개인정보 동의서/사전 설문지
+          </a>
+        </div>
+
+        <!-- Step 2: Enter Student ID -->
+        <div class="bg-pastelBlue-light border-4 border-pastelBlue rounded-[36px] p-8 shadow-sm text-center">
+          <span class="text-5xl mb-4 block">🔑 2단계</span>
+          
+          <div class="space-y-6">
+            <!-- 3 separate input fields for kids -->
+            <div class="flex justify-center items-center gap-2">
+              <input type="number" id="input-grade" placeholder="5" min="1" max="6" class="w-16 bg-white border-2 border-slate-200 rounded-[20px] py-4 text-center text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+              <span class="text-base font-bold text-slate-700">학년</span>
+              <input type="number" id="input-class" placeholder="2" min="1" max="20" class="w-16 bg-white border-2 border-slate-200 rounded-[20px] py-4 text-center text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+              <span class="text-base font-bold text-slate-700">반</span>
+              <input type="number" id="input-number" placeholder="13" min="1" max="50" class="w-20 bg-white border-2 border-slate-200 rounded-[20px] py-4 text-center text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+              <span class="text-base font-bold text-slate-700">번</span>
+            </div>
+
+            <button onclick="loadProfileFromIdReg()" id="login-submit-btn-reg" class="w-full bg-slate-800 text-white font-black py-5 px-8 rounded-[24px] shadow-md hover:bg-slate-900 active:scale-95 transition-transform text-base">
+              로그인 및 동기화 시작 🐾
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TABS 2: 미션인증 (MISSION) ==================== -->
+      <section id="tab-mission" class="tab-content hidden pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800">
+        
+        <!-- Level Milestone Cards -->
+        <div class="grid grid-cols-4 gap-2 mb-4">
+          <div id="m-lvl-1" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🥚</span>
+            <span class="text-[11px] font-bold mt-1">알콩이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">0~1000P</span>
+          </div>
+          <div id="m-lvl-2" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐣</span>
+            <span class="text-[11px] font-bold mt-1">삐약이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">~2000P</span>
+          </div>
+          <div id="m-lvl-3" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐔</span>
+            <span class="text-[11px] font-bold mt-1">튼튼이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">~3000P</span>
+          </div>
+          <div id="m-lvl-4" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐓</span>
+            <span class="text-[11px] font-bold mt-1">꼬꼬대장</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">3001P~</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full flex items-center gap-3 mb-6 px-1">
+          <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
+            <div id="m-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <span id="m-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
+        </div>
+
+        <!-- Manual point adjuster (Removed) -->
+
+        <!-- Title -->
+        <h4 class="text-2xl font-black text-center text-slate-800 tracking-widest mb-4 flex items-center justify-center gap-2">🏃 오늘의 미션 🏃</h4>
+
+        <!-- Today Points Circular Progress (100% goal) -->
+        <div class="flex flex-col items-center justify-center mb-6">
+          <div class="relative w-32 h-32 flex items-center justify-center">
+            <!-- SVG Circular Ring -->
+            <svg class="absolute w-full h-full transform -rotate-90">
+              <!-- Outer track (pastel pink) -->
+              <circle cx="64" cy="64" r="54" stroke="#FDE2E4" stroke-width="8" fill="transparent" />
+              <!-- Progress fill (colored pastel orange/pink) -->
+              <circle id="today-progress-circle" cx="64" cy="64" r="54" stroke="#ffb5a7" stroke-width="8" fill="transparent"
+                      stroke-dasharray="339.3" stroke-dashoffset="339.3" stroke-linecap="round" class="transition-all duration-500" />
+            </svg>
+            <!-- Inner Text Content -->
+            <div class="z-10 flex flex-col items-center justify-center gap-0.5">
+              <span class="text-[10px] font-black text-slate-400 tracking-wider">오늘 달성도</span>
+              <span id="today-progress-percent" class="text-2xl font-black text-slate-800">0%</span>
+              <span id="today-total-earn-points" class="text-xs font-bold text-amber-500">0 P</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Photo upload block (MUST) -->
+        <div class="bg-white border-4 border-pastelYellow rounded-[28px] overflow-hidden mb-6 shadow-sm">
+          <div class="bg-pastelYellow border-b-2 border-pastelYellow/50 text-slate-800 font-black py-3.5 px-6 text-sm flex items-center justify-between">
+            <span class="flex items-center gap-1.5">🏃 운동 미션 인증</span>
+            <span class="bg-slate-800 text-yellow-300 text-[10.5px] px-2 py-0.5 rounded-full font-black">MUST</span>
+          </div>
+          
+          <div class="p-5 flex flex-col items-center gap-4">
+            <button onclick="document.getElementById('mission-photo-input').click()" class="w-full bg-white border-2 border-dashed border-pastelPeach hover:border-pastelPeach-dark text-slate-700 hover:text-slate-800 text-sm font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-2 active:scale-98 transition duration-200">
+              <span>📷 운동 사진 업로드하기 →</span>
+            </button>
+            <input type="file" id="mission-photo-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(this)">
+            
+            <!-- Custom Progress bar for Upload -->
+            <div id="photo-upload-progress-container" class="w-full hidden bg-slate-100 border rounded-full h-2 overflow-hidden mt-1">
+              <div id="photo-upload-progress" class="bg-amber-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+
+            <p id="photo-upload-status" class="text-xs text-emerald-600 font-bold mt-1 text-center hidden"></p>
+            
+            <div class="w-full bg-red-50 border border-red-200/60 rounded-2xl p-3.5 flex items-start gap-2">
+              <span class="text-base text-red-500 leading-none">⚠️</span>
+              <p class="text-xs text-red-600 font-medium leading-relaxed">위 운동 인증샷을 업로드해야 아래 미션 포인트가 인정돼요</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mission Cards -->
+        <div class="space-y-4 mb-6">
+          
+          <!-- Mission 1 -->
+          <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl">🏃‍♂️</span>
+                <div>
+                  <span class="font-bold text-slate-800 text-base block">숨이 찰 정도의 운동</span>
+                  <span class="text-xs text-slate-400 leading-normal">심장이 쿵쾅쿵쾅 뛰는 운동 30분 이상</span>
+                </div>
+              </div>
+              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+50p</span>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-done-1" onclick="toggleMissionButton(1, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
+              <button id="btn-cancel-1" onclick="toggleMissionButton(1, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
+            </div>
+          </div>
+
+          <!-- Mission 2 -->
+          <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl">🍚</span>
+                <div>
+                  <span class="font-bold text-slate-800 text-base block">아침밥 먹기</span>
+                  <span class="text-xs text-slate-400 leading-normal">든든하게 먹어야 튼튼한 하루 출발!</span>
+                </div>
+              </div>
+              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+20p</span>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-done-2" onclick="toggleMissionButton(2, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
+              <button id="btn-cancel-2" onclick="toggleMissionButton(2, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
+            </div>
+          </div>
+
+          <!-- Mission 3 -->
+          <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl">🛌</span>
+                <div>
+                  <span class="font-bold text-slate-800 text-base block">잠 충분히 자기</span>
+                  <span class="text-xs text-slate-400 leading-normal">푹 자야 키도 크고 머리도 맑아져요</span>
+                </div>
+              </div>
+              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-done-3" onclick="toggleMissionButton(3, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
+              <button id="btn-cancel-3" onclick="toggleMissionButton(3, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
+            </div>
+          </div>
+
+          <!-- Mission 4 -->
+          <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl">🥤</span>
+                <div>
+                  <span class="font-bold text-slate-800 text-base block">단맛 음료 줄이기</span>
+                  <span class="text-xs text-slate-400 leading-normal">탄산과 액상과당 대신 시원한 물 선택</span>
+                </div>
+              </div>
+              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-done-4" onclick="toggleMissionButton(4, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
+              <button id="btn-cancel-4" onclick="toggleMissionButton(4, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
+            </div>
+          </div>
+
+          <!-- Mission 5 -->
+          <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl">💧</span>
+                <div>
+                  <span class="font-bold text-slate-800 text-base block">1일 5컵 이상 물 마시기</span>
+                  <span class="text-xs text-slate-400 leading-normal">오늘도 촉촉하게 활력 보충</span>
+                </div>
+              </div>
+              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-done-5" onclick="toggleMissionButton(5, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
+              <button id="btn-cancel-5" onclick="toggleMissionButton(5, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
+            </div>
+          </div>
+
+        </div>
+
+
+      </section>
+
+      <!-- ==================== TABS 3: 놀이터 (PLAYGROUND) ==================== -->
+      <section id="tab-playground" class="tab-content hidden pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800 flex flex-col items-center select-none">
+        
+        <!-- Level Milestone Cards -->
+        <div class="grid grid-cols-4 gap-2 mb-4 w-full">
+          <div id="p-lvl-1" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🥚</span>
+            <span class="text-[11px] font-bold mt-1">알콩이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">0~1000P</span>
+          </div>
+          <div id="p-lvl-2" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐣</span>
+            <span class="text-[11px] font-bold mt-1">삐약이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">~2000P</span>
+          </div>
+          <div id="p-lvl-3" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐔</span>
+            <span class="text-[11px] font-bold mt-1">튼튼이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">~3000P</span>
+          </div>
+          <div id="p-lvl-4" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐓</span>
+            <span class="text-[11px] font-bold mt-1">꼬꼬대장</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">3001P~</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full flex items-center gap-3 mb-6 px-1">
+          <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
+            <div id="p-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <span id="p-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
+        </div>
+
+        <h3 class="text-3xl font-black text-slate-800 mb-2 self-start flex items-center gap-1.5">🎮 신나는 튼튼 놀이터</h3>
+        <p class="text-sm text-slate-500 mb-6 self-start">떨어지는 음식 중 건강한 음식을 바구니로 받아보세요!</p>
+
+        <!-- Catching Game Card Container -->
+        <div class="w-full max-w-[440px] bg-white border-4 border-pastelPink rounded-[36px] p-5 shadow-md flex flex-col items-center relative overflow-hidden">
+          <div class="relative w-full max-w-[400px] h-[300px] border-2 border-slate-200 rounded-2xl overflow-hidden bg-[#eaf7ff]">
+            <canvas id="gameCanvas" width="400" height="300" class="w-full h-full block bg-[#eaf7ff]"></canvas>
+            
+            <!-- Game Start/End Overlay -->
+            <div id="gameOverlay" class="absolute inset-0 bg-slate-900/80 flex flex-col justify-center items-center text-center p-4 text-white z-10">
+              <h4 id="gameOverlayTitle" class="text-xl font-black text-yellow-300 mb-2">🍎 건강음식 받기 게임! 🍓</h4>
+              <p id="gameOverlayText" class="text-[11px] leading-relaxed text-slate-200 mb-4 px-2">
+                좌우 방향키(←, →) 또는 아래 버튼으로 바구니를 움직이세요.<br>
+                <strong>건강 음식(사과, 바나나, 당근 등)</strong>을 먹으면 <strong>+10점</strong>!<br>
+                <strong>정크 푸드(도넛, 사탕, 햄버거 등)</strong>를 먹으면 <strong>-5점</strong>!<br>
+                제한시간 30초 내에 <strong>100점</strong>을 돌파해 보세요!
+              </p>
+              <button id="startGameBtn" class="bg-pastelPink text-slate-800 font-black px-6 py-3 rounded-2xl active:scale-95 transition-transform text-sm shadow-md border-2 border-white hover:bg-pastelPink-dark">
+                게임 시작! 🎮
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile Controls -->
+          <div class="flex justify-center gap-4 w-full mt-4">
+            <button id="btnLeft" class="flex-1 bg-pastelPink-light border-2 border-pastelPink text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none">◀ 왼쪽</button>
+            <button id="btnStop" class="flex-1 bg-slate-100 border-2 border-slate-300 text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none">■ 멈춤</button>
+            <button id="btnRight" class="flex-1 bg-pastelPink-light border-2 border-pastelPink text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none">오른쪽 ▶</button>
+          </div>
+        </div>
+
+        <!-- Success Banner -->
+        <div id="game-success-message" class="hidden mt-6 bg-emerald-50 border-2 border-emerald-300 rounded-[32px] p-6 w-full max-w-[440px] text-center animate-bounce">
+          <h4 class="font-bold text-emerald-800 text-lg">🎉 미션 대성공! 🎉</h4>
+          <p class="text-sm text-emerald-600 mt-1.5">오늘의 보너스 <span class="font-bold">+50p</span>가 적립되었습니다!</p>
+        </div>
+
+        <!-- Video Recommendation Card -->
+        <div class="w-full max-w-[440px] mt-6 bg-white border-4 border-pastelBlue rounded-[32px] p-5 shadow-sm text-slate-800">
+          <h4 class="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">🎬 추천 비만예방 콘텐츠</h4>
+          
+          <div class="space-y-3 text-left">
+            
+            <!-- Video Item 1 -->
+            <div onclick="window.open('https://www.youtube.com/results?search_query=초등학생+비만예방+애니메이션', '_blank')" class="flex items-center gap-4 p-3 bg-pastelBlue-light border-2 border-transparent hover:border-pastelBlue rounded-2xl cursor-pointer active:scale-98 transition duration-150">
+              <span class="text-3xl bg-white p-2 rounded-xl shadow-sm">📺</span>
+              <div class="flex-1">
+                <span class="font-bold text-slate-800 text-sm block">비만 예방 쏙쏙! EBS 만화</span>
+                <span class="text-[11px] text-slate-400 font-medium">재미있는 애니메이션 교육 만화 시청하기</span>
+              </div>
+            </div>
+
+            <!-- Video Item 2 -->
+            <div onclick="window.open('https://www.youtube.com/results?search_query=초등학생+다이어트+댄스+홈트', '_blank')" class="flex items-center gap-4 p-3 bg-pastelPink-light border-2 border-transparent hover:border-pastelPink rounded-2xl cursor-pointer active:scale-98 transition duration-150">
+              <span class="text-3xl bg-white p-2 rounded-xl shadow-sm">💃</span>
+              <div class="flex-1">
+                <span class="font-bold text-slate-800 text-sm block">신나는 초등 다이어트 홈트 댄스</span>
+                <span class="text-[11px] text-slate-400 font-medium">따라하면 땀이 송골송골! 홈트레이닝 댄스</span>
+              </div>
+            </div>
+
+            <!-- Video Item 3 -->
+            <div onclick="window.open('https://www.youtube.com/results?search_query=어린이+스트레칭+키크기', '_blank')" class="flex items-center gap-4 p-3 bg-pastelMint-light border-2 border-transparent hover:border-pastelMint rounded-2xl cursor-pointer active:scale-98 transition duration-150">
+              <span class="text-3xl bg-white p-2 rounded-xl shadow-sm">🤸</span>
+              <div class="flex-1">
+                <span class="font-bold text-slate-800 text-sm block">키가 쑥쑥 크는 어린이 스트레칭</span>
+                <span class="text-[11px] text-slate-400 font-medium">아침/저녁 5분 성장판 자극 스트레칭</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== TABS 4: 내몸탐험 (MY BODY) ==================== -->
+      <section id="tab-mybody" class="tab-content hidden pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800">
+        
+        <!-- Level Milestone Cards -->
+        <div class="grid grid-cols-4 gap-2 mb-4">
+          <div id="b-lvl-1" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🥚</span>
+            <span class="text-[11px] font-bold mt-1">알콩이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">0~1000P</span>
+          </div>
+          <div id="b-lvl-2" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐣</span>
+            <span class="text-[11px] font-bold mt-1">삐약이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">~2000P</span>
+          </div>
+          <div id="b-lvl-3" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐔</span>
+            <span class="text-[11px] font-bold mt-1">튼튼이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">~3000P</span>
+          </div>
+          <div id="b-lvl-4" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐓</span>
+            <span class="text-[11px] font-bold mt-1">꼬꼬대장</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">3001P~</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full flex items-center gap-3 mb-6 px-1">
+          <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
+            <div id="b-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <span id="b-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
+        </div>
+
+        <h3 class="text-3xl font-black text-slate-800 mb-6 flex items-center gap-1.5">🔍 내몸탐험대 보고서</h3>
+
+        <!-- Monthly BMI Input Card -->
+        <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 shadow-sm mb-6 w-full max-w-[440px] mx-auto select-none text-slate-800">
+          <h4 class="text-xl font-black text-center mb-1 text-slate-800 flex items-center justify-center gap-1">나의 신체 성장 기록</h4>
+          <p class="text-[11px] text-slate-500 text-center mb-5">한달에 한번 키와 몸무게를 측정해요</p>
+
+          <!-- Inputs -->
+          <div class="grid grid-cols-2 gap-4 mb-5">
+            <div>
+              <label class="block text-slate-600 text-[11px] font-bold mb-1.5">📏 키 (cm)</label>
+              <input type="number" step="0.1" id="input-bmi-height" placeholder="예) 145" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl py-3.5 px-4 text-center text-slate-800 text-base font-bold focus:outline-none focus:border-pastelPink placeholder-slate-400">
+            </div>
+            <div>
+              <label class="block text-slate-600 text-[11px] font-bold mb-1.5">⚖️ 몸무게 (kg)</label>
+              <input type="number" step="0.1" id="input-bmi-weight" placeholder="예) 42" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl py-3.5 px-4 text-center text-slate-800 text-base font-bold focus:outline-none focus:border-pastelPink placeholder-slate-400">
+            </div>
+          </div>
+
+          <!-- Enlarge Button -->
+          <button onclick="saveMonthlyBmi()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black py-6 rounded-[24px] shadow-lg active:scale-95 transition duration-150 text-lg flex items-center justify-center gap-1.5">
+            <span>📊 BMI 계산하고 저장하기</span>
+          </button>
+        </div>
+
+        <!-- Korean Society for the Study of Obesity Standard Guideline Card -->
+        <div class="bg-slate-50 border-2 border-slate-200/60 rounded-[32px] p-5 mb-6 w-full max-w-[440px] mx-auto text-left text-slate-700 shadow-sm">
+          <h4 class="text-sm font-black text-slate-800 mb-3 flex items-center gap-1.5">📌 BMI란?</h4>
+          <p class="text-xs leading-relaxed mb-4 text-slate-600">
+            <strong>뜻:</strong> 체질량지수(Body Mass Index)로, 키와 몸무게를 이용해 비만 정도를 나타내는 지표예요.<br>
+            <strong>계산법:</strong> 몸무게(kg) ÷ 키(m)²<br>
+            <span class="text-slate-400 text-[10.5px] block mt-1">예) 키 145cm, 몸무게 40kg ➡️ 40 ÷ (1.45 × 1.45) = 19.0</span>
+          </p>
+
+          <div class="border-t border-slate-200 pt-3 space-y-2">
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-lg">🔵</span>
+              <span class="font-bold w-16">저체중:</span>
+              <span class="text-slate-500 font-semibold">BMI 18.5 미만</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-lg">🟢</span>
+              <span class="font-bold w-16 text-emerald-600">정상:</span>
+              <span class="text-slate-500 font-semibold">BMI 18.5 ~ 22.9</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-lg">🟡</span>
+              <span class="font-bold w-16 text-amber-500">과체중:</span>
+              <span class="text-slate-500 font-semibold">BMI 23 ~ 24.9</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-lg">🟠</span>
+              <span class="font-bold w-28 text-orange-500 font-black">비만 1단계(경도):</span>
+              <span class="text-slate-500 font-semibold">BMI 25 ~ 29.9</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-lg">🔴</span>
+              <span class="font-bold w-32 text-red-500 font-black">비만 2단계(중등도):</span>
+              <span class="text-slate-500 font-semibold">BMI 30 ~ 34.9</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-lg">🟤</span>
+              <span class="font-bold w-28 text-yellow-800 font-black">비만 3단계(고도):</span>
+              <span class="text-slate-500 font-semibold">BMI 35 이상</span>
+            </div>
+          </div>
+          <div class="text-[10px] text-right text-slate-400 font-bold mt-3">※ 대한비만학회 기준</div>
+        </div>
+
+        <!-- Monthly History Table Card -->
+        <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 shadow-sm mb-6 w-full max-w-[440px] mx-auto text-slate-800">
+          <h4 class="text-base font-bold text-slate-700 mb-4 flex items-center gap-1.5">📊 월별 누적 기록</h4>
+          <div class="overflow-hidden rounded-2xl border border-slate-100">
+            <table class="w-full text-center text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50 text-slate-600 font-bold border-b border-slate-100">
+                  <th class="py-3 px-2">월</th>
+                  <th class="py-3 px-2">키 (cm)</th>
+                  <th class="py-3 px-2">몸무게 (kg)</th>
+                  <th class="py-3 px-2">BMI</th>
+                </tr>
+              </thead>
+              <tbody id="bmi-history-table-body" class="divide-y divide-slate-100 font-bold">
+                <tr>
+                  <td colspan="4" class="py-6 text-slate-400 font-normal">아직 등록된 기록이 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== TABS 5: 스티커판 (STICKERS) ==================== -->
+      <section id="tab-stickers" class="tab-content hidden pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800 flex flex-col items-center">
+        
+        <!-- Level Milestone Cards -->
+        <div class="grid grid-cols-4 gap-2 mb-4 w-full">
+          <div id="s-lvl-1" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🥚</span>
+            <span class="text-[11px] font-bold mt-1">알콩이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">0~1000P</span>
+          </div>
+          <div id="s-lvl-2" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐣</span>
+            <span class="text-[11px] font-bold mt-1">삐약이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">~2000P</span>
+          </div>
+          <div id="s-lvl-3" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐔</span>
+            <span class="text-[11px] font-bold mt-1">튼튼이</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">~3000P</span>
+          </div>
+          <div id="s-lvl-4" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+            <span class="text-2xl">🐓</span>
+            <span class="text-[11px] font-bold mt-1">꼬꼬대장</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">3001P~</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full flex items-center gap-3 mb-6 px-1">
+          <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
+            <div id="s-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <span id="s-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
+        </div>
+
+        <h3 class="text-3xl font-black text-slate-800 mb-2 self-start flex items-center gap-1.5">🍎 과일 야채 스티커판</h3>
+        <p class="text-sm text-slate-500 mb-8 self-start">포인트를 모을때마다 스티커를 붙여요. <span class="text-xs text-pastelPink font-bold">(매월 1일 리셋)</span></p>
+
+        <!-- Sticker Grid -->
+        <div class="grid grid-cols-4 gap-5 p-6 bg-white border-4 border-pastelPink-light rounded-[36px] shadow-inner max-w-[420px]">
+          <!-- Stickers 1 to 31 -->
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="100" title="100p">1</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="200" title="200p">2</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="300" title="300p">3</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="400" title="400p">4</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="500" title="500p">5</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="600" title="600p">6</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="700" title="700p">7</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="800" title="800p">8</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="900" title="900p">9</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1000" title="1000p">10</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1100" title="1100p">11</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1200" title="1200p">12</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1300" title="1300p">13</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1400" title="1400p">14</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1500" title="1500p">15</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1600" title="1600p">16</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1700" title="1700p">17</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1800" title="1800p">18</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1900" title="1900p">19</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2000" title="2000p">20</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2100" title="2100p">21</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2200" title="2200p">22</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2300" title="2300p">23</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2400" title="2400p">24</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2500" title="2500p">25</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2600" title="2600p">26</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2700" title="2700p">27</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2800" title="2800p">28</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2900" title="2900p">29</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="3000" title="3000p">30</div>
+          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="3100" title="3100p">31</div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Floating Home Button just above the menus -->
+    <div class="absolute bottom-[105px] left-1/2 transform -translate-x-1/2 z-30">
+      <button onclick="switchTab('home')" class="w-14 h-14 rounded-full bg-slate-800 text-white border-[3px] border-white shadow-lg active:scale-95 hover:bg-slate-900 transition-all flex items-center justify-center text-2xl cursor-pointer" title="홈으로 이동">
+        🏠
+      </button>
+    </div>
+
+    <!-- BOTTOM TAB BUTTONS (5 Enlarged Menus) -->
+    <div class="border-t-[3px] border-slate-100 bg-white py-5 px-3 flex justify-around items-center gap-1.5 z-20 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.06)]">
+      
+      <!-- Highly Visible Enlarged Register/Application Tab -->
+      <button onclick="switchTab('register')" id="btn-tab-register" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400 border-2 border-pastelPink bg-pastelPink-light/60">
+        <span class="text-4xl font-bold animate-pulse text-pink-600">📝</span>
+        <span class="text-[13.5px] font-black text-pink-600">신청서</span>
+      </button>
+
+      <button onclick="switchTab('mission')" id="btn-tab-mission" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400">
+        <span class="text-3xl">✅</span>
+        <span class="text-[12.5px] font-black">미션인증</span>
+      </button>
+
+      <button onclick="switchTab('playground')" id="btn-tab-playground" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400">
+        <span class="text-3xl">🎮</span>
+        <span class="text-[12.5px] font-black">놀이터</span>
+      </button>
+      
+      <button onclick="switchTab('mybody')" id="btn-tab-mybody" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400">
+        <span class="text-3xl">🔍</span>
+        <span class="text-[12.5px] font-black">내몸탐험</span>
+      </button>
+
+      <button onclick="switchTab('stickers')" id="btn-tab-stickers" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400">
+        <span class="text-3xl">🍒</span>
+        <span class="text-[12.5px] font-black">스티커판</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== DIALOG 1: LEVEL INFO MODAL ==================== -->
+  <div id="level-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+    <div class="bg-white rounded-[36px] border-4 border-pastelPink w-full max-w-[340px] p-6 text-center shadow-2xl scale-95 transition-all duration-300">
+      <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center justify-center gap-1.5">🎁 선물팡팡 레벨업 안내</h3>
+      
+      <div class="space-y-2 text-left mb-6 bg-pastelPink-light p-4 rounded-2xl border border-pastelPink/30 text-sm">
+        <div class="flex justify-between items-center py-1">
+          <span class="font-bold">🥚 1단계 알콩이</span>
+          <span class="text-slate-500 font-semibold">0 ~ 1000p</span>
+        </div>
+        <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
+          <span class="font-bold text-amber-600">🐣 2단계 삐약이</span>
+          <span class="text-slate-500 font-semibold">1001 ~ 2000p</span>
+        </div>
+        <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
+          <span class="font-bold text-emerald-600">🐔 3단계 튼튼이</span>
+          <span class="text-slate-500 font-semibold">2001 ~ 3000p</span>
+        </div>
+        <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
+          <span class="font-bold text-red-500">🐓 4단계 꼬꼬대장</span>
+          <span class="text-slate-500 font-semibold">3001p~</span>
+        </div>
+      </div>
+      
+
+
+      <button onclick="toggleModal('level-modal')" class="w-full bg-slate-800 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md hover:bg-slate-900 active:scale-95 transition-transform">
+        화이팅! 확인 완료 💖
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== DIALOG 2: TEACHER SETTINGS MODAL ==================== -->
+  <div id="settings-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+    <div class="bg-white rounded-[36px] w-full max-w-[340px] p-6 shadow-2xl border-4 border-pastelBlue">
+      <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-1.5">⚙️ 보건교사용 연동 설정</h3>
+      <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">구글 스프레드시트 웹앱 주소를 입력하여 실시간 연동을 제어합니다.</p>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">구글 웹앱 URL (GAS API Link)</label>
+          <textarea id="settings-gas-url" rows="3" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-pastelBlue custom-scrollbar"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">파이어베이스 설정 (Firebase Config JSON)</label>
+          <textarea id="settings-firebase-config" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..." }' class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-[10px] focus:outline-none focus:border-pastelBlue custom-scrollbar font-mono"></textarea>
+        </div>
+
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-[10px] text-slate-500 space-y-1.5">
+          <p class="font-bold text-slate-700">📌 설치 참고사항:</p>
+          <p>1. `google_apps_script.js` 코드를 구글 시트 Apps Script에 배포하여 웹앱 URL을 획득합니다.</p>
+          <p>2. 파이어베이스 인증 사진 저장을 위해 Firebase Web App SDK Config JSON을 복사해 넣습니다. (입력 안하면 데모 모드로 가동)</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mt-5">
+        <button onclick="toggleModal('settings-modal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3.5 px-4 rounded-2xl active:scale-95 transition-transform">
+          취소
+        </button>
+        <button onclick="saveSettings()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-3.5 px-4 rounded-2xl shadow-md active:scale-95 transition-transform">
+          저장하기 💾
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Native Synthesized Audio Web API -->
+  <script>
+    function playAudio(type) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (!ctx) return;
+        
+        if (type === 'match') {
+          // Success tone: high pleasant ding-ding
+          const osc1 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          osc1.connect(gain1);
+          gain1.connect(ctx.destination);
+          osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+          osc1.frequency.setValueAtTime(880.00, ctx.currentTime + 0.08); // A5
+          gain1.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+          osc1.start();
+          osc1.stop(ctx.currentTime + 0.35);
+        } else if (type === 'mismatch') {
+          // Failure tone: soft low buzzer
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(120, ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.05, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        } else if (type === 'clear') {
+          // Victory melody: arpeggio
+          const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+          notes.forEach((freq, i) => {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g);
+            g.connect(ctx.destination);
+            o.type = 'triangle';
+            o.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.1);
+            g.gain.setValueAtTime(0.08, ctx.currentTime + i * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
+            o.start(ctx.currentTime + i * 0.1);
+            o.stop(ctx.currentTime + i * 0.1 + 0.3);
+          });
+        }
+      } catch (e) {
+        console.warn('Audio blocked or not supported on this platform:', e);
+      }
+    }
+  </script>
+
+  <!-- BUSINESS LOGIC JAVASCRIPT -->
+  <script>
+    // State management
+    const state = {
+      studentId: localStorage.getItem('teunteun_student_id') || '',
+      student: null, // Holds profile info
+      gasUrl: localStorage.getItem('teunteun_gas_url') || '',
+      firebaseConfig: null,
+      isOffline: true, // Default to true, switches if gasUrl is verified
+      todayMissionsSubmitted: false,
+      photoUploaded: false,
+      photoUrl: '',
+      photoUploadTime: '',
+      todayMissions: {
+        1: null, // 숨이 찰 정도의 운동 (+50)
+        2: null, // 아침밥 먹기 (+20)
+        3: null, // 잠 충분히 자기 (+10)
+        4: null, // 단맛 음료 줄이기 (+10)
+        5: null  // 1일 5컵 이상 물 마시기 (+10)
+      }
+    };
+
+    // Default Guest Student Template
+    const DEFAULT_GUEST = {
+      studentId: '',
+      name: '게스트',
+      nickname: '게스트 모험가',
+      totalPoints: 0,
+      height: 140,
+      weight: 40,
+      history: [],
+      weightHistory: []
+    };
+
+    // Level settings based on points (Chicken series with custom thresholds)
+    const LEVEL_CONFIG = [
+      { max: 1000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~1000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야. 매일 건강 미션을 달성해서 나를 무럭무럭 키워줘! 🌱", bgClass: '#fde2e4' },
+      { max: 2000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~2000p)", img: "assets/level2.png?v=2", dialog: "삐약삐약! 껍질을 깨고 나온 삐약이야! 운동장 세 바퀴 뛰고 올까? 🏃", bgClass: '#fffdf0' },
+      { max: 3000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~3000p)", img: "assets/level3.png?v=2", dialog: "날개를 힘껏 퍼덕퍼덕! 이제 튼튼해졌어! 채소도 잘 먹어야 대장이 될 수 있어! 🥦", bgClass: '#d8f3dc' },
+      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(3001p~)", img: "assets/level4.png?v=2", dialog: "와아! 멋진 왕관과 망토를 쓴 꼬꼬대장 완성! 건강대장이 된 소감이 어때? 👑✨", bgClass: '#cddafd' }
+    ];
+
+    function getLevelData(points) {
+      const pts = Number(points) || 0;
+      for (const config of LEVEL_CONFIG) {
+        if (pts <= config.max) return config;
+      }
+      return LEVEL_CONFIG[LEVEL_CONFIG.length - 1];
+    }
+
+    // Modal Control
+    function toggleModal(modalId) {
+      const modal = document.getElementById(modalId);
+      modal.classList.toggle('hidden');
+    }
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      // Force sync all points and milestones when switching tabs
+      if (state.student) {
+        const p = state.student.totalPoints || 0;
+        updateMissionLevelMilestones(p);
+      }
+      // Switch header container visibility (hidden on all tabs except Register to pull content to the top)
+      const appHeader = document.getElementById('app-header');
+      if (appHeader) {
+        if (tabId === 'register') {
+          appHeader.style.display = 'flex';
+        } else {
+          appHeader.style.display = 'none';
+        }
+      }
+
+      // Hide header level badge on Home (page 1) and Register (page 2) tabs
+      const headerLvlBadge = document.getElementById('header-level-badge');
+      if (headerLvlBadge) {
+        if (tabId === 'home' || tabId === 'register') {
+          headerLvlBadge.style.display = 'none';
+        } else {
+          headerLvlBadge.style.display = 'inline-block';
+          if (state.student) {
+            const levelInfo = getLevelData(state.student.totalPoints || 0);
+            headerLvlBadge.innerText = levelInfo.badge;
+          }
+        }
+      }
+
+      // Switch header title / avatar visibility based on active tab (Home/Register show title text, others show avatar)
+      const headerTitle = document.getElementById('header-title-text');
+      const headerAvatar = document.getElementById('header-avatar-box');
+      if (headerTitle && headerAvatar) {
+        if (tabId === 'home' || tabId === 'register') {
+          headerTitle.style.display = 'block';
+          headerAvatar.style.display = 'none';
+        } else {
+          headerTitle.style.display = 'none';
+          headerAvatar.style.display = 'flex';
+        }
+      }
+
+      // Hide all content sections
+      document.querySelectorAll('.tab-content').forEach(section => {
+        section.classList.add('hidden');
+      });
+
+      // Show targeted tab
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+      // Update bottom nav button highlighting
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('text-slate-800', 'bg-pastelPink/30', 'scale-105');
+        btn.classList.add('text-slate-400');
+      });
+
+      // Highlight target button (skip for home, which is circular and always highlighted)
+      const activeBtn = document.getElementById('btn-tab-' + tabId);
+      if (activeBtn) {
+        if (tabId === 'home') {
+          // Home special button
+        } else {
+          activeBtn.classList.remove('text-slate-400');
+          activeBtn.classList.add('text-slate-800', 'bg-pastelPink/30', 'scale-105');
+        }
+      }
+
+      // Tab specific triggers
+      if (tabId === 'home') {
+        renderHome();
+      } else if (tabId === 'mybody') {
+        if (!state.student || !state.studentId) {
+          alert("신청서 작성을 먼저 마쳐주세요! 📋");
+          switchTab('register');
+          return;
+        }
+        initMonthlyBmi();
+        renderMyBody();
+      } else if (tabId === 'stickers') {
+        if (!state.student || !state.studentId) {
+          alert("신청서 작성을 먼저 마쳐주세요! 📋");
+          switchTab('register');
+          return;
+        }
+        renderStickers();
+      } else if (tabId === 'playground') {
+        initCardGame();
+      }
+    }
+
+
+
+    // Local Storage Mock DB for complete offline/free functionality
+    const LocalDB = {
+      getStudent: function(id) {
+        const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+        return students[id] || null;
+      },
+      saveStudent: function(id, name, nickname, height, weight) {
+        const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+        const isNew = !students[id];
+        
+        let existingPoints = 0;
+        let history = [];
+        let weightHistory = [];
+        
+        if (!isNew) {
+          existingPoints = students[id].totalPoints;
+          history = students[id].history || [];
+          weightHistory = students[id].weightHistory || [];
+        } else {
+          // Sign-up bonus 100p (Reverted back to 100p as requested)
+          existingPoints = 100;
+          const today = getTodayDateString(true);
+          history.push({ date: today, mission: "모험 가입 축하 보너스 🌱", weight: weight, points: 100 });
+          weightHistory.push({ date: today.split(" ")[0], weight: weight });
+        }
+        
+        students[id] = {
+          studentId: id,
+          name: name,
+          nickname: nickname,
+          height: height,
+          weight: weight,
+          totalPoints: existingPoints,
+          history: history,
+          weightHistory: weightHistory
+        };
+        
+        localStorage.setItem('mock_students', JSON.stringify(students));
+        return { success: true, isNew, student: students[id] };
+      },
+      addMission: function(id, missionName, points, weight) {
+        const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+        if (!students[id]) return { success: false, message: "학생 정보가 없습니다." };
+
+        const today = getTodayDateString(true);
+        students[id].totalPoints += points;
+        students[id].history.unshift({
+          date: today,
+          mission: missionName,
+          weight: weight || null,
+          points: points
+        });
+
+        if (weight) {
+          students[id].weight = weight;
+          students[id].weightHistory.push({
+            date: today.split(" ")[0],
+            weight: weight
+          });
+        }
+
+        localStorage.setItem('mock_students', JSON.stringify(students));
+        return { success: true, totalPoints: students[id].totalPoints, student: students[id] };
+      }
+    };
+
+    // Helper: format today's date
+    function getTodayDateString(withTime = false) {
+      const d = new Date();
+      const yr = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, '0');
+      const dy = String(d.getDate()).padStart(2, '0');
+      
+      if (!withTime) return `${yr}-${mo}-${dy}`;
+      
+      const hr = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      return `${yr}-${mo}-${dy} ${hr}:${mi}`;
+    }
+
+    function getYearMonthString() {
+      const d = new Date();
+      const yr = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, '0');
+      return `${yr}-${mo}`;
+    }
+
+    // Helper: Initialize Firebase Storage
+    function initFirebase() {
+      const fbConfigStr = localStorage.getItem('teunteun_firebase_config');
+      if (fbConfigStr) {
+        try {
+          state.firebaseConfig = JSON.parse(fbConfigStr);
+          document.getElementById('settings-firebase-config').value = fbConfigStr;
+          if (!firebase.apps.length) {
+            firebase.initializeApp(state.firebaseConfig);
+            console.log("Firebase initialized successfully");
+          }
+        } catch (e) {
+          console.error("Firebase Initialization Error:", e);
+        }
+      }
+    }
+
+    // Load setup configurations
+    window.onload = function() {
+      // Setup connection status based on GAS URL presence
+      if (!state.gasUrl) {
+        state.isOffline = true;
+      } else {
+        state.isOffline = false;
+      }
+      
+      document.getElementById('settings-gas-url').value = state.gasUrl;
+      
+      // Load and Initialize Firebase config
+      initFirebase();
+      
+      // Auto-load profile if saved, else use Guest template
+      if (state.studentId) {
+        refreshStudentData();
+        // Auto-fill registration inputs from stored ID
+        const parts = state.studentId.split('-');
+        if (parts.length === 3) {
+          const inputGrade = document.getElementById('input-grade');
+          const inputClass = document.getElementById('input-class');
+          const inputNumber = document.getElementById('input-number');
+          if (inputGrade) inputGrade.value = parts[0];
+          if (inputClass) inputClass.value = parts[1];
+          if (inputNumber) inputNumber.value = parts[2];
+        }
+      } else {
+        state.student = { ...DEFAULT_GUEST };
+        state.lastLevel = getLevelData(0).level;
+        renderHome();
+      }
+
+      // Show home tab by default on startup
+      switchTab('home');
+
+      // Start animation loops
+      initConfetti();
+    };
+
+    // Save Teacher Settings
+    function saveSettings() {
+      const url = document.getElementById('settings-gas-url').value.trim();
+      state.gasUrl = url;
+      localStorage.setItem('teunteun_gas_url', url);
+      
+      const fbConfigStr = document.getElementById('settings-firebase-config').value.trim();
+      if (fbConfigStr) {
+        try {
+          const parsed = JSON.parse(fbConfigStr);
+          localStorage.setItem('teunteun_firebase_config', fbConfigStr);
+          state.firebaseConfig = parsed;
+          if (firebase.apps.length) {
+            firebase.app().delete().then(() => {
+              firebase.initializeApp(parsed);
+            });
+          } else {
+            firebase.initializeApp(parsed);
+          }
+        } catch(e) {
+          alert("파이어베이스 JSON 형식이 잘못되었습니다! 올바른 JSON을 입력해 주세요. ⚠️");
+          return;
+        }
+      } else {
+        localStorage.removeItem('teunteun_firebase_config');
+        state.firebaseConfig = null;
+      }
+      
+      if (url) {
+        state.isOffline = false;
+        alert("설정이 저장 및 연동되었습니다! 💾");
+      } else {
+        state.isOffline = true;
+        alert("구글 시트 URL이 없어 데모(로컬) 모드로 실행됩니다.");
+      }
+      
+      toggleModal('settings-modal');
+      refreshStudentData();
+    }
+
+    // Manual points save & update UI
+    function saveManualPoints() {
+      if (!state.studentId) {
+        alert("신청서 탭에서 학번 연동을 먼저 완료해 주세요!");
+        switchTab('register');
+        return;
+      }
+      const val = parseInt(document.getElementById('input-manual-points').value.trim());
+      if (isNaN(val) || val < 0) {
+        alert("올바른 포인트를 입력해주세요! 🐾");
+        return;
+      }
+      
+      // Update points locally
+      state.student.totalPoints = val;
+      
+      if (state.isOffline) {
+        const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+        if (students[state.studentId]) {
+          students[state.studentId].totalPoints = val;
+          localStorage.setItem('mock_students', JSON.stringify(students));
+        }
+        alert(`포인트가 ${val}P로 수동 수정되었습니다!`);
+        refreshStudentData();
+      } else {
+        // GAS Remote Sync
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            studentId: state.studentId,
+            missionType: `[수동포인트조정] 교사 조정`,
+            points: val - (state.student.totalPoints - val),
+            weight: ""
+          })
+        })
+        .then(() => {
+          alert(`서버에 포인트 수정 요청 완료! (+${val}P)`);
+          refreshStudentData();
+        })
+        .catch(err => {
+          console.error(err);
+          alert("서버 연결 실패! 로컬에서만 우선 반영합니다.");
+          refreshStudentData();
+        });
+      }
+    }
+
+       // Update Mission page Milestones progress
+    function updateMissionLevelMilestones(points) {
+      const h_lvls = [
+        { id: 1, min: 0, max: 1000, el: document.getElementById('h-lvl-1') },
+        { id: 2, min: 1001, max: 2000, el: document.getElementById('h-lvl-2') },
+        { id: 3, min: 2001, max: 3000, el: document.getElementById('h-lvl-3') },
+        { id: 4, min: 3001, max: Infinity, el: document.getElementById('h-lvl-4') }
+      ];
+
+      const m_lvls = [
+        { id: 1, min: 0, max: 1000, el: document.getElementById('m-lvl-1') },
+        { id: 2, min: 1001, max: 2000, el: document.getElementById('m-lvl-2') },
+        { id: 3, min: 2001, max: 3000, el: document.getElementById('m-lvl-3') },
+        { id: 4, min: 3001, max: Infinity, el: document.getElementById('m-lvl-4') }
+      ];
+      
+      const p_lvls = [
+        { id: 1, min: 0, max: 1000, el: document.getElementById('p-lvl-1') },
+        { id: 2, min: 1001, max: 2000, el: document.getElementById('p-lvl-2') },
+        { id: 3, min: 2001, max: 3000, el: document.getElementById('p-lvl-3') },
+        { id: 4, min: 3001, max: Infinity, el: document.getElementById('p-lvl-4') }
+      ];
+
+      const b_lvls = [
+        { id: 1, min: 0, max: 1000, el: document.getElementById('b-lvl-1') },
+        { id: 2, min: 1001, max: 2000, el: document.getElementById('b-lvl-2') },
+        { id: 3, min: 2001, max: 3000, el: document.getElementById('b-lvl-3') },
+        { id: 4, min: 3001, max: Infinity, el: document.getElementById('b-lvl-4') }
+      ];
+
+      const s_lvls = [
+        { id: 1, min: 0, max: 1000, el: document.getElementById('s-lvl-1') },
+        { id: 2, min: 1001, max: 2000, el: document.getElementById('s-lvl-2') },
+        { id: 3, min: 2001, max: 3000, el: document.getElementById('s-lvl-3') },
+        { id: 4, min: 3001, max: Infinity, el: document.getElementById('s-lvl-4') }
+      ];
+      
+      let activeLevel = 1;
+      m_lvls.forEach(l => {
+        if (points >= l.min && points <= l.max) {
+          activeLevel = l.id;
+        }
+      });
+      
+      const updateLvlElements = (lvls) => {
+        lvls.forEach(l => {
+          if (!l.el) return;
+          
+          // Reset classes
+          l.el.className = "rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm";
+          
+          if (l.id === activeLevel) {
+            l.el.classList.add('opacity-100', 'border-2', 'border-pastelPink', 'bg-pastelPink-light/60', 'text-pastelPink-dark');
+          } else {
+            l.el.classList.add('opacity-60', 'border-2', 'border-transparent', 'bg-slate-50', 'text-slate-400');
+          }
+        });
+      };
+      
+      updateLvlElements(h_lvls);
+      updateLvlElements(m_lvls);
+      updateLvlElements(p_lvls);
+      updateLvlElements(b_lvls);
+      updateLvlElements(s_lvls);
+
+      // Progress bar calculation (Max 5000 for standard display)
+      const maxRepresentPoints = 5000;
+      const percentage = Math.min(100, Math.max(0, (points / maxRepresentPoints) * 100));
+      
+      // Update Home Progress Bar
+      const hProgBar = document.getElementById('h-prog-bar');
+      const hProgText = document.getElementById('h-prog-text');
+      if (hProgBar) hProgBar.style.width = `${percentage}%`;
+      if (hProgText) hProgText.innerText = `${points.toLocaleString()} P`;
+
+      // Update Mission Progress Bar
+      const mProgBar = document.getElementById('m-prog-bar');
+      const mProgText = document.getElementById('m-prog-text');
+      if (mProgBar) mProgBar.style.width = `${percentage}%`;
+      if (mProgText) mProgText.innerText = `${points.toLocaleString()} P`;
+      
+      // Update Playground Progress Bar
+      const pProgBar = document.getElementById('p-prog-bar');
+      const pProgText = document.getElementById('p-prog-text');
+      if (pProgBar) pProgBar.style.width = `${percentage}%`;
+      if (pProgText) pProgText.innerText = `${points.toLocaleString()} P`;
+
+      // Update MyBody Progress Bar
+      const bProgBar = document.getElementById('b-prog-bar');
+      const bProgText = document.getElementById('b-prog-text');
+      if (bProgBar) bProgBar.style.width = `${percentage}%`;
+      if (bProgText) bProgText.innerText = `${points.toLocaleString()} P`;
+      
+      // Update Stickers Progress Bar (Using Monthly points with 3100 Max)
+      const sProgBar = document.getElementById('s-prog-bar');
+      const sProgText = document.getElementById('s-prog-text');
+      if (sProgBar && sProgText) {
+        if (state.studentId) {
+          const storageKey = `teunteun_sticker_reset_${state.studentId}`;
+          const resetInfo = JSON.parse(localStorage.getItem(storageKey) || 'null');
+          const base = resetInfo ? resetInfo.basePoints : 0;
+          const displayPoints = Math.max(0, points - base);
+          const maxStickersPoints = 3100;
+          const sPercentage = Math.min(100, Math.max(0, (displayPoints / maxStickersPoints) * 100));
+          sProgBar.style.width = `${sPercentage}%`;
+          sProgText.innerText = `${displayPoints.toLocaleString()} P`;
+        } else {
+          sProgBar.style.width = `${percentage}%`;
+          sProgText.innerText = `${points.toLocaleString()} P`;
+        }
+      }
+      
+      const manualPointsInput = document.getElementById('input-manual-points');
+      if (manualPointsInput) manualPointsInput.value = points;
+    }
+
+    // Realtime points delta sync helper
+    function saveStudentPointsRealtime(missionName, pointsDelta) {
+      if (!state.studentId || pointsDelta === 0) return;
+
+      // Update state points
+      state.student.totalPoints = Math.max(0, state.student.totalPoints + pointsDelta);
+
+      // ALWAYS sync to mock_students DB to keep Single Source of Truth
+      const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+      if (students[state.studentId]) {
+        students[state.studentId].totalPoints = state.student.totalPoints;
+        const today = getTodayDateString(true);
+        students[state.studentId].history.unshift({
+          date: today,
+          mission: missionName,
+          points: pointsDelta
+        });
+        localStorage.setItem('mock_students', JSON.stringify(students));
+      }
+
+      if (state.isOffline) {
+        refreshStudentData();
+      } else {
+        // GAS sync (Run asynchronously in the background)
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            studentId: state.studentId,
+            missionType: missionName,
+            points: pointsDelta,
+            weight: ""
+          })
+        })
+        .catch(err => {
+          console.error("GAS sync error", err);
+        });
+
+        // Sync local storage cache instantly
+        localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
+
+        // Update UI instantly
+        renderHome();
+        renderStickers();
+      }
+    }
+
+    // Helper to save daily checklist state to localStorage
+    function saveDailyState() {
+      if (!state.studentId) return;
+      const key = `teunteun_daily_state_${state.studentId}_${getTodayDateString()}`;
+      const data = {
+        todayMissions: state.todayMissions,
+        photoUploaded: state.photoUploaded,
+        photoUrl: state.photoUrl,
+        photoUploadTime: state.photoUploadTime
+      };
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    // Helper to load daily checklist state from localStorage
+    function loadDailyState() {
+      if (!state.studentId) return;
+      const key = `teunteun_daily_state_${state.studentId}_${getTodayDateString()}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          state.todayMissions = data.todayMissions || { 1: null, 2: null, 3: null, 4: null, 5: null };
+          state.photoUploaded = !!data.photoUploaded;
+          state.photoUrl = data.photoUrl || '';
+          state.photoUploadTime = data.photoUploadTime || '';
+          
+          // Update photo upload UI
+          const statusText = document.getElementById('photo-upload-status');
+          if (statusText) {
+            if (state.photoUploaded && state.photoUploadTime) {
+              statusText.innerText = `📷 ${state.photoUploadTime} 업로드 완료${state.photoUrl === 'mock-demo-url' ? ' (데모)' : ''}`;
+              statusText.classList.remove('hidden');
+            } else {
+              statusText.innerText = '';
+              statusText.classList.add('hidden');
+            }
+          }
+          
+          // Update Today points UI
+          updateTodayPoints();
+        } catch (e) {
+          console.error("Error loading daily state:", e);
+        }
+      } else {
+        // Reset to default if no saved state for today
+        state.todayMissions = { 1: null, 2: null, 3: null, 4: null, 5: null };
+        state.photoUploaded = false;
+        state.photoUrl = '';
+        state.photoUploadTime = '';
+        
+        const statusText = document.getElementById('photo-upload-status');
+        if (statusText) {
+          statusText.innerText = '';
+          statusText.classList.add('hidden');
+        }
+        updateTodayPoints();
+      }
+      
+      // Update UI button highlights
+      updateMissionButtonsUI();
+    }
+
+    // Update Done/Cancel button highlights based on state (null/true/false)
+    function updateMissionButtonsUI() {
+      const activeDoneClass = "flex-1 bg-[#D8F3DC] border border-[#B7E4C7] text-[#1B4332] text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95 shadow-sm";
+      const activeCancelClass = "flex-1 bg-[#FDE2E4] border border-[#FFCAD4] text-[#800F2F] text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95 shadow-sm";
+      const inactiveClass = "flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95";
+
+      for (let id = 1; id <= 5; id++) {
+        const doneBtn = document.getElementById(`btn-done-${id}`);
+        const cancelBtn = document.getElementById(`btn-cancel-${id}`);
+        if (!doneBtn || !cancelBtn) continue;
+
+        const val = state.todayMissions[id];
+        if (val === true) {
+          doneBtn.className = activeDoneClass;
+          cancelBtn.className = inactiveClass;
+        } else if (val === false) {
+          doneBtn.className = inactiveClass;
+          cancelBtn.className = activeCancelClass;
+        } else {
+          // null (Neutral - both gray)
+          doneBtn.className = inactiveClass;
+          cancelBtn.className = inactiveClass;
+        }
+      }
+    }
+
+    // Toggle mission button active state and calculate points (Realtime sync)
+    function toggleMissionButton(id, isDone) {
+      if (!state.studentId) {
+        alert("신청서 탭에서 학번 연동을 먼저 완료해 주세요!");
+        switchTab('register');
+        return;
+      }
+      
+      // Mandatory photo upload check for exercise mission
+      if (id === 1 && isDone && !state.photoUploaded) {
+        alert("운동 인증 사진을 먼저 업로드하셔야 미션 완료가 가능합니다! 📷");
+        return;
+      }
+
+      // Check if state is actually changing
+      const previousState = state.todayMissions[id];
+      if (previousState === isDone) return; // No change, return early
+
+      const pointsConfig = { 1: 50, 2: 20, 3: 10, 4: 10, 5: 10 };
+      const missionNames = { 1: "운동🏃", 2: "아침밥🍚", 3: "잠🛌", 4: "단음료🥤", 5: "물💧" };
+      
+      // Calculate points delta dynamically based on transition from previousState to isDone
+      let pointsDelta = 0;
+      if (isDone && previousState !== true) {
+        pointsDelta = pointsConfig[id];
+      } else if (!isDone && previousState === true) {
+        pointsDelta = -pointsConfig[id];
+      }
+      
+      state.todayMissions[id] = isDone;
+
+      // Save current daily checklist state to localStorage FIRST to prevent race condition in local/offline modes
+      saveDailyState();
+
+      // Realtime Save points delta
+      if (pointsDelta !== 0) {
+        saveStudentPointsRealtime(missionNames[id] + (isDone ? " 완료" : " 취소"), pointsDelta);
+      }
+
+      // Update button highlights
+      updateMissionButtonsUI();
+
+      // Update today points display
+      updateTodayPoints();
+    }
+
+    // Calculate today's potential earned points
+    function updateTodayPoints() {
+      let total = 0;
+      const pointsConfig = { 1: 50, 2: 20, 3: 10, 4: 10, 5: 10 };
+      
+      for (const [id, isDone] of Object.entries(state.todayMissions)) {
+        if (isDone === true) {
+          total += pointsConfig[id];
+        }
+      }
+      
+      // Update points text
+      const todayTotalText = document.getElementById('today-total-earn-points');
+      if (todayTotalText) {
+        todayTotalText.innerText = `${total} P`;
+      }
+
+      // Calculate percentage (Max is 100 points)
+      const percent = Math.min(100, total);
+      const percentText = document.getElementById('today-progress-percent');
+      if (percentText) {
+        percentText.innerText = `${percent}%`;
+      }
+
+      // Update circular SVG path offset
+      const circle = document.getElementById('today-progress-circle');
+      if (circle) {
+        const circumference = 339.3;
+        const offset = circumference - (percent / 100) * circumference;
+        circle.style.strokeDashoffset = offset;
+      }
+
+      return total;
+    }
+
+    // Firebase Photo Upload logic
+    function handlePhotoUpload(input) {
+      if (!input.files || input.files.length === 0) return;
+      
+      const file = input.files[0];
+      const progContainer = document.getElementById('photo-upload-progress-container');
+      const progBar = document.getElementById('photo-upload-progress');
+      const statusText = document.getElementById('photo-upload-status');
+      
+      if (progContainer) progContainer.classList.remove('hidden');
+      if (progBar) progBar.style.width = '0%';
+      if (statusText) statusText.classList.add('hidden');
+      
+      const timeStr = new Date().toLocaleTimeString('ko-KR');
+
+      if (state.firebaseConfig) {
+        try {
+          const storageRef = firebase.storage().ref();
+          const timestamp = Date.now();
+          const fileName = `student_${state.studentId}_${timestamp}_${file.name}`;
+          const uploadTask = storageRef.child(`missions/${fileName}`).put(file);
+          
+          uploadTask.on('state_changed', 
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              if (progBar) progBar.style.width = `${progress}%`;
+            }, 
+            (error) => {
+              console.error("Firebase Storage Upload Error:", error);
+              alert("사진 업로드 중 에러가 발생했습니다. 데모 모드로 가동합니다. ⚠️");
+              runMockUpload(timeStr);
+            }, 
+            () => {
+              uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                state.photoUploaded = true;
+                state.photoUrl = downloadURL;
+                state.photoUploadTime = timeStr;
+                
+                input.value = ''; // Reset input to release memory
+                
+                if (progContainer) progContainer.classList.add('hidden');
+                if (statusText) {
+                  statusText.innerText = `📷 ${timeStr} 업로드 완료`;
+                  statusText.classList.remove('hidden');
+                }
+                
+                alert("인증 사진이 성공적으로 업로드되었습니다! 🐾");
+                saveDailyState();
+              });
+            }
+          );
+        } catch (e) {
+          console.error("Firebase upload initialization error:", e);
+          runMockUpload(timeStr);
+        }
+      } else {
+        runMockUpload(timeStr);
+      }
+      
+      function runMockUpload(timeStr) {
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 20;
+          if (progBar) progBar.style.width = `${progress}%`;
+          if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              state.photoUploaded = true;
+              state.photoUrl = 'mock-demo-url';
+              state.photoUploadTime = timeStr;
+              
+              input.value = ''; // Reset file input
+              
+              if (progContainer) progContainer.classList.add('hidden');
+              if (statusText) {
+                statusText.innerText = `📷 ${timeStr} 업로드 완료 (데모)`;
+                statusText.classList.remove('hidden');
+              }
+              
+              alert("사진이 성공적으로 업로드되었습니다! (데모 모드) 🐾");
+              saveDailyState();
+            }, 300);
+          }
+        }, 150);
+      }
+    }
+
+
+    // Load profile manually using ID (from Registration Tab)
+    function loadProfileFromIdReg() {
+      const gradeVal = document.getElementById('input-grade').value.trim();
+      const classVal = document.getElementById('input-class').value.trim();
+      const numVal = document.getElementById('input-number').value.trim();
+      
+      if (!gradeVal || !classVal || !numVal) {
+        alert("학년, 반, 번호를 모두 입력해주세요! 🐾");
+        return;
+      }
+      
+      const id = `${gradeVal}-${classVal}-${numVal}`;
+      
+      const loginBtn = document.querySelector('#tab-register #login-submit-btn-reg');
+      loginBtn.disabled = true;
+      loginBtn.innerText = "동기화 중... ⏳";
+
+      state.studentId = id;
+      localStorage.setItem('teunteun_student_id', id);
+      
+      executeLoginSync(id, loginBtn);
+    }
+
+    // Unified login sync logic
+    function executeLoginSync(id, loginBtn) {
+      if (state.isOffline) {
+        setTimeout(() => {
+          let s = LocalDB.getStudent(id);
+          if (!s) {
+            // If new unregistered ID, auto-register them in local DB
+            const classMatch = id.match(/^(\d+)-(\d+)-/);
+            const nickname = classMatch ? `${classMatch[1]}학년 ${classMatch[2]}반 새싹` : `새싹대원-${id}`;
+            const res = LocalDB.saveStudent(id, "탐험대원", nickname, 140, 45);
+            s = res.student;
+          }
+          state.student = s;
+          state.lastLevel = getLevelData(s.totalPoints || 0).level;
+          renderHome();
+          loginBtn.disabled = false;
+          loginBtn.innerText = "연동 완료 🐾";
+          alert(`[${s.nickname}] 님 로그인 완료! 포인트를 차곡차곡 쌓아봐요! 🌱`);
+          switchTab('home');
+        }, 600);
+      } else {
+        syncWithGAS(id, (success) => {
+          if (success) {
+            renderHome();
+            loginBtn.disabled = false;
+            loginBtn.innerText = "연동 완료 🐾";
+            alert(`[${state.student.nickname}] 님 구글 시트 동기화 완료! ⚡`);
+            switchTab('home');
+          } else {
+            // Auto register on GAS if student doesn't exist
+            // Sends a default profile to register API so they aren't blocked!
+            const classMatch = id.match(/^(\d+)-(\d+)-/);
+            const nickname = classMatch ? `${classMatch[1]}학년 ${classMatch[2]}반 새싹` : `새싹대원-${id}`;
+            
+            fetch(state.gasUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'register',
+                studentId: id,
+                name: '탐험대원',
+                nickname: nickname,
+                height: 140,
+                weight: 45
+              })
+            })
+            .then(() => {
+              setTimeout(() => {
+                syncWithGAS(id, (successSec) => {
+                  loginBtn.disabled = false;
+                  loginBtn.innerText = "연동 완료 🐾";
+                  if (successSec) {
+                    alert(`신규 모험가 학번[${id}]으로 임시 가입 완료 및 동기화되었습니다! 🌱`);
+                    renderHome();
+                    switchTab('home');
+                  } else {
+                    alert("가입 처리는 성공했으나 데이터 싱크 실패. 인터넷 상태를 점검하세요.");
+                  }
+                });
+              }, 1200);
+            })
+            .catch(() => {
+              loginBtn.disabled = false;
+              loginBtn.innerText = "연동 완료 🐾";
+              alert("로그인 중 서버 연결 오류 발생!");
+            });
+          }
+        });
+      }
+    }
+
+
+
+    // Refresh state from DB/GAS
+    function refreshStudentData(alertOnSuccess = false) {
+      if (!state.studentId) return;
+
+      if (state.isOffline) {
+        const s = LocalDB.getStudent(state.studentId);
+        if (s) {
+          // Hotfix: Forcefully sync 440p down to 100p baseline in local DB
+          if (s.totalPoints === 440) {
+            s.totalPoints = 100;
+            const today = getTodayDateString(true);
+            s.history = [
+              { date: today, mission: "모험 가입 축하 보너스 🌱 (통일화 복구)", weight: s.weight, points: 100 }
+            ];
+            const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+            students[state.studentId] = s;
+            localStorage.setItem('mock_students', JSON.stringify(students));
+          }
+          if (!state.student) {
+            state.lastLevel = getLevelData(s.totalPoints || 0).level;
+          }
+          state.student = s;
+          renderHome();
+          if (alertOnSuccess) alert(`${s.nickname} 모험가님 정보를 로컬에서 성공적으로 불렀습니다!`);
+        } else {
+          if (alertOnSuccess) alert("해당 학번으로 등록된 로컬 정보가 없습니다. 새로 신청해 주세요!");
+        }
+      } else {
+        syncWithGAS(state.studentId, (success) => {
+          if (success) {
+            // Hotfix: Forcefully sync 440p down to 100p baseline in GAS too
+            if (state.student && state.student.totalPoints === 440) {
+              state.student.totalPoints = 100;
+              localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
+              
+              // STRICT SYNC: Update local mock_students DB as well
+              const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+              if (students[state.studentId]) {
+                students[state.studentId].totalPoints = 100;
+                const today = getTodayDateString(true);
+                students[state.studentId].history = [
+                  { date: today, mission: "모험 가입 축하 보너스 🌱 (통일화 복구)", weight: students[state.studentId].weight, points: 100 }
+                ];
+                localStorage.setItem('mock_students', JSON.stringify(students));
+              }
+
+              // Post delta adjustment to GAS to align remote spreadsheet to 100p
+              if (state.gasUrl) {
+                fetch(state.gasUrl, {
+                  method: 'POST',
+                  mode: 'no-cors',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'log_mission',
+                    studentId: state.studentId,
+                    missionType: `[시스템조정] 440p -> 100p 통일화 복구`,
+                    points: -340,
+                    weight: ""
+                  })
+                });
+              }
+            }
+            renderHome();
+            if (alertOnSuccess) alert("구글 시트에서 성공적으로 최신 정보를 불렀습니다!");
+          } else {
+            // Fallback to local storage copy if fetch fails
+            const localCopy = LocalDB.getStudent(state.studentId);
+            if (localCopy) {
+              // Hotfix: Also check fallback copy for 440p
+              if (localCopy.totalPoints === 440) {
+                localCopy.totalPoints = 100;
+                const today = getTodayDateString(true);
+                localCopy.history = [
+                  { date: today, mission: "모험 가입 축하 보너스 🌱 (통일화 복구)", weight: localCopy.weight, points: 100 }
+                ];
+                const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+                students[state.studentId] = localCopy;
+                localStorage.setItem('mock_students', JSON.stringify(students));
+              }
+              if (!state.student) {
+                state.lastLevel = getLevelData(localCopy.totalPoints || 0).level;
+              }
+              state.student = localCopy;
+              renderHome();
+              if (alertOnSuccess) alert("구글 시트 로딩 실패로 이전 캐시 데이터를 복원했습니다.");
+            }
+          }
+        });
+      }
+    }
+
+    // Fetch student info from GAS
+    function syncWithGAS(id, callback) {
+      if (!state.gasUrl) return callback(false);
+      
+      const fetchUrl = `${state.gasUrl}?action=get_student&studentId=${encodeURIComponent(id)}`;
+      
+      fetch(fetchUrl)
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.student) {
+          if (!state.student) {
+            state.lastLevel = getLevelData(res.student.totalPoints || 0).level;
+          }
+          state.student = res.student;
+          // Sync to local mock database for backup
+          localStorage.setItem('teunteun_student_cached', JSON.stringify(res.student));
+          
+          // STRICT SYNC: Keep local mock_students DB synchronized with GAS server data
+          const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+          if (students[id]) {
+            students[id].totalPoints = res.student.totalPoints;
+            students[id].history = res.student.history || [];
+            localStorage.setItem('mock_students', JSON.stringify(students));
+          }
+          callback(true);
+        } else {
+          callback(false);
+        }
+      })
+      .catch(err => {
+        console.error("Fetch GAS error:", err);
+        // Load fallback cache if exists
+        const cached = localStorage.getItem('teunteun_student_cached');
+        if (cached) {
+          const s = JSON.parse(cached);
+          if (!state.student) {
+            state.lastLevel = getLevelData(s.totalPoints || 0).level;
+          }
+          state.student = s;
+          callback(true);
+        } else {
+          callback(false);
+        }
+      });
+    }
+
+    // Image Error Handler (Fallback to Cute Emoji)
+    function handleImageError(img) {
+      img.classList.add('hidden');
+      const emojiEl = document.getElementById('main-character-emoji');
+      emojiEl.classList.remove('hidden');
+      
+      const p = (state.student && state.student.totalPoints) || 0;
+      const level = getLevelData(p).level;
+      
+      if (level === 1) emojiEl.innerText = '🥚';
+      else if (level === 2) emojiEl.innerText = '🐣';
+      else if (level === 3) emojiEl.innerText = '🐔';
+      else emojiEl.innerText = '🐓';
+    }
+
+    // Header Image Error Handler
+    function handleHeaderImageError(img) {
+      img.classList.add('hidden');
+      const emojiEl = document.getElementById('header-character-emoji');
+      if (emojiEl) {
+        emojiEl.classList.remove('hidden');
+        const p = (state.student && state.student.totalPoints) || 0;
+        const level = getLevelData(p).level;
+        if (level === 1) emojiEl.innerText = '🥚';
+        else if (level === 2) emojiEl.innerText = '🐣';
+        else if (level === 3) emojiEl.innerText = '🐔';
+        else emojiEl.innerText = '🐓';
+      }
+    }
+
+    // Home Tab Rendering (Clean & Safe)
+    function renderHome() {
+      if (!state.student) return;
+
+      const p = state.student.totalPoints || 0;
+      const levelInfo = getLevelData(p);
+
+      // Check for level up celebration in real time
+      if (state.lastLevel && levelInfo.level > state.lastLevel) {
+        triggerLevelUpCelebration(levelInfo.name);
+      }
+      state.lastLevel = levelInfo.level;
+      
+      // Update background scenery by level dynamically
+      const cardContainer = document.getElementById('character-card-container');
+      if (cardContainer) {
+        const bgUrls = {
+          1: 'assets/cute_farm_bg_lvl1.png?v=2',
+          2: 'assets/cute_farm_bg_lvl2.png?v=2',
+          3: 'assets/cute_farm_bg_lvl3.png?v=2',
+          4: 'assets/cute_farm_bg_lvl4.png?v=2'
+        };
+        const currentBg = bgUrls[levelInfo.level] || 'assets/cute_farm_bg.png?v=2';
+        const tempImg = new Image();
+        tempImg.onload = function() {
+          cardContainer.style.backgroundImage = `url('${currentBg}')`;
+          cardContainer.style.filter = 'none';
+        };
+        tempImg.onerror = function() {
+          cardContainer.style.backgroundImage = `url('assets/cute_farm_bg.png?v=2')`;
+          if (levelInfo.level === 1) {
+            cardContainer.style.filter = 'none';
+          } else if (levelInfo.level === 2) {
+            cardContainer.style.filter = 'hue-rotate(30deg) saturate(1.3)';
+          } else if (levelInfo.level === 3) {
+            cardContainer.style.filter = 'hue-rotate(-40deg) saturate(1.2) contrast(1.05)';
+          } else {
+            cardContainer.style.filter = 'hue-rotate(-120deg) brightness(1.1) saturate(1.4)';
+          }
+        };
+        tempImg.src = currentBg;
+      }
+      
+      // Reset image visibility and set source
+      const imgEl = document.getElementById('main-character-img');
+      const emojiEl = document.getElementById('main-character-emoji');
+      
+      if (imgEl && emojiEl) {
+        imgEl.src = levelInfo.img;
+        imgEl.classList.remove('hidden');
+        emojiEl.classList.add('hidden');
+        
+        // Update fallback emoji
+        if (levelInfo.level === 1) emojiEl.innerText = '🥚';
+        else if (levelInfo.level === 2) emojiEl.innerText = '🐣';
+        else if (levelInfo.level === 3) emojiEl.innerText = '🐔';
+        else emojiEl.innerText = '🐓';
+      }
+
+      // Update badge with custom range points in both header and home overlay
+      const headerLvlBadge = document.getElementById('header-level-badge');
+      if (headerLvlBadge) {
+        headerLvlBadge.innerText = levelInfo.badge;
+      }
+      
+      const charLvlBadge = document.getElementById('character-level-badge');
+      if (charLvlBadge) {
+        charLvlBadge.innerText = levelInfo.badge;
+        charLvlBadge.style.display = 'block';
+      }
+
+      // Update character speech bubble dialog dynamically
+      const charSpeech = document.getElementById('character-speech-bubble');
+      if (charSpeech) {
+        charSpeech.innerText = levelInfo.dialog;
+      }
+      
+      // Update current points in the separate bottom right badge
+      const pointsBadge = document.getElementById('character-points-badge');
+      if (pointsBadge) {
+        pointsBadge.innerText = `내 점수: ${p.toLocaleString()} p`;
+      }
+      
+      // Update Character glowing background based on level colors
+      const backdropEl = document.getElementById('character-backdrop');
+      if (backdropEl) {
+        backdropEl.style.backgroundColor = levelInfo.bgClass;
+      }
+
+      // Update Header avatar image and glowing background
+      const headerImgEl = document.getElementById('header-character-img');
+      const headerEmojiEl = document.getElementById('header-character-emoji');
+      const headerBackdrop = document.getElementById('header-character-backdrop');
+      
+      if (headerImgEl && headerEmojiEl && headerBackdrop) {
+        headerImgEl.src = levelInfo.img;
+        headerImgEl.classList.remove('hidden');
+        headerEmojiEl.classList.add('hidden');
+        
+        if (levelInfo.level === 1) headerEmojiEl.innerText = '🥚';
+        else if (levelInfo.level === 2) headerEmojiEl.innerText = '🐣';
+        else if (levelInfo.level === 3) headerEmojiEl.innerText = '🐔';
+        else headerEmojiEl.innerText = '🐓';
+        
+        headerBackdrop.style.backgroundColor = levelInfo.bgClass;
+      }
+
+      // Update Mission Tab Milestones
+      updateMissionLevelMilestones(p);
+
+      // Restore daily checklist state and highlights
+      loadDailyState();
+
+      // Update stickers board in background to sync
+      renderStickers();
+    }
+
+    // Submit Today's Missions
+    function submitMissions() {
+      if (!state.studentId) {
+        alert("신청서 탭에서 학번 연동을 먼저 완료해 주세요!");
+        switchTab('register');
+        return;
+      }
+
+      // Check if already completed today (in local storage to prevent double taps)
+      const lastSubmitDate = localStorage.getItem(`last_submit_${state.studentId}`);
+      if (lastSubmitDate === getTodayDateString()) {
+        alert("오늘의 일일 건강 미션 인증 도장을 이미 찍었어요! 내일 다시 도전하세요! 🐾");
+        return;
+      }
+
+      // Calculate points
+      let pointsEarned = 0;
+      let missionsList = [];
+      const pointsConfig = { 1: 50, 2: 20, 3: 10, 4: 10, 5: 10 };
+      const missionNames = { 1: "운동🏃", 2: "아침밥🍚", 3: "잠🛌", 4: "단음료🥤", 5: "물💧" };
+
+      // Verify photo requirement for exercise mission
+      if (state.todayMissions[1] && !state.photoUploaded) {
+        alert("숨이 찰 정도의 운동 미션을 완료하기 위해서는 운동 사진 인증 업로드가 필요합니다! 📷");
+        return;
+      }
+
+      for (let id = 1; id <= 5; id++) {
+        if (state.todayMissions[id]) {
+          pointsEarned += pointsConfig[id];
+          missionsList.push(missionNames[id]);
+        }
+      }
+
+      if (pointsEarned === 0) {
+        alert("달성한 미션을 선택해 주세요!");
+        return;
+      }
+
+      let logMessage = `[일일미션] ${missionsList.join(', ')}`;
+      if (state.todayMissions[1] && state.photoUrl) {
+        logMessage += ` (인증샷 첨부됨)`;
+      }
+
+      // Post implementation
+      if (state.isOffline) {
+        LocalDB.addMission(state.studentId, logMessage, pointsEarned, null);
+        localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
+        
+        // Trigger Level up effects
+        const oldPoints = state.student.totalPoints;
+        const newPoints = oldPoints + pointsEarned;
+        const oldLevel = getLevelData(oldPoints).level;
+        const newLevel = getLevelData(newPoints).level;
+
+        state.student.totalPoints = newPoints;
+        
+        if (newLevel > oldLevel) {
+          triggerLevelUpCelebration(getLevelData(newPoints).name);
+        } else {
+          alert(`오늘의 미션 완료! 도장 꾹! 🐾\n${pointsEarned}p가 적립되어 ${newPoints}p가 되었습니다!`);
+        }
+        
+        clearMissionsForm();
+        refreshStudentData();
+        switchTab('home');
+      } else {
+        // GAS Remote Post
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            studentId: state.studentId,
+            missionType: logMessage,
+            points: pointsEarned,
+            weight: ""
+          })
+        })
+        .then(() => {
+          localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
+          alert(`서버에 미션 적립 전송 완료! 실시간 수식 갱신 후 점수가 올라갑니다. (+${pointsEarned}p)`);
+          clearMissionsForm();
+          
+          setTimeout(() => {
+            refreshStudentData();
+            switchTab('home');
+          }, 1500);
+        })
+        .catch(err => {
+          console.error("Mission Log Error:", err);
+          alert("네트워크 장애로 전송 실패! 데모 모드로 전환되거나 기기 상태를 체크해주세요.");
+        });
+      }
+    }
+
+    function clearMissionsForm() {
+      // Reset state missions
+      for (let id = 1; id <= 5; id++) {
+        state.todayMissions[id] = false;
+        
+        // Reset UI buttons to bright inactive layout
+        const doneBtn = document.getElementById(`btn-done-${id}`);
+        const cancelBtn = document.getElementById(`btn-cancel-${id}`);
+        if (doneBtn && cancelBtn) {
+          doneBtn.className = "flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95";
+          cancelBtn.className = "flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95";
+        }
+      }
+
+      // Reset photo upload
+      state.photoUploaded = false;
+      state.photoUrl = '';
+      state.photoUploadTime = '';
+      
+      const fileInput = document.getElementById('mission-photo-input');
+      if (fileInput) fileInput.value = '';
+      
+      const statusText = document.getElementById('photo-upload-status');
+      if (statusText) {
+        statusText.innerText = '';
+        statusText.classList.add('hidden');
+      }
+
+      const todayTotalText = document.getElementById('today-total-earn-points');
+      if (todayTotalText) {
+        todayTotalText.innerHTML = `0 <span class="text-base text-slate-600 font-bold">P</span>`;
+      }
+    }
+
+    // Health Catch Game (Playground)
+    (function() {
+      let canvas, ctx;
+      let startBtn, overlay, overlayTitle, overlayText;
+      let btnLeft, btnStop, btnRight;
+      
+      let gameInterval = null;
+      let timerInterval = null;
+      let isPlaying = false;
+      let isPaused = false; // Add isPaused state
+      
+      let score = 0;
+      let timeLeft = 30;
+      let highScore = parseInt(localStorage.getItem('teunteun_health_game_high') || '0');
+      
+      let basket = {
+        x: 170,
+        y: 250,
+        width: 60,
+        height: 18,
+        speed: 15,
+        color: '#ffcad4' // pastelPink Default
+      };
+      
+      let items = [];
+      const spawnChance = 0.04;
+      
+      const healthyFoodsList = [
+        { emoji: '🍎', score: 10, isHealthy: true },
+        { emoji: '🍌', score: 10, isHealthy: true },
+        { emoji: '🥕', score: 10, isHealthy: true },
+        { emoji: '🍓', score: 10, isHealthy: true },
+        { emoji: '🍉', score: 10, isHealthy: true },
+        { emoji: '🥦', score: 10, isHealthy: true }
+      ];
+      
+      const junkFoods = [
+        { emoji: '🍩', score: -5, isHealthy: false },
+        { emoji: '🍬', score: -5, isHealthy: false },
+        { emoji: '🍫', score: -5, isHealthy: false },
+        { emoji: '🍔', score: -5, isHealthy: false },
+        { emoji: '🍕', score: -5, isHealthy: false },
+        { emoji: '🥤', score: -5, isHealthy: false }
+      ];
+      
+      let keys = {
+        ArrowLeft: false,
+        ArrowRight: false
+      };
+      
+      window.initCardGame = function() {
+        resetGameUI();
+      }
+      
+      function resetGameUI() {
+        canvas = document.getElementById('gameCanvas');
+        if (!canvas) return;
+        ctx = canvas.getContext('2d');
+        
+        startBtn = document.getElementById('startGameBtn');
+        overlay = document.getElementById('gameOverlay');
+        overlayTitle = document.getElementById('gameOverlayTitle');
+        overlayText = document.getElementById('gameOverlayText');
+        
+        btnLeft = document.getElementById('btnLeft');
+        btnStop = document.getElementById('btnStop');
+        btnRight = document.getElementById('btnRight');
+        
+        isPlaying = false;
+        clearInterval(gameInterval);
+        clearInterval(timerInterval);
+        
+        overlay.classList.remove('hidden');
+        document.getElementById('game-success-message').classList.add('hidden');
+        
+        basket.x = canvas.width / 2 - basket.width / 2;
+        drawInitialFrame();
+        
+        if (!window.gameEventsBound) {
+          bindGameEvents();
+          window.gameEventsBound = true;
+        }
+      }
+
+      function drawInitialFrame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grad.addColorStop(0, '#eaf7ff');
+        grad.addColorStop(1, '#ffffff');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#334155';
+        ctx.fillStyle = basket.color;
+        ctx.beginPath();
+        ctx.roundRect(basket.x, basket.y, basket.width, basket.height, 8);
+        ctx.fill();
+        ctx.stroke();
+      }
+      
+      function bindGameEvents() {
+        window.addEventListener('keydown', (e) => {
+          if (e.key in keys) {
+            keys[e.key] = true;
+            e.preventDefault();
+            
+            // Auto-resume if key is pressed while paused
+            if (isPlaying && isPaused) {
+              togglePauseGame();
+            }
+          }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+          if (e.key in keys) {
+            keys[e.key] = false;
+          }
+        });
+        
+        let moveLeftInterval = null;
+        let moveRightInterval = null;
+        
+        btnLeft.addEventListener('mousedown', () => { moveLeftInterval = setInterval(() => moveBasket('left'), 20); });
+        btnLeft.addEventListener('mouseup', () => { clearInterval(moveLeftInterval); });
+        btnLeft.addEventListener('mouseleave', () => { clearInterval(moveLeftInterval); });
+        
+        btnRight.addEventListener('mousedown', () => { moveRightInterval = setInterval(() => moveBasket('right'), 20); });
+        btnRight.addEventListener('mouseup', () => { clearInterval(moveRightInterval); });
+        btnRight.addEventListener('mouseleave', () => { clearInterval(moveRightInterval); });
+        
+        btnLeft.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          moveLeftInterval = setInterval(() => moveBasket('left'), 20);
+        });
+        btnLeft.addEventListener('touchend', () => { clearInterval(moveLeftInterval); });
+        
+        btnRight.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          moveRightInterval = setInterval(() => moveBasket('right'), 20);
+        });
+        btnRight.addEventListener('touchend', () => { clearInterval(moveRightInterval); });
+        
+        // Stop button handlers to toggle pause/play state
+        btnStop.addEventListener('click', () => {
+          togglePauseGame();
+        });
+        btnStop.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          togglePauseGame();
+        });
+
+        startBtn.addEventListener('click', () => {
+          playAudio('match');
+          startGame();
+        });
+      }
+      
+      function moveBasket(dir) {
+        if (!isPlaying) return;
+        
+        // Auto-resume if paused and controls are touched
+        if (isPaused) {
+          togglePauseGame();
+        }
+        
+        if (dir === 'left') {
+          basket.x = Math.max(0, basket.x - basket.speed);
+        } else if (dir === 'right') {
+          basket.x = Math.min(canvas.width - basket.width, basket.x + basket.speed);
+        }
+      }
+      
+      function startGame() {
+        score = 0;
+        timeLeft = 30;
+        items = [];
+        basket.x = canvas.width / 2 - basket.width / 2;
+        isPlaying = true;
+        isPaused = false; // Reset paused state
+        
+        // Reset stop button text and styling
+        if (btnStop) {
+          btnStop.textContent = "■ 멈춤";
+          btnStop.className = "flex-1 bg-slate-100 border-2 border-slate-300 text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none";
+        }
+        
+        overlay.classList.add('hidden');
+        document.getElementById('game-success-message').classList.add('hidden');
+        
+        gameInterval = setInterval(updateGame, 1000 / 60);
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+      
+      function togglePauseGame() {
+        if (!isPlaying) return;
+        
+        if (!isPaused) {
+          isPaused = true;
+          clearInterval(gameInterval);
+          gameInterval = null;
+          clearInterval(timerInterval);
+          timerInterval = null;
+          
+          // Clear active mobile moving intervals
+          if (typeof moveLeftInterval !== 'undefined') clearInterval(moveLeftInterval);
+          if (typeof moveRightInterval !== 'undefined') clearInterval(moveRightInterval);
+          keys.ArrowLeft = false;
+          keys.ArrowRight = false;
+          
+          drawPauseOverlay();
+          
+          if (btnStop) {
+            btnStop.textContent = "▶ 재개";
+            btnStop.className = "flex-1 bg-pastelMint border-2 border-pastelMint-dark text-[#1B4332] text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none shadow-sm";
+          }
+        } else {
+          isPaused = false;
+          gameInterval = setInterval(updateGame, 1000 / 60);
+          timerInterval = setInterval(updateTimer, 1000);
+          
+          if (btnStop) {
+            btnStop.textContent = "■ 멈춤";
+            btnStop.className = "flex-1 bg-slate-100 border-2 border-slate-300 text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none";
+          }
+        }
+      }
+      
+      function drawPauseOverlay() {
+        ctx.fillStyle = "rgba(15, 23, 42, 0.4)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 24px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("⏸️ 일시 정지", canvas.width / 2, canvas.height / 2);
+      }
+      
+      function updateTimer() {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }
+      
+      function spawnItem() {
+        const isHealthy = Math.random() < 0.6;
+        const sourceList = isHealthy ? healthyFoodsList : junkFoods;
+        const template = sourceList[Math.floor(Math.random() * sourceList.length)];
+        
+        items.push({
+          x: Math.random() * (canvas.width - 24) + 12,
+          y: -20,
+          emoji: template.emoji,
+          score: template.score,
+          isHealthy: template.isHealthy,
+          speed: Math.random() * 2 + 2 + (30 - timeLeft) * 0.1,
+          size: 24
+        });
+      }
+      
+      function updateGame() {
+        if (keys.ArrowLeft) moveBasket('left');
+        if (keys.ArrowRight) moveBasket('right');
+        
+        if (Math.random() < spawnChance) spawnItem();
+        
+        for (let i = items.length - 1; i >= 0; i--) {
+          let item = items[i];
+          item.y += item.speed;
+          
+          if (item.y > canvas.height + 20) {
+            items.splice(i, 1);
+            continue;
+          }
+          
+          if (item.y + item.size / 2 >= basket.y &&
+              item.y - item.size / 2 <= basket.y + basket.height &&
+              item.x + item.size / 2 >= basket.x &&
+              item.x - item.size / 2 <= basket.x + basket.width) {
+            
+            score += item.score;
+            if (score < 0) score = 0;
+            
+            playAudio(item.isHealthy ? 'match' : 'mismatch');
+            
+            items.splice(i, 1);
+            continue;
+          }
+        }
+        
+        draw();
+      }
+      
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grad.addColorStop(0, '#eaf7ff');
+        grad.addColorStop(1, '#ffffff');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#334155';
+        ctx.fillStyle = basket.color;
+        ctx.beginPath();
+        ctx.roundRect(basket.x, basket.y, basket.width, basket.height, 8);
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(basket.x + 15, basket.y);
+        ctx.lineTo(basket.x + 15, basket.y + basket.height);
+        ctx.moveTo(basket.x + 30, basket.y);
+        ctx.lineTo(basket.x + 30, basket.y + basket.height);
+        ctx.moveTo(basket.x + 45, basket.y);
+        ctx.lineTo(basket.x + 45, basket.y + basket.height);
+        ctx.stroke();
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        items.forEach(item => {
+          ctx.font = `${item.size}px Arial`;
+          ctx.fillText(item.emoji, item.x, item.y);
+        });
+        
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`점수: ${score}`, 15, 25);
+        ctx.fillText(`최고: ${highScore}`, 15, 45);
+        
+        ctx.textAlign = 'right';
+        ctx.fillStyle = timeLeft <= 5 ? '#ef4444' : '#1e293b';
+        ctx.fillText(`시간: ${timeLeft}초`, canvas.width - 15, 25);
+      }
+      
+      function endGame() {
+        isPlaying = false;
+        isPaused = false;
+        clearInterval(gameInterval);
+        clearInterval(timerInterval);
+        
+        if (btnStop) {
+          btnStop.textContent = "■ 멈춤";
+          btnStop.className = "flex-1 bg-slate-100 border-2 border-slate-300 text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none";
+        }
+        
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem('teunteun_health_game_high', highScore.toString());
+        }
+        
+        let isSuccess = score >= 100;
+        
+        overlayTitle.textContent = isSuccess ? "🏆 성공! 대단해요! 🏆" : "🎮 게임 종료! 🐾";
+        overlayText.innerHTML = `
+          획득 점수: <strong>${score}점</strong><br>
+          최고 점수: <strong>${highScore}점</strong><br><br>
+          ${isSuccess ? 
+            `100점을 돌파하여 미션 보너스 <strong>+50p</strong>를 적립했습니다! 🌟` : 
+            `아쉽네요! 다음번엔 100점을 넘어 성공해 보세요!<br>(건강 음식을 먹으면 점수가 오릅니다.)`
+          }
+        `;
+        startBtn.textContent = "다시 도전하기! 🔄";
+        overlay.classList.remove('hidden');
+        
+        playAudio('clear');
+        
+        if (isSuccess) {
+          handleGameWin();
+        }
+      }
+
+      function handleGameWin() {
+        document.getElementById('game-success-message').classList.remove('hidden');
+        triggerConfetti();
+
+        if (!state.studentId) {
+          alert("와아! 건강 음식 받기 게임을 모두 클리어했어요! 🎮\n포인트를 적립하려면 [신청서] 탭에서 등록을 먼저 마쳐주세요!");
+          return;
+        }
+
+        const gamePlayDate = localStorage.getItem(`game_clear_${state.studentId}`);
+        if (gamePlayDate === getTodayDateString()) {
+          alert("오늘의 놀이터 게임 클리어! 이미 일일 보너스 점수(50p)를 획득하여 이번 판은 순위 점수가 오르지 않아요! 🎮");
+          return;
+        }
+
+        const pointsEarned = 50;
+        const missionName = "[놀이터] 건강음식 받기 성공 🍎";
+
+        if (state.isOffline) {
+          LocalDB.addMission(state.studentId, missionName, pointsEarned, null);
+          localStorage.setItem(`game_clear_${state.studentId}`, getTodayDateString());
+          
+          setTimeout(() => {
+            alert(`놀이터 게임 완료! 보너스 점수 50p가 적립되었습니다!`);
+            refreshStudentData();
+          }, 500);
+        } else {
+          fetch(state.gasUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'log_mission',
+              studentId: state.studentId,
+              missionType: missionName,
+              points: pointsEarned,
+              weight: ""
+            })
+          })
+          .then(() => {
+            localStorage.setItem(`game_clear_${state.studentId}`, getTodayDateString());
+            setTimeout(() => {
+              alert("서버에 놀이터 미션 완료 보너스 전송을 완료했습니다! (+50p)");
+              refreshStudentData();
+            }, 500);
+          });
+        }
+      }
+    })();
+
+    // Monthly BMI management functions
+    function initMonthlyBmi() {
+      if (!state.studentId) return;
+      if (!state.activeBmiMonth) {
+        const curMonth = new Date().getMonth() + 1;
+        state.activeBmiMonth = (curMonth >= 6 && curMonth <= 12) ? curMonth : 6;
+      }
+      
+      // Load saved monthly metrics to state.student.weightHistory
+      syncBmiHistoryToState();
+      
+      selectBmiMonth(state.activeBmiMonth);
+    }
+    
+    function syncBmiHistoryToState() {
+      if (!state.studentId || !state.student) return;
+      const key = `teunteun_monthly_bmi_${state.studentId}`;
+      const stored = JSON.parse(localStorage.getItem(key) || '{}');
+      
+      let monthlyHistory = [];
+      const currentYear = new Date().getFullYear();
+      
+      for (let m = 6; m <= 12; m++) {
+        if (stored[m]) {
+          const monthStr = String(m).padStart(2, '0');
+          const dateStr = `${currentYear}-${monthStr}-01`;
+          monthlyHistory.push({
+            date: dateStr,
+            weight: parseFloat(stored[m].weight),
+            height: parseFloat(stored[m].height)
+          });
+        }
+      }
+      
+      if (monthlyHistory.length > 0) {
+        const historyMap = {};
+        
+        // Populate existing weightHistory records
+        if (state.student.weightHistory) {
+          state.student.weightHistory.forEach(item => {
+            historyMap[item.date] = item.weight;
+          });
+        }
+        
+        // Overwrite or add monthly entries
+        monthlyHistory.forEach(item => {
+          historyMap[item.date] = item.weight;
+        });
+        
+        // Sort and rebuild
+        state.student.weightHistory = Object.keys(historyMap).map(d => ({
+          date: d,
+          weight: parseFloat(historyMap[d])
+        })).sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Determine latest month measurement to set main height and weight
+        let latestMonth = 0;
+        for (let m = 12; m >= 6; m--) {
+          if (stored[m]) {
+            latestMonth = m;
+            break;
+          }
+        }
+        if (latestMonth > 0) {
+          state.student.height = stored[latestMonth].height;
+          state.student.weight = stored[latestMonth].weight;
+        }
+      }
+    }
+    
+    function selectBmiMonth(month) {
+      if (!state.studentId) return;
+      state.activeBmiMonth = month;
+      
+      // Load stored metrics to input fields
+      const key = `teunteun_monthly_bmi_${state.studentId}`;
+      const stored = JSON.parse(localStorage.getItem(key) || '{}');
+      
+      const heightInput = document.getElementById('input-bmi-height');
+      const weightInput = document.getElementById('input-bmi-weight');
+      
+      if (heightInput && weightInput) {
+        if (stored[month]) {
+          heightInput.value = stored[month].height;
+          weightInput.value = stored[month].weight;
+        } else {
+          heightInput.value = '';
+          weightInput.value = '';
+        }
+      }
+    }
+    
+    function saveMonthlyBmi() {
+      if (!state.studentId) {
+        alert("신청서 작성을 먼저 마쳐주세요! 📋");
+        switchTab('register');
+        return;
+      }
+      
+      const heightInput = document.getElementById('input-bmi-height');
+      const weightInput = document.getElementById('input-bmi-weight');
+      
+      const hVal = parseFloat(heightInput.value.trim());
+      const wVal = parseFloat(weightInput.value.trim());
+      
+      if (isNaN(hVal) || hVal <= 0 || isNaN(wVal) || wVal <= 0) {
+        alert("올바른 키와 몸무게 수치를 입력해 주세요! 🐾");
+        return;
+      }
+      
+      const month = state.activeBmiMonth;
+      const key = `teunteun_monthly_bmi_${state.studentId}`;
+      const stored = JSON.parse(localStorage.getItem(key) || '{}');
+      
+      const bmiVal = parseFloat((wVal / ((hVal / 100) ** 2)).toFixed(1));
+      
+      stored[month] = { height: hVal, weight: wVal, bmi: bmiVal };
+      localStorage.setItem(key, JSON.stringify(stored));
+      
+      // Sync local state
+      syncBmiHistoryToState();
+      
+      // Update mock database locally
+      if (state.isOffline) {
+        const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+        if (students[state.studentId]) {
+          students[state.studentId].height = state.student.height;
+          students[state.studentId].weight = state.student.weight;
+          students[state.studentId].weightHistory = state.student.weightHistory;
+          localStorage.setItem('mock_students', JSON.stringify(students));
+        }
+        alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록이 저장되었습니다! 📊`);
+        renderMyBody();
+      } else {
+        // Send data to GAS backend
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            studentId: state.studentId,
+            missionType: `[내몸탐험] ${month}월 신체 측정 📏`,
+            points: 0,
+            weight: wVal
+          })
+        })
+        .then(() => {
+          alert(`당신의 BMI는 ${bmiVal}입니다. 구글 시트와 ${month}월 신체 데이터 동기화를 완료했습니다! 📡`);
+          renderMyBody();
+        })
+        .catch(err => {
+          console.error("GAS monthly sync error", err);
+          alert("서버 전송 실패! 로컬 브라우저에만 우선 기록합니다.");
+          renderMyBody();
+        });
+      }
+    }
+
+    // Render MyBody Report (BMI & Canvas Chart)
+    function renderMyBody() {
+      if (!state.student) return;
+
+      const h = state.student.height;
+      const w = state.student.weight;
+      
+      const displayHeight = document.getElementById('bmi-display-height');
+      const displayWeight = document.getElementById('bmi-display-weight');
+      if (displayHeight) displayHeight.innerText = `키: ${h} cm`;
+      if (displayWeight) displayWeight.innerText = `몸무게: ${w} kg`;
+
+      // Calculate BMI
+      const bmi = (w / ((h / 100) ** 2)).toFixed(1);
+      const valueText = document.getElementById('bmi-value-text');
+      if (valueText) valueText.innerText = bmi;
+
+      // Pediatric BMI zones (standard thresholds approximately)
+      // Underweight < 15, Healthy 15~19, Overweight 19~21, Obese 21+
+      const badge = document.getElementById('bmi-status-badge');
+      if (badge) {
+        if (bmi < 15) {
+          badge.innerText = "🌱 가벼워요 (날씬새싹)";
+          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-white bg-pastelBlue-dark";
+        } else if (bmi >= 15 && bmi < 19) {
+          badge.innerText = "🌻 건강해요 (튼튼새싹)";
+          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-white bg-emerald-400";
+        } else if (bmi >= 19 && bmi < 21) {
+          badge.innerText = "🍊 토실해요 (토실새싹)";
+          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-white bg-amber-400";
+        } else {
+          badge.innerText = "🍇 통통해요 (통통새싹)";
+          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-white bg-red-400";
+        }
+      }
+
+      // Render Monthly History Table
+      const tableBody = document.getElementById('bmi-history-table-body');
+      if (tableBody) {
+        const key = `teunteun_monthly_bmi_${state.studentId}`;
+        const stored = JSON.parse(localStorage.getItem(key) || '{}');
+        
+        let html = '';
+        let hasRecords = false;
+        
+        for (let m = 6; m <= 12; m++) {
+          if (stored[m]) {
+            hasRecords = true;
+            html += `
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-3 px-2 text-slate-800 font-black">${m}월</td>
+                <td class="py-3 px-2 text-slate-600 font-bold">${stored[m].height} cm</td>
+                <td class="py-3 px-2 text-slate-600 font-bold">${stored[m].weight} kg</td>
+                <td class="py-3 px-2 text-sky-600 font-black">${stored[m].bmi}</td>
+              </tr>
+            `;
+          }
+        }
+        
+        if (hasRecords) {
+          tableBody.innerHTML = html;
+        } else {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="4" class="py-6 text-slate-400 font-normal">아직 등록된 기록이 없습니다.</td>
+            </tr>
+          `;
+        }
+      }
+    }
+
+    // Draw custom Canvas weight chart
+    function drawWeightChart() {
+      // Weight chart has been removed based on user request.
+    }
+
+    // Render Stickers board
+    function renderStickers() {
+      if (!state.student) return;
+
+      const p = state.student.totalPoints || 0;
+      const stickerCells = document.querySelectorAll('.sticker-cell');
+      
+      const activeColors = [
+        ['bg-pastelPink-light', 'border-pastelPink', 'text-pink-500'],
+        ['bg-pastelMint-light', 'border-pastelMint-dark', 'text-emerald-600'],
+        ['bg-pastelBlue-light', 'border-pastelBlue-dark', 'text-blue-500'],
+        ['bg-pastelPeach-light', 'border-pastelPeach-dark', 'text-orange-500'],
+        ['bg-pastelYellow-light', 'border-pastelYellow-dark', 'text-amber-500']
+      ];
+
+      const allActiveClasses = [
+        'bg-pastelPink-light', 'border-pastelPink', 'text-pink-500',
+        'bg-pastelMint-light', 'border-pastelMint-dark', 'text-emerald-600',
+        'bg-pastelBlue-light', 'border-pastelBlue-dark', 'text-blue-500',
+        'bg-pastelPeach-light', 'border-pastelPeach-dark', 'text-orange-500',
+        'bg-pastelYellow-light', 'border-pastelYellow-dark', 'text-amber-500',
+        'border-2', 'opacity-100', 'scale-105', 'shadow-md'
+      ];
+
+      const emojiStickers = [
+        '🍎', '🍓', '🥕', '🍌', '🥦', '🍇', '🍉', '🍊', '🍋', '🍍', '🍒', '🍑', '🍅', '🥑', '🌽', '🥔',
+        '🍐', '🥝', '🫐', '🥬', '🌶️', '🍄', '🍠', '🍈', '🍏', '🥭', '🥥', '🧅', '🥜', '🥦', '🍎'
+      ];
+
+      // 매월 1일 리셋 로직 (또는 달이 바뀌었을 때 리셋)
+      const currentMonth = getYearMonthString();
+      const storageKey = `teunteun_sticker_reset_${state.studentId}`;
+      let resetInfo = JSON.parse(localStorage.getItem(storageKey) || 'null');
+
+      if (!resetInfo || resetInfo.lastResetMonth !== currentMonth) {
+        resetInfo = {
+          lastResetMonth: currentMonth,
+          basePoints: resetInfo ? p : 0
+        };
+        localStorage.setItem(storageKey, JSON.stringify(resetInfo));
+      }
+
+      // 이번 달 획득한 포인트
+      const displayPoints = Math.max(0, p - resetInfo.basePoints);
+
+      stickerCells.forEach((cell, index) => {
+        const ptsReq = parseInt(cell.getAttribute('data-points'));
+        const colorSet = activeColors[index % activeColors.length];
+        
+        // Reset classes safely
+        cell.classList.remove(...allActiveClasses);
+        cell.classList.remove('opacity-20', 'grayscale', 'bg-slate-50', 'border-slate-100', 'text-slate-400');
+        
+        if (displayPoints >= ptsReq) {
+          cell.classList.add('opacity-100', 'scale-105', 'shadow-md', 'border-2', ...colorSet);
+          cell.style.filter = 'none';
+          cell.innerText = emojiStickers[index % emojiStickers.length];
+        } else {
+          cell.classList.add('opacity-20', 'grayscale', 'bg-slate-50', 'border-slate-100', 'text-slate-400');
+          cell.style.filter = 'grayscale(100%)';
+          cell.innerText = index + 1;
+        }
+      });
+    }
+
+
+
+    // Gift Pangs Banner Levelup explanation popup
+    function triggerGiftPangs() {
+      // Manual click fireworks
+      triggerConfetti();
+      playAudio('clear');
+      toggleModal('level-modal');
+    }
+
+    function triggerLevelUpCelebration(newLevelName) {
+      triggerConfetti();
+      playAudio('clear');
+      alert(`🎉 대박! 레벨업 성공! 🎉\n새로운 캐릭터 [${newLevelName}] 단계에 도달했습니다! 꾸준히 몸을 관리한 결과물이에요! 축하합니다! 🥳`);
+    }
+
+    // ==================== CONFETTI PARTICLES SIMULATION ====================
+    let canvas, ctx;
+    let particles = [];
+    const colors = ['#FFC0CB', '#FFD700', '#ADFF2F', '#00FFFF', '#FF69B4', '#FFA500'];
+
+    function initConfetti() {
+      canvas = document.getElementById('confetti-canvas');
+      ctx = canvas.getContext('2d');
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+      loopConfetti();
+    }
+
+    function resizeCanvas() {
+      if (canvas) {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+      }
+    }
+
+    function triggerConfetti() {
+      for (let i = 0; i < 80; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height - 150, // shoot from character button level
+          vx: (Math.random() - 0.5) * 10,
+          vy: -Math.random() * 15 - 5,
+          size: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 10
+        });
+      }
+    }
+
+    function loopConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.4; // gravity
+        p.rotation += p.rotationSpeed;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation * Math.PI / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+
+        // remove particles out of view
+        if (p.y > canvas.height) {
+          particles.splice(idx, 1);
+        }
+      });
+
+      requestAnimationFrame(loopConfetti);
+    }
+  </script>
+</body>
+</html>

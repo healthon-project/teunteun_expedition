@@ -1,0 +1,5 @@
+node_modules/
+temp_extract/
+temp_extract_lvl3/
+.system_generated/
+*.log
