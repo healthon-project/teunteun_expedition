@@ -157,11 +157,13 @@
 
         <!-- Character display area (Enlarged) -->
         <div id="character-card-container" class="w-[420px] h-[420px] rounded-[60px] border-[5px] border-pastelPink shadow-md flex justify-center items-center relative overflow-hidden mb-8 transition-all duration-500" style="background-image: url('assets/cute_farm_bg.png'); background-size: cover; background-position: center;">
+          <!-- Background Fading Overlay -->
+          <div class="absolute inset-0 bg-white/60 backdrop-blur-[2px] pointer-events-none z-0"></div>
           <!-- Soft glowing backdrop -->
           <div id="character-backdrop" class="absolute w-72 h-72 rounded-full bg-pastelYellow opacity-30 blur-xl"></div>
           
           <!-- Big Character Image -->
-          <img id="main-character-img" src="assets/level1.png" alt="알콩이" class="w-[320px] h-[320px] object-contain z-10 char-float transition-all duration-500" onerror="handleImageError(this)">
+          <img id="main-character-img" src="assets/level1.png" alt="알콩이" class="w-[320px] h-[320px] object-contain z-10 char-float transition-all duration-500" style="filter: drop-shadow(0 12px 20px rgba(0,0,0,0.18)) saturate(1.2) contrast(1.08);" onerror="handleImageError(this)">
           
           <!-- Fallback Big Emoji (shown if image fails to load) -->
           <div id="main-character-emoji" class="text-[180px] z-10 char-float transition-all duration-500 hidden select-none">🥚</div>
