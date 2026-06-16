@@ -1,14 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const srcDir = 'C:\\Users\\user\\.gemini\\antigravity\\brain\\c4521e88-1f20-4caf-9660-29ba0828729e';
+const srcDir = 'C:\\Users\\user\\.gemini\\antigravity\\brain\\6a5b8035-61cb-4cd3-85ac-91fb293eb7e3';
 const destDir = 'C:\\Users\\user\\.gemini\\antigravity\\scratch\\teunteun_expedition\\assets';
 
 const files = [
-  { src: 'cute_farm_bg_lvl1_1780463593177.png', dest: 'cute_farm_bg_lvl1.png' },
-  { src: 'cute_farm_bg_lvl2_1780463606051.png', dest: 'cute_farm_bg_lvl2.png' },
-  { src: 'cute_farm_bg_lvl3_1780463620350.png', dest: 'cute_farm_bg_lvl3.png' },
-  { src: 'cute_farm_bg_lvl4_1780463635770.png', dest: 'cute_farm_bg_lvl4.png' }
+  { src: 'perfect_half_green_land_bg_1781077799246.png', dest: 'cute_farm_bg.png' },
+  { src: 'perfect_half_green_land_bg_1781077799246.png', dest: 'cute_farm_bg_lvl1.png' },
+  { src: 'perfect_half_green_land_bg_1781077799246.png', dest: 'cute_farm_bg_lvl2.png' },
+  { src: 'perfect_half_green_land_bg_1781077799246.png', dest: 'cute_farm_bg_lvl3.png' },
+  { src: 'perfect_half_green_land_bg_1781077799246.png', dest: 'cute_farm_bg_lvl4.png' }
 ];
 
 if (!fs.existsSync(destDir)) {

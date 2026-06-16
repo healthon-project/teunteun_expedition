@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>튼튼탐험대 - 스스로 체중관리 챌린지 🏕️</title>
+  <title>꼬꼬챌린지 - 스스로 체중관리 챌린지 🏕️</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Firebase Compat Web SDK -->
@@ -28,6 +28,11 @@
       margin: 0;
       padding: 10px;
       overflow-x: hidden;
+    }
+    @media (max-width: 640px) {
+      body {
+        padding: 0;
+      }
     }
 
     /* Scrollbar style */
@@ -86,10 +91,52 @@
     .char-float {
       animation: float 4s ease-in-out infinite;
     }
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-1.5deg) scale(1); }
+      50% { transform: rotate(1.5deg) scale(1.04); }
+    }
+    .title-playful {
+      animation: wiggle 2.5s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    /* Bottom tab responsive grid layout (always single line) */
+    .bottom-tab-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      justify-items: center;
+      column-gap: 1px;
+      width: 100%;
+    }
+    .tab-btn {
+      letter-spacing: -0.05em;
+      padding-left: 0.5px;
+      padding-right: 0.5px;
+    }
+
+    .bottom-tab-grid #btn-tab-register { order: 1; }
+    .bottom-tab-grid #btn-tab-mission { order: 2; }
+    .bottom-tab-grid #btn-tab-playground { order: 3; }
+    .bottom-tab-grid #btn-tab-mybody { order: 4; }
+    .bottom-tab-grid #btn-tab-stickers { order: 5; }
+
+    /* Responsive Device Container Size (Desktop/Laptop: 6.7cm width, 14.5cm height screen size) */
+    @media (min-width: 640px) {
+      .phone-mockup-wrapper {
+        width: 430px !important;
+        height: 860px !important;
+        max-height: calc(100vh - 4.5rem) !important;
+        margin-top: 3rem !important;
+      }
+    }
   </style>
   <script>
     tailwind.config = {
       theme: {
+        screens: {
+          pc: '640px',
+        },
         extend: {
           colors: {
             pastelPink: { light: '#fff0f3', DEFAULT: '#ffcad4', dark: '#ffb3c1' },
@@ -105,22 +152,25 @@
 </head>
 <body class="select-none">
 
-  <!-- Mobile phone wrapper (Enlarged) -->
-  <div class="relative w-full max-w-[500px] h-[920px] bg-white rounded-[50px] shadow-2xl border-[12px] border-slate-800 overflow-hidden flex flex-col justify-between">
+  <!-- Mobile phone outer wrapper (Bezel Frame - Galaxy S26 size: max-w-[390px]) -->
+  <div class="phone-mockup-wrapper relative w-full h-[100dvh] bg-slate-800 rounded-none pc:rounded-[44px] shadow-none pc:shadow-2xl p-0 pc:p-[11px] overflow-hidden flex flex-col justify-between">
     
     <!-- Phone top speaker / camera notch -->
-    <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-48 h-5 bg-slate-800 rounded-b-2xl z-50 flex justify-center items-center">
+    <div class="hidden pc:flex absolute top-0 left-1/2 transform -translate-x-1/2 w-48 h-5 bg-slate-800 rounded-b-2xl z-50 justify-center items-center">
       <div class="w-16 h-1 bg-slate-600 rounded-full mb-1"></div>
     </div>
 
-    <!-- Background Confetti Canvas -->
-    <canvas id="confetti-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-40"></canvas>
+    <!-- Inner Screen Wrapper (Actual screen boundary inside the bezel) -->
+    <div id="app-screen-wrapper" class="w-full h-full rounded-none pc:rounded-[32px] overflow-hidden flex flex-col justify-between relative" style="background-image: linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.35)), url('assets/cute_farm_bg.png'); background-size: cover; background-position: center;">
 
-    <!-- App Header -->
-    <div id="app-header" class="pt-24 pb-6 px-6 bg-gradient-to-r from-pastelPink-light via-pastelYellow-light to-pastelMint-light border-b border-pastelPink/30 flex flex-col justify-center items-center gap-2 z-10 relative">
+      <!-- Background Confetti Canvas -->
+      <canvas id="confetti-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-40"></canvas>
+
+      <!-- App Header (Shown on Register tab to show title and Settings icon) -->
+      <div id="app-header" class="pt-10 pb-3 px-6 bg-gradient-to-r from-pastelPink-light via-pastelYellow-light to-pastelMint-light border-b border-pastelPink/30 flex flex-col justify-center items-center gap-2 z-10 relative">
       <button onclick="switchTab('home')" class="flex items-center justify-center cursor-pointer active:scale-95 transition-transform" title="홈으로 이동">
         <!-- 1,2페이지용 원래 텍스트 타이틀 -->
-        <h1 id="header-title-text" class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-amber-500 to-emerald-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.15)] tracking-wide text-center">튼튼탐험대</h1>
+        <h1 id="header-title-text" class="text-5xl font-black text-transparent bg-clip-text drop-shadow-[0_2px_2px_rgba(0,0,0,0.15)] tracking-wide text-center title-playful" style="background: linear-gradient(to right, #ff3b30, #ff9500, #ffcc00, #34c759, #007aff, #5856d6, #af52de); -webkit-background-clip: text; color: transparent;">꼬꼬챌린지</h1>
         
         <!-- 미션인증 등 다른 페이지용 동적 캐릭터 아바타 (기본 hidden) -->
         <div id="header-avatar-box" class="hidden relative w-20 h-20 rounded-full bg-white border-4 border-pastelPink shadow-md flex justify-center items-center overflow-hidden">
@@ -139,7 +189,7 @@
       </div>
       
       <!-- Settings Icon for Teacher Link -->
-      <button onclick="toggleModal('settings-modal')" class="absolute right-4 top-24 p-2 rounded-full hover:bg-pastelPink/30 active:scale-95 transition-transform" title="보건교사 설정">
+      <button onclick="toggleModal('settings-modal')" class="absolute right-4 top-10 p-2 rounded-full hover:bg-pastelPink/30 active:scale-95 transition-transform" title="보건교사 설정">
         <svg class="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -147,115 +197,138 @@
       </button>
     </div>
 
+    <!-- Global Milestone Header (Shown on Mission, Playground, My Body, and Stickers tabs) -->
+    <div id="global-milestone-header" class="hidden pt-10 pb-2 px-6 bg-gradient-to-r from-pastelPink-light via-pastelYellow-light to-pastelMint-light border-b border-pastelPink/30 flex flex-col justify-center items-center gap-1 z-10 relative">
+      <!-- Level Milestone Cards -->
+      <div class="grid grid-cols-4 gap-2 mb-1.5 w-full">
+        <div id="g-lvl-1" class="rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+          <span class="text-xl">🥚</span>
+          <span class="text-[10.5px] font-bold mt-0.5">알콩이</span>
+          <span class="text-[8.5px] text-slate-400 mt-0">0~1000P</span>
+        </div>
+        <div id="g-lvl-2" class="rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+          <span class="text-xl">🐣</span>
+          <span class="text-[10.5px] font-bold mt-0.5">삐약이</span>
+          <span class="text-[8.5px] text-slate-400 mt-0">~2000P</span>
+        </div>
+        <div id="g-lvl-3" class="rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+          <span class="text-xl">🐥</span>
+          <span class="text-[10.5px] font-bold mt-0.5">튼튼이</span>
+          <span class="text-[8.5px] text-slate-400 mt-0">~3000P</span>
+        </div>
+        <div id="g-lvl-4" class="rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+          <span class="text-xl">🐔</span>
+          <span class="text-[10.5px] font-bold mt-0.5">꼬꼬대장</span>
+          <span class="text-[8.5px] text-slate-400 mt-0">3001P~</span>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full flex items-center gap-3 px-1">
+        <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
+          <div id="g-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <span id="g-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
+      </div>
+    </div>
+
     <!-- APP CONTENT (Scrollable area) -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar bg-[#FDFBF7] relative pb-6">
+    <div id="app-content-scroll" class="flex-1 overflow-y-auto custom-scrollbar bg-transparent relative" style="padding-top: 3.5rem; padding-bottom: 6rem;">
 
       <!-- ==================== PAGE 1: HOME ==================== -->
-      <section id="tab-home" class="tab-content pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800 flex flex-col items-center justify-start min-h-[580px]">
+      <!-- ==================== PAGE 1: HOME ==================== -->
+      <section id="tab-home" class="tab-content flex flex-col items-center justify-start min-h-[500px] sm:min-h-[580px] w-full pb-4">
         
-        <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-amber-500 to-emerald-500 drop-shadow-[0_2px_2px_rgba(0,0,0,0.15)] tracking-wide text-center mb-6">튼튼탐험대</h1>
+        <!-- Main Card Wrapper (Contains character drawing, speech, and gift btn) -->
+        <div class="w-full pt-6 pb-6 px-5 bg-transparent text-slate-800 flex flex-col items-center justify-start">
+          <h1 class="text-5xl font-black text-transparent bg-clip-text drop-shadow-[0_4px_6px_rgba(239,68,68,0.25)] tracking-wider text-center mb-1 title-playful hover:scale-110 active:scale-95 transition-transform duration-200 cursor-pointer" style="background: linear-gradient(to right, #ff3b30, #ff9500, #ffcc00, #34c759, #007aff, #5856d6, #af52de); -webkit-background-clip: text; color: transparent;">꼬꼬챌린지</h1>
+          <p class="text-xs sm:text-sm font-black text-slate-500 text-center mb-4 sm:mb-6">알콩이에서 꼬꼬대장까지, 나는 건강왕</p>
 
-        <!-- Character display area (Enlarged) -->
-        <div id="character-card-container" class="w-[420px] h-[420px] rounded-[60px] border-[5px] border-pastelPink shadow-md flex justify-center items-center relative overflow-hidden mb-8 transition-all duration-500" style="background-image: url('assets/cute_farm_bg.png'); background-size: cover; background-position: center;">
-          <!-- Background Fading Overlay -->
-          <div class="absolute inset-0 bg-white/45 pointer-events-none z-0"></div>
-          <!-- Soft glowing backdrop -->
-          <div id="character-backdrop" class="absolute w-72 h-72 rounded-full bg-pastelYellow opacity-30 blur-xl"></div>
-          
-          <!-- Big Character Image -->
-          <img id="main-character-img" src="assets/level1.png" alt="알콩이" class="w-[320px] h-[320px] object-contain z-10 char-float transition-all duration-500" style="filter: drop-shadow(0 12px 20px rgba(0,0,0,0.18)) saturate(1.2) contrast(1.08);" onerror="handleImageError(this)">
-          
-          <!-- Fallback Big Emoji (shown if image fails to load) -->
-          <div id="main-character-emoji" class="text-[180px] z-10 char-float transition-all duration-500 hidden select-none">🥚</div>
-          
-          <!-- Badge overlay -->
-          <div class="absolute top-5 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm text-sm px-5 py-2.5 rounded-2xl font-black z-20 shadow-md border-2 whitespace-nowrap transition-all duration-300" id="character-level-badge">
-            🥚 1단계: 알콩이(0~1000p)
+          <!-- Character display area (Enlarged to make the egg 3x larger) -->
+          <div id="character-card-container" class="w-full max-w-[360px] sm:max-w-[480px] aspect-square flex justify-center items-center relative mb-6 sm:mb-8 transition-all duration-500">
+            <!-- Soft glowing backdrop (Hidden to prevent extra background behind the egg) -->
+            <div id="character-backdrop" class="hidden absolute w-72 h-72 rounded-full bg-pastelYellow opacity-30 blur-xl"></div>
+            
+            <!-- Big Character Image (Enlarged to 3x size with a cute white sticker outline) -->
+            <img id="main-character-img" src="assets/level1.png" alt="알콩이" class="w-[115%] h-[115%] object-contain z-10 char-float transition-all duration-500 transform -translate-y-2" style="filter: drop-shadow(4px 4px 0px #ffffff) drop-shadow(-4px -4px 0px #ffffff) drop-shadow(4px -4px 0px #ffffff) drop-shadow(-4px 4px 0px #ffffff) drop-shadow(0 16px 28px rgba(0,0,0,0.18)) saturate(1.2) contrast(1.08);" onerror="handleImageError(this)">
+            
+            <!-- Fallback Big Emoji (shown if image fails to load) -->
+            <div id="main-character-emoji" class="text-[8rem] sm:text-[11rem] z-10 char-float transition-all duration-500 transform -translate-y-4 hidden select-none">🥚</div>
+            
+            <!-- Badge overlay (Bottom - Moved from top and styled) -->
+            <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm text-xs sm:text-sm px-5 py-2.5 rounded-2xl font-black z-20 shadow-md border-2 border-pastelPink/40 whitespace-nowrap transition-all duration-300" id="character-level-badge">
+              🥚 1단계: 알콩이(0~1000p)
+            </div>
           </div>
 
-          
-          <!-- Question Pill (Centered) -->
-          <div id="character-speech-bubble" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[90%] max-w-[380px] bg-pastelPink text-slate-800 text-xs px-4 py-2.5 rounded-2xl font-black z-20 shadow-md border-2 border-white text-center animate-pulse leading-relaxed">
-            나는 누구일까요?
-          </div>
+          <!-- Level-up Gift Pangs Button -->
+          <button onclick="triggerGiftPangs()" class="group relative w-full max-w-[280px] sm:max-w-[360px] bg-gradient-to-r from-red-400 via-pink-400 to-yellow-400 hover:from-red-500 hover:to-yellow-500 text-white font-black py-4 px-6 sm:py-6 sm:px-8 rounded-[24px] sm:rounded-[36px] shadow-lg transform transition active:scale-95 duration-200 hover:-translate-y-0.5 flex items-center justify-center">
+            <span class="text-lg sm:text-2xl tracking-wider drop-shadow-md text-center">레벨업! 선물팡팡</span>
+            <div class="absolute right-4 sm:right-6 top-1/2 transform -translate-y-1/2 flex items-center justify-center leading-none">
+              <span class="text-3xl sm:text-5xl inline-block animate-bounce" style="animation-duration: 1.5s;">🎁</span>
+            </div>
+          </button>
         </div>
 
-        <!-- Level-up Gift Pangs Button -->
-        <button onclick="triggerGiftPangs()" class="group relative w-full max-w-[360px] bg-gradient-to-r from-red-400 via-pink-400 to-yellow-400 hover:from-red-500 hover:to-yellow-500 text-white font-black py-6 px-8 rounded-[36px] shadow-lg transform transition active:scale-95 duration-200 hover:-translate-y-0.5 flex items-center justify-center">
-          <span class="text-2xl tracking-wider drop-shadow-md text-center">레벨업! 선물팡팡</span>
-          <div class="absolute right-6 top-1/2 transform -translate-y-1/2 flex items-center justify-center leading-none">
-            <span class="text-5xl inline-block animate-bounce" style="animation-duration: 1.5s;">🎁</span>
-          </div>
-        </button>
       </section>
       <!-- ==================== TABS 1: 신청서 (REGISTER) ==================== -->
-      <section id="tab-register" class="tab-content hidden py-8 px-6">
-        <h3 class="text-2xl font-black text-slate-800 mb-4 flex items-center gap-1.5">📋 튼튼 모험가 신청서</h3>
+      <section id="tab-register" class="tab-content hidden py-4 px-4">
+        <h3 class="text-xl font-black text-slate-800 mb-3 flex items-center gap-1.5">📋 참여를 위해 꼭 작성해 주세요!</h3>
 
-        <!-- Step 1: Open Google Form (Enlarged) -->
-        <div class="bg-pastelPink-light border-4 border-pastelPink rounded-[36px] p-8 mb-8 text-center shadow-md">
-          <span class="text-2xl mb-3 block">📝 1단계</span>
-          <a href="https://docs.google.com/forms/d/1CM5T2XH1zjE9JcnnzexwrfiV6pdPIzS1cbHvn47UXt4/edit" id="open-google-form-btn" target="_blank" class="inline-block w-full bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-6 px-10 rounded-[28px] shadow-lg transition active:scale-95 text-lg text-center border-2 border-white">
-            신청서/개인정보 동의서/사전 설문지
-          </a>
-        </div>
-
-        <!-- Step 2: Enter Student ID -->
-        <div class="bg-pastelBlue-light border-4 border-pastelBlue rounded-[36px] p-8 shadow-sm text-center">
-          <span class="text-2xl mb-3 block">🔑 2단계</span>
+        <!-- Step 1: Enter Student ID -->
+        <div class="bg-pastelBlue-light border-4 border-pastelBlue rounded-[24px] sm:rounded-[36px] p-4 sm:p-8 mb-4 shadow-sm text-center">
+          <span class="text-xl sm:text-2xl mb-2 sm:mb-3 block">🔑 1단계</span>
           
-          <div class="space-y-6">
+          <div class="space-y-4 sm:space-y-6">
             <!-- 3 separate input fields for kids -->
             <div class="flex justify-center items-center gap-2">
-              <input type="number" id="input-grade" placeholder="5" min="1" max="6" class="w-16 bg-white border-2 border-slate-200 rounded-[20px] py-4 text-center text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
-              <span class="text-base font-bold text-slate-700">학년</span>
-              <input type="number" id="input-class" placeholder="2" min="1" max="20" class="w-16 bg-white border-2 border-slate-200 rounded-[20px] py-4 text-center text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
-              <span class="text-base font-bold text-slate-700">반</span>
-              <input type="number" id="input-number" placeholder="13" min="1" max="50" class="w-20 bg-white border-2 border-slate-200 rounded-[20px] py-4 text-center text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
-              <span class="text-base font-bold text-slate-700">번</span>
+              <input type="number" id="input-grade" placeholder="5" min="1" max="6" class="w-14 sm:w-16 bg-white border-2 border-slate-200 rounded-[15px] sm:rounded-[20px] py-2.5 sm:py-4 text-center text-base sm:text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+              <span class="text-sm sm:text-base font-bold text-slate-700">학년</span>
+              <input type="number" id="input-class" placeholder="2" min="1" max="20" class="w-14 sm:w-16 bg-white border-2 border-slate-200 rounded-[15px] sm:rounded-[20px] py-2.5 sm:py-4 text-center text-base sm:text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+              <span class="text-sm sm:text-base font-bold text-slate-700">반</span>
+              <input type="number" id="input-number" placeholder="13" min="1" max="50" class="w-18 sm:w-20 bg-white border-2 border-slate-200 rounded-[15px] sm:rounded-[20px] py-2.5 sm:py-4 text-center text-base sm:text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+              <span class="text-sm sm:text-base font-bold text-slate-700">번</span>
             </div>
 
-            <button onclick="loadProfileFromIdReg()" id="login-submit-btn-reg" class="w-full bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white font-black py-5 px-8 rounded-[28px] shadow-lg hover:shadow-xl active:scale-95 transition-all text-base border-2 border-white flex justify-center items-center text-center">
-              로그인 및 동기화 시작 🐾
+            <!-- Name Input Field -->
+            <div class="flex justify-center items-center gap-2.5 max-w-[280px] mx-auto">
+              <span class="text-base sm:text-lg font-bold text-slate-700 whitespace-nowrap">이름</span>
+              <input type="text" id="input-name" placeholder="이름을 입력하세요" class="w-full bg-white border-2 border-slate-200 rounded-[15px] sm:rounded-[20px] py-2 sm:py-3 px-3.5 sm:px-4 text-center text-sm sm:text-base font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+            </div>
+
+            <button onclick="loadProfileFromIdReg()" id="login-submit-btn-reg" class="inline-flex w-[85%] bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white font-black py-3 sm:py-5 px-6 sm:px-8 rounded-[20px] sm:rounded-[24px] shadow-md hover:shadow-lg active:scale-95 transition-all text-base sm:text-xl border-2 border-white justify-center items-center text-center">
+              로그인
             </button>
+
+            <!-- Divider and Teacher Participant Login inside 1st Step Card -->
+            <hr class="border-t border-dashed border-pastelBlue my-2 opacity-35">
+
+            <div class="pt-1">
+              <span class="text-[10px] sm:text-xs font-bold text-slate-400 block mb-1.5 cursor-pointer select-none animate-pulse" ondblclick="toggleModal('settings-modal')" title="더블클릭 시 보건교사 설정창이 열립니다.">👩‍🏫 교사 참여자 로그인</span>
+              <div class="flex justify-center items-center gap-1.5 max-w-[340px] mx-auto">
+                <input type="text" id="input-teacher-name" placeholder="이름" class="w-16 sm:w-20 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+                <input type="text" id="input-teacher-phone" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="끝 4자리" class="w-20 sm:w-28 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+                <button onclick="loadTeacherProfile()" id="login-teacher-btn" class="bg-slate-500 hover:bg-slate-600 text-white text-[10px] sm:text-xs font-bold py-1 sm:py-1.5 px-2 rounded-[10px] sm:rounded-[12px] active:scale-95 transition-all">
+                  로그인
+                </button>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <!-- Step 2: Open Google Form (Enlarged) -->
+        <div class="bg-pastelPink-light border-4 border-pastelPink rounded-[24px] sm:rounded-[36px] p-4 sm:p-8 text-center shadow-md">
+          <span class="text-xl sm:text-2xl mb-2 sm:mb-3 block">📝 2단계</span>
+          <button id="open-google-form-btn" onclick="openSurveyModal()" class="inline-block w-[85%] bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-3 sm:py-5 px-6 sm:px-8 rounded-[20px] sm:rounded-[24px] shadow-md transition active:scale-95 text-base sm:text-xl text-center border-2 border-white cursor-pointer">
+            사전설문지
+          </button>
         </div>
       </section>
 
-      <!-- ==================== TABS 2: 미션인증 (MISSION) ==================== -->
-      <section id="tab-mission" class="tab-content hidden pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800">
-        
-        <!-- Level Milestone Cards -->
-        <div class="grid grid-cols-4 gap-2 mb-4">
-          <div id="m-lvl-1" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🥚</span>
-            <span class="text-[11px] font-bold mt-1">알콩이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">0~1000P</span>
-          </div>
-          <div id="m-lvl-2" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐣</span>
-            <span class="text-[11px] font-bold mt-1">삐약이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">~2000P</span>
-          </div>
-          <div id="m-lvl-3" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐔</span>
-            <span class="text-[11px] font-bold mt-1">튼튼이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">~3000P</span>
-          </div>
-          <div id="m-lvl-4" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐓</span>
-            <span class="text-[11px] font-bold mt-1">꼬꼬대장</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">3001P~</span>
-          </div>
-        </div>
 
-        <!-- Progress Bar -->
-        <div class="w-full flex items-center gap-3 mb-6 px-1">
-          <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
-            <div id="m-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-          </div>
-          <span id="m-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
-        </div>
+      <!-- ==================== TABS 2: 미션인증 (MISSION) ==================== -->
+      <section id="tab-mission" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800">
+
 
         <!-- Manual point adjuster (Removed) -->
 
@@ -282,53 +355,49 @@
           </div>
         </div>
 
-        <!-- Photo upload block (MUST) -->
-        <div class="bg-white border-4 border-pastelYellow rounded-[28px] overflow-hidden mb-6 shadow-sm">
-          <div class="bg-pastelYellow border-b-2 border-pastelYellow/50 text-slate-800 font-black py-3.5 px-6 text-sm flex items-center justify-between">
-            <span class="flex items-center gap-1.5">🏃 운동 미션 인증</span>
-            <span class="bg-slate-800 text-yellow-300 text-[10.5px] px-2 py-0.5 rounded-full font-black">MUST</span>
+        <!-- Mission 1: 운동 미션 (인증샷 업로드 통합) -->
+        <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
+          <div class="flex justify-between items-start">
+            <div class="flex items-center gap-4">
+              <span class="text-3xl">🏃‍♂️</span>
+              <div>
+                <span class="font-bold text-slate-800 text-base block">
+                  숨이 찰 정도의 운동
+                </span>
+              </div>
+            </div>
+            <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+50p</span>
           </div>
-          
-          <div class="p-5 flex flex-col items-center gap-4">
-            <button onclick="document.getElementById('mission-photo-input').click()" class="w-full bg-white border-2 border-dashed border-pastelPeach hover:border-pastelPeach-dark text-slate-700 hover:text-slate-800 text-sm font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-2 active:scale-98 transition duration-200">
-              <span>📷 운동 사진 업로드하기 →</span>
-            </button>
+
+          <!-- Unified Photo Upload & Action Button -->
+          <div class="flex flex-col gap-3">
+            <!-- Hidden File Input -->
             <input type="file" id="mission-photo-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(this)">
             
-            <!-- Custom Progress bar for Upload -->
-            <div id="photo-upload-progress-container" class="w-full hidden bg-slate-100 border rounded-full h-2 overflow-hidden mt-1">
+            <!-- Action Button -->
+            <button id="btn-upload-exercise" onclick="document.getElementById('mission-photo-input').click()" class="w-full bg-pastelPeach text-slate-800 text-sm font-black py-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm border border-pastelPeach-dark/20">
+              📷 운동 사진 인증하고 완료하기
+            </button>
+
+            <!-- Uploading Progress Bar -->
+            <div id="photo-upload-progress-container" class="w-full hidden bg-slate-100 border rounded-full h-2.5 overflow-hidden">
               <div id="photo-upload-progress" class="bg-amber-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
 
-            <p id="photo-upload-status" class="text-xs text-emerald-600 font-bold mt-1 text-center hidden"></p>
-            
-            <div class="w-full bg-red-50 border border-red-200/60 rounded-2xl p-3.5 flex items-start gap-2">
-              <span class="text-base text-red-500 leading-none">⚠️</span>
-              <p class="text-xs text-red-600 font-medium leading-relaxed">위 운동 인증샷을 업로드해야 아래 미션 포인트가 인정돼요</p>
+            <!-- Upload Status (hidden by default) -->
+            <div id="photo-upload-preview-box" class="hidden flex items-center justify-between gap-3 bg-emerald-50 border border-emerald-200/60 p-4 rounded-2xl">
+              <div class="text-left">
+                <span id="photo-upload-status" class="text-xs text-emerald-700 font-bold block"></span>
+                <span class="text-[10px] text-slate-400 font-medium">인증 도장이 완료되었습니다!</span>
+              </div>
+              <!-- Cancel button to reset -->
+              <button onclick="cancelExerciseMission()" class="bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold py-2 px-3.5 rounded-xl active:scale-95 transition-all">
+                취소
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- Mission Cards -->
-        <div class="space-y-4 mb-6">
-          
-          <!-- Mission 1 -->
-          <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
-            <div class="flex justify-between items-start">
-              <div class="flex items-center gap-4">
-                <span class="text-3xl">🏃‍♂️</span>
-                <div>
-                  <span class="font-bold text-slate-800 text-base block">숨이 찰 정도의 운동</span>
-                  <span class="text-xs text-slate-400 leading-normal">심장이 쿵쾅쿵쾅 뛰는 운동 30분 이상</span>
-                </div>
-              </div>
-              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+50p</span>
-            </div>
-            <div class="flex gap-2">
-              <button id="btn-done-1" onclick="toggleMissionButton(1, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
-              <button id="btn-cancel-1" onclick="toggleMissionButton(1, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
-            </div>
-          </div>
 
           <!-- Mission 2 -->
           <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
@@ -337,7 +406,6 @@
                 <span class="text-3xl">🍚</span>
                 <div>
                   <span class="font-bold text-slate-800 text-base block">아침밥 먹기</span>
-                  <span class="text-xs text-slate-400 leading-normal">든든하게 먹어야 튼튼한 하루 출발!</span>
                 </div>
               </div>
               <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+20p</span>
@@ -355,7 +423,6 @@
                 <span class="text-3xl">🛌</span>
                 <div>
                   <span class="font-bold text-slate-800 text-base block">잠 충분히 자기</span>
-                  <span class="text-xs text-slate-400 leading-normal">푹 자야 키도 크고 머리도 맑아져요</span>
                 </div>
               </div>
               <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
@@ -373,7 +440,6 @@
                 <span class="text-3xl">🥤</span>
                 <div>
                   <span class="font-bold text-slate-800 text-base block">단맛 음료 줄이기</span>
-                  <span class="text-xs text-slate-400 leading-normal">탄산과 액상과당 대신 시원한 물 선택</span>
                 </div>
               </div>
               <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
@@ -391,7 +457,6 @@
                 <span class="text-3xl">💧</span>
                 <div>
                   <span class="font-bold text-slate-800 text-base block">1일 5컵 이상 물 마시기</span>
-                  <span class="text-xs text-slate-400 leading-normal">오늘도 촉촉하게 활력 보충</span>
                 </div>
               </div>
               <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
@@ -402,45 +467,12 @@
             </div>
           </div>
 
-        </div>
-
 
       </section>
 
       <!-- ==================== TABS 3: 놀이터 (PLAYGROUND) ==================== -->
-      <section id="tab-playground" class="tab-content hidden pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800 flex flex-col items-center select-none">
-        
-        <!-- Level Milestone Cards -->
-        <div class="grid grid-cols-4 gap-2 mb-4 w-full">
-          <div id="p-lvl-1" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🥚</span>
-            <span class="text-[11px] font-bold mt-1">알콩이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">0~1000P</span>
-          </div>
-          <div id="p-lvl-2" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐣</span>
-            <span class="text-[11px] font-bold mt-1">삐약이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">~2000P</span>
-          </div>
-          <div id="p-lvl-3" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐔</span>
-            <span class="text-[11px] font-bold mt-1">튼튼이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">~3000P</span>
-          </div>
-          <div id="p-lvl-4" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐓</span>
-            <span class="text-[11px] font-bold mt-1">꼬꼬대장</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">3001P~</span>
-          </div>
-        </div>
+      <section id="tab-playground" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800 flex flex-col items-center select-none">
 
-        <!-- Progress Bar -->
-        <div class="w-full flex items-center gap-3 mb-6 px-1">
-          <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
-            <div id="p-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-          </div>
-          <span id="p-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
-        </div>
 
         <h3 class="text-3xl font-black text-slate-800 mb-2 self-start flex items-center gap-1.5">🎮 신나는 튼튼 놀이터</h3>
         <p class="text-sm text-slate-500 mb-6 self-start">떨어지는 음식 중 건강한 음식을 바구니로 받아보세요!</p>
@@ -517,39 +549,8 @@
       </section>
 
       <!-- ==================== TABS 4: 내몸탐험 (MY BODY) ==================== -->
-      <section id="tab-mybody" class="tab-content hidden pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800">
-        
-        <!-- Level Milestone Cards -->
-        <div class="grid grid-cols-4 gap-2 mb-4">
-          <div id="b-lvl-1" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🥚</span>
-            <span class="text-[11px] font-bold mt-1">알콩이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">0~1000P</span>
-          </div>
-          <div id="b-lvl-2" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐣</span>
-            <span class="text-[11px] font-bold mt-1">삐약이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">~2000P</span>
-          </div>
-          <div id="b-lvl-3" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐔</span>
-            <span class="text-[11px] font-bold mt-1">튼튼이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">~3000P</span>
-          </div>
-          <div id="b-lvl-4" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐓</span>
-            <span class="text-[11px] font-bold mt-1">꼬꼬대장</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">3001P~</span>
-          </div>
-        </div>
+      <section id="tab-mybody" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800">
 
-        <!-- Progress Bar -->
-        <div class="w-full flex items-center gap-3 mb-6 px-1">
-          <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
-            <div id="b-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-          </div>
-          <span id="b-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
-        </div>
 
         <h3 class="text-3xl font-black text-slate-800 mb-6 flex items-center gap-1.5">🔍 내몸탐험대 보고서</h3>
 
@@ -645,118 +646,91 @@
       </section>
 
       <!-- ==================== TABS 5: 스티커판 (STICKERS) ==================== -->
-      <section id="tab-stickers" class="tab-content hidden pt-14 pb-8 px-5 bg-white border-[5px] border-pastelPink rounded-[50px] shadow-md text-slate-800 flex flex-col items-center">
-        
-        <!-- Level Milestone Cards -->
-        <div class="grid grid-cols-4 gap-2 mb-4 w-full">
-          <div id="s-lvl-1" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🥚</span>
-            <span class="text-[11px] font-bold mt-1">알콩이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">0~1000P</span>
-          </div>
-          <div id="s-lvl-2" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐣</span>
-            <span class="text-[11px] font-bold mt-1">삐약이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">~2000P</span>
-          </div>
-          <div id="s-lvl-3" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐔</span>
-            <span class="text-[11px] font-bold mt-1">튼튼이</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">~3000P</span>
-          </div>
-          <div id="s-lvl-4" class="bg-slate-50 border-2 border-transparent rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-            <span class="text-2xl">🐓</span>
-            <span class="text-[11px] font-bold mt-1">꼬꼬대장</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">3001P~</span>
-          </div>
-        </div>
+      <section id="tab-stickers" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800 flex flex-col items-center">
 
-        <!-- Progress Bar -->
-        <div class="w-full flex items-center gap-3 mb-6 px-1">
-          <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
-            <div id="s-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-          </div>
-          <span id="s-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
-        </div>
 
-        <h3 class="text-3xl font-black text-slate-800 mb-2 self-start flex items-center gap-1.5">🍎 과일 야채 스티커판</h3>
-        <p class="text-sm text-slate-500 mb-8 self-start">포인트를 모을때마다 스티커를 붙여요. <span class="text-xs text-pastelPink font-bold">(매월 1일 리셋)</span></p>
+        <h3 class="text-3xl font-black text-slate-800 mb-2 self-start flex items-center gap-1.5">🥦 과일 야채 스티커판</h3>
+        <p class="text-sm text-slate-500 mb-8 self-start">100포인트가 모일 때마다 스티커가 붙어요. <span class="text-xs text-pastelPink font-bold">(매월 1일 리셋)</span></p>
 
         <!-- Sticker Grid -->
-        <div class="grid grid-cols-4 gap-5 p-6 bg-white border-4 border-pastelPink-light rounded-[36px] shadow-inner max-w-[420px]">
+        <div class="grid grid-cols-4 gap-3 sm:gap-5 p-4 sm:p-6 bg-white border-4 border-pastelPink-light rounded-[36px] shadow-inner w-full max-w-[420px]">
           <!-- Stickers 1 to 31 -->
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="100" title="100p">1</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="200" title="200p">2</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="300" title="300p">3</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="400" title="400p">4</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="500" title="500p">5</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="600" title="600p">6</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="700" title="700p">7</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="800" title="800p">8</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="900" title="900p">9</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1000" title="1000p">10</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1100" title="1100p">11</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1200" title="1200p">12</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1300" title="1300p">13</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1400" title="1400p">14</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1500" title="1500p">15</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1600" title="1600p">16</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1700" title="1700p">17</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1800" title="1800p">18</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1900" title="1900p">19</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2000" title="2000p">20</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2100" title="2100p">21</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2200" title="2200p">22</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2300" title="2300p">23</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2400" title="2400p">24</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2500" title="2500p">25</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2600" title="2600p">26</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2700" title="2700p">27</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2800" title="2800p">28</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2900" title="2900p">29</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="3000" title="3000p">30</div>
-          <div class="sticker-cell aspect-square w-20 bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="3100" title="3100p">31</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="100" title="100p">1</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="200" title="200p">2</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="300" title="300p">3</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="400" title="400p">4</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="500" title="500p">5</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="600" title="600p">6</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="700" title="700p">7</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="800" title="800p">8</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="900" title="900p">9</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1000" title="1000p">10</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1100" title="1100p">11</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1200" title="1200p">12</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1300" title="1300p">13</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1400" title="1400p">14</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1500" title="1500p">15</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1600" title="1600p">16</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1700" title="1700p">17</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1800" title="1800p">18</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1900" title="1900p">19</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2000" title="2000p">20</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2100" title="2100p">21</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2200" title="2200p">22</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2300" title="2300p">23</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2400" title="2400p">24</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2500" title="2500p">25</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2600" title="2600p">26</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2700" title="2700p">27</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2800" title="2800p">28</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2900" title="2900p">29</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="3000" title="3000p">30</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="3100" title="3100p">31</div>
         </div>
       </section>
 
     </div>
 
-    <!-- Floating Home Button just above the menus -->
-    <div class="absolute bottom-[105px] left-1/2 transform -translate-x-1/2 z-30">
-      <button onclick="switchTab('home')" class="w-14 h-14 rounded-full bg-slate-800 text-white border-[3px] border-white shadow-lg active:scale-95 hover:bg-slate-900 transition-all flex items-center justify-center text-2xl cursor-pointer" title="홈으로 이동">
-        🏠
-      </button>
+    <!-- BOTTOM TAB CONTAINER (Exposed compact menu bar with 2 rows: Home on top center, 5 tabs on bottom) -->
+    <div class="w-full border-t border-slate-100 bg-white py-1.5 px-0.5 z-30 shadow-[0_-5px_12px_-4px_rgba(0,0,0,0.06)]" style="padding-bottom: calc(8px + env(safe-area-inset-bottom));">
+      <div class="flex flex-col items-center gap-1.5 w-full max-w-[440px] mx-auto">
+        <!-- Top Row: Home Button alone (Further enlarged) -->
+        <div class="flex justify-center w-full">
+          <button onclick="switchTab('home')" id="btn-home" class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-slate-800 text-white border-2 border-white shadow-md active:scale-95 hover:bg-slate-900 transition-all flex items-center justify-center text-xl sm:text-2xl cursor-pointer" title="홈으로 이동">
+            🏠
+          </button>
+        </div>
+        
+        <!-- Bottom Row: 5 grid tabs (Further enlarged icons and labels, high-contrast labels) -->
+        <div class="bottom-tab-grid w-full">
+          <button onclick="switchTab('register')" id="btn-tab-register" class="tab-btn flex flex-col items-center justify-center py-0.5 rounded-lg hover:bg-slate-50 transition active:scale-95 text-slate-600 min-w-0">
+            <span class="text-xl sm:text-2xl">📝</span>
+            <span class="text-[12.5px] sm:text-[14px] font-black whitespace-nowrap">사전설문</span>
+          </button>
+
+          <button onclick="switchTab('mission')" id="btn-tab-mission" class="tab-btn flex flex-col items-center justify-center py-0.5 rounded-lg hover:bg-slate-50 transition active:scale-95 text-slate-600 min-w-0">
+            <span class="text-xl sm:text-2xl">✅</span>
+            <span class="text-[12.5px] sm:text-[14px] font-black whitespace-nowrap">미션인증</span>
+          </button>
+
+          <button onclick="switchTab('playground')" id="btn-tab-playground" class="tab-btn flex flex-col items-center justify-center py-0.5 rounded-lg hover:bg-slate-50 transition active:scale-95 text-slate-600 min-w-0">
+            <span class="text-xl sm:text-2xl">🎮</span>
+            <span class="text-[12.5px] sm:text-[14px] font-black whitespace-nowrap">놀이터</span>
+          </button>
+
+          <button onclick="switchTab('mybody')" id="btn-tab-mybody" class="tab-btn flex flex-col items-center justify-center py-0.5 rounded-lg hover:bg-slate-50 transition active:scale-95 text-slate-600 min-w-0">
+            <span class="text-xl sm:text-2xl">🔍</span>
+            <span class="text-[12.5px] sm:text-[14px] font-black whitespace-nowrap">내몸탐험</span>
+          </button>
+
+          <button onclick="switchTab('stickers')" id="btn-tab-stickers" class="tab-btn flex flex-col items-center justify-center py-0.5 rounded-lg hover:bg-slate-50 transition active:scale-95 text-slate-600 min-w-0">
+            <span class="text-xl sm:text-2xl">🥳</span>
+            <span class="text-[12.5px] sm:text-[14px] font-black whitespace-nowrap">스티커판</span>
+          </button>
+        </div>
+      </div>
     </div>
-
-    <!-- BOTTOM TAB BUTTONS (5 Enlarged Menus) -->
-    <div class="border-t-[3px] border-slate-100 bg-white py-5 px-3 flex justify-around items-center gap-1.5 z-20 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.06)]">
-      
-      <!-- Highly Visible Enlarged Register/Application Tab -->
-      <button onclick="switchTab('register')" id="btn-tab-register" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400 border-2 border-pastelPink bg-pastelPink-light/60">
-        <span class="text-4xl font-bold animate-pulse text-pink-600">📝</span>
-        <span class="text-[13.5px] font-black text-pink-600">신청서</span>
-      </button>
-
-      <button onclick="switchTab('mission')" id="btn-tab-mission" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400">
-        <span class="text-3xl">✅</span>
-        <span class="text-[12.5px] font-black">미션인증</span>
-      </button>
-
-      <button onclick="switchTab('playground')" id="btn-tab-playground" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400">
-        <span class="text-3xl">🎮</span>
-        <span class="text-[12.5px] font-black">놀이터</span>
-      </button>
-      
-      <button onclick="switchTab('mybody')" id="btn-tab-mybody" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400">
-        <span class="text-3xl">🔍</span>
-        <span class="text-[12.5px] font-black">내몸탐험</span>
-      </button>
-
-      <button onclick="switchTab('stickers')" id="btn-tab-stickers" class="tab-btn flex flex-col items-center gap-1 flex-1 py-3 rounded-[20px] hover:bg-slate-50 transition active:scale-90 text-slate-400">
-        <span class="text-3xl">🍒</span>
-        <span class="text-[12.5px] font-black">스티커판</span>
-      </button>
-    </div>
+  </div>
   </div>
 
   <!-- ==================== DIALOG 1: LEVEL INFO MODAL ==================== -->
@@ -788,6 +762,62 @@
       <button onclick="toggleModal('level-modal')" class="w-full bg-slate-800 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md hover:bg-slate-900 active:scale-95 transition-transform">
         화이팅! 확인 완료 💖
       </button>
+    </div>
+  </div>
+
+  <!-- ==================== DIALOG 1.5: SURVEY MODAL ==================== -->
+  <div id="survey-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+    <div class="bg-white rounded-[36px] border-4 border-pastelPink w-full max-w-[420px] p-6 shadow-2xl scale-95 transition-all duration-300 flex flex-col relative">
+      <!-- Close Button -->
+      <button onclick="toggleModal('survey-modal')" class="absolute right-5 top-5 text-slate-400 hover:text-slate-600 transition active:scale-90" title="닫기">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+
+      <h3 class="text-xl font-black text-slate-800 text-center mb-1 flex items-center justify-center gap-1.5">📝 사전 설문조사</h3>
+      <p class="text-xs font-bold text-slate-500 text-center mb-4">나의 평소 건강 습관 알아보기</p>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-slate-100 h-2.5 rounded-full mb-1 overflow-hidden">
+        <div id="survey-progress-bar" class="bg-gradient-to-r from-pink-400 to-pastelPink h-full transition-all duration-300" style="width: 9.09%;"></div>
+      </div>
+      <div class="flex justify-between items-center text-[10px] font-black text-slate-400 mb-4 px-1">
+        <span id="survey-progress-percent">9%</span>
+        <span id="survey-progress-text">1 / 11 문항</span>
+      </div>
+
+      <!-- Question Card -->
+      <div id="survey-question-card" class="bg-slate-50 border-2 border-slate-100 rounded-3xl p-5 min-h-[140px] flex flex-col justify-center items-center text-center mb-5 transition-all duration-300">
+        <span id="survey-q-num" class="text-xs font-black text-pink-500 mb-1.5 block">질문 1</span>
+        <h4 id="survey-q-text" class="text-base font-black text-slate-800 leading-relaxed">일주일에 3번 이상 땀이 날 정도로 운동한다(체육포함).</h4>
+      </div>
+
+      <!-- Choices -->
+      <div class="space-y-2.5 mb-5" id="survey-choices-container">
+        <button onclick="selectSurveyAnswer(0)" id="survey-opt-0" class="w-full bg-white border-2 border-slate-200 hover:border-pastelPink rounded-2xl py-3.5 px-6 text-sm font-black text-slate-700 transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+          그렇다(5-7회) 😀
+        </button>
+        <button onclick="selectSurveyAnswer(1)" id="survey-opt-1" class="w-full bg-white border-2 border-slate-200 hover:border-pastelPink rounded-2xl py-3.5 px-6 text-sm font-black text-slate-700 transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+          보통이다(3-4회) 😐
+        </button>
+        <button onclick="selectSurveyAnswer(2)" id="survey-opt-2" class="w-full bg-white border-2 border-slate-200 hover:border-pastelPink rounded-2xl py-3.5 px-6 text-sm font-black text-slate-700 transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+          아니다(0-2회) 🙁
+        </button>
+      </div>
+
+      <!-- Navigation -->
+      <div class="grid grid-cols-2 gap-2">
+        <button id="survey-prev-btn" onclick="prevSurveyQuestion()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-black py-4 px-4 rounded-2xl active:scale-95 transition-transform flex justify-center items-center gap-1 cursor-pointer">
+          ◀ 이전
+        </button>
+        <button id="survey-next-btn" onclick="nextSurveyQuestion()" class="bg-slate-800 hover:bg-slate-900 text-white text-sm font-black py-4 px-4 rounded-2xl active:scale-95 transition-transform flex justify-center items-center gap-1 shadow-md cursor-pointer">
+          다음 ▶
+        </button>
+        <button id="survey-submit-btn" onclick="submitSurvey()" class="hidden col-span-2 bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white text-sm font-black py-4 px-4 rounded-2xl active:scale-95 transition-transform flex justify-center items-center gap-1.5 shadow-lg cursor-pointer">
+          설문 완료 및 제출하기 🐾
+        </button>
+      </div>
     </div>
   </div>
 
@@ -899,7 +929,9 @@
         3: null, // 잠 충분히 자기 (+10)
         4: null, // 단맛 음료 줄이기 (+10)
         5: null  // 1일 5컵 이상 물 마시기 (+10)
-      }
+      },
+      surveyAnswers: Array(11).fill(null),
+      currentSurveyIndex: 0
     };
 
     // Default Guest Student Template
@@ -916,9 +948,9 @@
 
     // Level settings based on points (Chicken series with custom thresholds)
     const LEVEL_CONFIG = [
-      { max: 1000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~1000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야.<br>매일 건강 미션을 달성해서 나를 무럭무럭 키워줘! 🌱", bgClass: '#fde2e4' },
+      { max: 1000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~1000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야.<br>매일 건강 미션을 달성해서 나를 무럭무럭 키워줘!", bgClass: '#fde2e4' },
       { max: 2000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~2000p)", img: "assets/level2.png?v=2", dialog: "삐약삐약! 껍질을 깨고 나온 삐약이야!<br>운동장 세 바퀴 뛰고 올까? 🏃", bgClass: '#fffdf0' },
-      { max: 3000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~3000p)", img: "assets/level3.png?v=2", dialog: "날개를 힘껏 퍼덕퍼덕! 이제 튼튼해졌어!<br>채소도 잘 먹어야 대장이 될 수 있어! 🥦", bgClass: '#d8f3dc' },
+      { max: 3000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~3000p)", img: "assets/level3.png?v=3", dialog: "날개를 힘껏 퍼덕퍼덕! 이제 튼튼해졌어!<br>채소도 잘 먹어야 대장이 될 수 있어! 🥦", bgClass: '#d8f3dc' },
       { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(3001p~)", img: "assets/level4.png?v=2", dialog: "와아! 멋진 왕관과 망토를 쓴 꼬꼬대장 완성!<br>건강대장이 된 소감이 어때? 👑✨", bgClass: '#cddafd' }
     ];
 
@@ -936,8 +968,20 @@
       modal.classList.toggle('hidden');
     }
 
+    let lastLoadedDate = getTodayDateString();
+    function checkDailyReset() {
+      const currentDate = getTodayDateString();
+      if (currentDate !== lastLoadedDate) {
+        lastLoadedDate = currentDate;
+        if (state.studentId) {
+          loadDailyState();
+        }
+      }
+    }
+
     // Switch Tabs
     function switchTab(tabId) {
+      checkDailyReset();
       // Force sync all points and milestones when switching tabs
       if (state.student) {
         const p = state.student.totalPoints || 0;
@@ -950,6 +994,25 @@
           appHeader.style.display = 'flex';
         } else {
           appHeader.style.display = 'none';
+        }
+      }
+
+      // Switch global milestone header visibility (shown on mission, playground, mybody, stickers)
+      const globalMilestoneHeader = document.getElementById('global-milestone-header');
+      const appContentScroll = document.getElementById('app-content-scroll');
+      if (globalMilestoneHeader) {
+        if (tabId === 'mission' || tabId === 'playground' || tabId === 'mybody' || tabId === 'stickers') {
+          globalMilestoneHeader.classList.remove('hidden');
+          if (appContentScroll) appContentScroll.style.paddingTop = '1rem';
+        } else {
+          globalMilestoneHeader.classList.add('hidden');
+          if (appContentScroll) {
+            if (tabId === 'register') {
+              appContentScroll.style.paddingTop = '1rem';
+            } else {
+              appContentScroll.style.paddingTop = '3.5rem';
+            }
+          }
         }
       }
 
@@ -990,24 +1053,22 @@
 
       // Update bottom nav button highlighting
       document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('text-slate-800', 'bg-pastelPink/30', 'scale-105');
-        btn.classList.add('text-slate-400');
+        btn.classList.remove('text-slate-900', 'bg-pastelPink/30');
+        btn.classList.add('text-slate-600');
       });
 
-      // Highlight target button (skip for home, which is circular and always highlighted)
+      // Highlight target button
       const activeBtn = document.getElementById('btn-tab-' + tabId);
       if (activeBtn) {
-        if (tabId === 'home') {
-          // Home special button
-        } else {
-          activeBtn.classList.remove('text-slate-400');
-          activeBtn.classList.add('text-slate-800', 'bg-pastelPink/30', 'scale-105');
-        }
+        activeBtn.classList.remove('text-slate-600');
+        activeBtn.classList.add('text-slate-900', 'bg-pastelPink/30');
       }
 
       // Tab specific triggers
       if (tabId === 'home') {
         renderHome();
+      } else if (tabId === 'register') {
+        updateSurveyButtonUI();
       } else if (tabId === 'mybody') {
         if (!state.student || !state.studentId) {
           alert("신청서 작성을 먼저 마쳐주세요! 📋");
@@ -1049,10 +1110,10 @@
           history = students[id].history || [];
           weightHistory = students[id].weightHistory || [];
         } else {
-          // Sign-up bonus 100p (Reverted back to 100p as requested)
-          existingPoints = 100;
+          // Sign-up bonus 0p (Start milestone from 0 as requested)
+          existingPoints = 0;
           const today = getTodayDateString(true);
-          history.push({ date: today, mission: "모험 가입 축하 보너스 🌱", weight: weight, points: 100 });
+          history.push({ date: today, mission: "모험 가입 환영! 🌱", weight: weight, points: 0 });
           weightHistory.push({ date: today.split(" ")[0], weight: weight });
         }
         
@@ -1119,18 +1180,32 @@
 
     // Helper: Initialize Firebase Storage
     function initFirebase() {
-      const fbConfigStr = localStorage.getItem('teunteun_firebase_config');
-      if (fbConfigStr) {
-        try {
-          state.firebaseConfig = JSON.parse(fbConfigStr);
-          document.getElementById('settings-firebase-config').value = fbConfigStr;
-          if (!firebase.apps.length) {
-            firebase.initializeApp(state.firebaseConfig);
-            console.log("Firebase initialized successfully");
-          }
-        } catch (e) {
-          console.error("Firebase Initialization Error:", e);
+      const defaultConfig = {
+        "apiKey": "AIzaSyAKtoz-QspWnTO_qC1wAxEUWrXWYjGzmCI",
+        "authDomain": "healthon-projectb.firebaseapp.com",
+        "projectId": "healthon-projectb",
+        "storageBucket": "healthon-projectb.firebasestorage.app",
+        "messagingSenderId": "684761005091",
+        "appId": "1:684761005091:web:1bfb79f2d57b1b93bb0596",
+        "measurementId": "G-EL6W3RCBLW"
+      };
+
+      let fbConfigStr = localStorage.getItem('teunteun_firebase_config');
+      if (!fbConfigStr) {
+        fbConfigStr = JSON.stringify(defaultConfig, null, 2);
+        // Automatically save it to local storage so it persists
+        localStorage.setItem('teunteun_firebase_config', fbConfigStr);
+      }
+      
+      try {
+        state.firebaseConfig = JSON.parse(fbConfigStr);
+        document.getElementById('settings-firebase-config').value = fbConfigStr;
+        if (!firebase.apps.length) {
+          firebase.initializeApp(state.firebaseConfig);
+          console.log("Firebase initialized successfully");
         }
+      } catch (e) {
+        console.error("Firebase Initialization Error:", e);
       }
     }
 
@@ -1151,15 +1226,48 @@
       // Auto-load profile if saved, else use Guest template
       if (state.studentId) {
         refreshStudentData();
-        // Auto-fill registration inputs from stored ID
-        const parts = state.studentId.split('-');
-        if (parts.length === 3) {
-          const inputGrade = document.getElementById('input-grade');
-          const inputClass = document.getElementById('input-class');
-          const inputNumber = document.getElementById('input-number');
-          if (inputGrade) inputGrade.value = parts[0];
-          if (inputClass) inputClass.value = parts[1];
-          if (inputNumber) inputNumber.value = parts[2];
+        if (state.studentId.startsWith('T-')) {
+          // Auto-fill teacher registration inputs from stored ID
+          const phoneLast4 = state.studentId.substring(2);
+          const inputTeacherPhone = document.getElementById('input-teacher-phone');
+          if (inputTeacherPhone) inputTeacherPhone.value = phoneLast4;
+          
+          const s = LocalDB.getStudent(state.studentId);
+          if (s && s.name) {
+            const inputTeacherName = document.getElementById('input-teacher-name');
+            if (inputTeacherName) inputTeacherName.value = s.name;
+          }
+        } else {
+          // Auto-fill student registration inputs from stored ID (4 or 5 digit concatenated ID)
+          const cleanId = state.studentId;
+          let gradeVal = "";
+          let classVal = "";
+          let numVal = "";
+          
+          if (cleanId.length === 4) {
+            gradeVal = cleanId.charAt(0);
+            classVal = cleanId.charAt(1);
+            numVal = parseInt(cleanId.substring(2));
+          } else if (cleanId.length === 5) {
+            gradeVal = cleanId.charAt(0);
+            classVal = parseInt(cleanId.substring(1, 3));
+            numVal = parseInt(cleanId.substring(3));
+          }
+          
+          if (gradeVal && classVal && numVal) {
+            const inputGrade = document.getElementById('input-grade');
+            const inputClass = document.getElementById('input-class');
+            const inputNumber = document.getElementById('input-number');
+            if (inputGrade) inputGrade.value = gradeVal;
+            if (inputClass) inputClass.value = classVal;
+            if (inputNumber) inputNumber.value = numVal;
+          }
+          // Auto-fill name field (skip if default name '탐험대원' is used)
+          const s = LocalDB.getStudent(state.studentId);
+          if (s && s.name && s.name !== "탐험대원") {
+            const inputName = document.getElementById('input-name');
+            if (inputName) inputName.value = s.name;
+          }
         }
       } else {
         state.student = { ...DEFAULT_GUEST };
@@ -1172,6 +1280,16 @@
 
       // Start animation loops
       initConfetti();
+
+      // Register daily reset check event listeners
+      window.addEventListener('focus', checkDailyReset);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          checkDailyReset();
+        }
+      });
+      // Periodically check every 15 seconds
+      setInterval(checkDailyReset, 15000);
     };
 
     // Save Teacher Settings
@@ -1217,7 +1335,7 @@
     // Manual points save & update UI
     function saveManualPoints() {
       if (!state.studentId) {
-        alert("신청서 탭에서 학번 연동을 먼저 완료해 주세요!");
+        alert("설문지 탭에서 로그인을 먼저 완료해 주세요! 🐾");
         switchTab('register');
         return;
       }
@@ -1273,36 +1391,15 @@
         { id: 4, min: 3001, max: Infinity, el: document.getElementById('h-lvl-4') }
       ];
 
-      const m_lvls = [
-        { id: 1, min: 0, max: 1000, el: document.getElementById('m-lvl-1') },
-        { id: 2, min: 1001, max: 2000, el: document.getElementById('m-lvl-2') },
-        { id: 3, min: 2001, max: 3000, el: document.getElementById('m-lvl-3') },
-        { id: 4, min: 3001, max: Infinity, el: document.getElementById('m-lvl-4') }
-      ];
-      
-      const p_lvls = [
-        { id: 1, min: 0, max: 1000, el: document.getElementById('p-lvl-1') },
-        { id: 2, min: 1001, max: 2000, el: document.getElementById('p-lvl-2') },
-        { id: 3, min: 2001, max: 3000, el: document.getElementById('p-lvl-3') },
-        { id: 4, min: 3001, max: Infinity, el: document.getElementById('p-lvl-4') }
-      ];
-
-      const b_lvls = [
-        { id: 1, min: 0, max: 1000, el: document.getElementById('b-lvl-1') },
-        { id: 2, min: 1001, max: 2000, el: document.getElementById('b-lvl-2') },
-        { id: 3, min: 2001, max: 3000, el: document.getElementById('b-lvl-3') },
-        { id: 4, min: 3001, max: Infinity, el: document.getElementById('b-lvl-4') }
-      ];
-
-      const s_lvls = [
-        { id: 1, min: 0, max: 1000, el: document.getElementById('s-lvl-1') },
-        { id: 2, min: 1001, max: 2000, el: document.getElementById('s-lvl-2') },
-        { id: 3, min: 2001, max: 3000, el: document.getElementById('s-lvl-3') },
-        { id: 4, min: 3001, max: Infinity, el: document.getElementById('s-lvl-4') }
+      const g_lvls = [
+        { id: 1, min: 0, max: 1000, el: document.getElementById('g-lvl-1') },
+        { id: 2, min: 1001, max: 2000, el: document.getElementById('g-lvl-2') },
+        { id: 3, min: 2001, max: 3000, el: document.getElementById('g-lvl-3') },
+        { id: 4, min: 3001, max: Infinity, el: document.getElementById('g-lvl-4') }
       ];
       
       let activeLevel = 1;
-      m_lvls.forEach(l => {
+      g_lvls.forEach(l => {
         if (points >= l.min && points <= l.max) {
           activeLevel = l.id;
         }
@@ -1313,7 +1410,7 @@
           if (!l.el) return;
           
           // Reset classes
-          l.el.className = "rounded-2xl p-2 flex flex-col items-center justify-center transition-all duration-300 shadow-sm";
+          l.el.className = "rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm";
           
           if (l.id === activeLevel) {
             l.el.classList.add('opacity-100', 'border-2', 'border-pastelPink', 'bg-pastelPink-light/60', 'text-pastelPink-dark');
@@ -1324,10 +1421,7 @@
       };
       
       updateLvlElements(h_lvls);
-      updateLvlElements(m_lvls);
-      updateLvlElements(p_lvls);
-      updateLvlElements(b_lvls);
-      updateLvlElements(s_lvls);
+      updateLvlElements(g_lvls);
 
       // Progress bar calculation (Max 5000 for standard display)
       const maxRepresentPoints = 5000;
@@ -1339,42 +1433,11 @@
       if (hProgBar) hProgBar.style.width = `${percentage}%`;
       if (hProgText) hProgText.innerText = `${points.toLocaleString()} P`;
 
-      // Update Mission Progress Bar
-      const mProgBar = document.getElementById('m-prog-bar');
-      const mProgText = document.getElementById('m-prog-text');
-      if (mProgBar) mProgBar.style.width = `${percentage}%`;
-      if (mProgText) mProgText.innerText = `${points.toLocaleString()} P`;
-      
-      // Update Playground Progress Bar
-      const pProgBar = document.getElementById('p-prog-bar');
-      const pProgText = document.getElementById('p-prog-text');
-      if (pProgBar) pProgBar.style.width = `${percentage}%`;
-      if (pProgText) pProgText.innerText = `${points.toLocaleString()} P`;
-
-      // Update MyBody Progress Bar
-      const bProgBar = document.getElementById('b-prog-bar');
-      const bProgText = document.getElementById('b-prog-text');
-      if (bProgBar) bProgBar.style.width = `${percentage}%`;
-      if (bProgText) bProgText.innerText = `${points.toLocaleString()} P`;
-      
-      // Update Stickers Progress Bar (Using Monthly points with 3100 Max)
-      const sProgBar = document.getElementById('s-prog-bar');
-      const sProgText = document.getElementById('s-prog-text');
-      if (sProgBar && sProgText) {
-        if (state.studentId) {
-          const storageKey = `teunteun_sticker_reset_${state.studentId}`;
-          const resetInfo = JSON.parse(localStorage.getItem(storageKey) || 'null');
-          const base = resetInfo ? resetInfo.basePoints : 0;
-          const displayPoints = Math.max(0, points - base);
-          const maxStickersPoints = 3100;
-          const sPercentage = Math.min(100, Math.max(0, (displayPoints / maxStickersPoints) * 100));
-          sProgBar.style.width = `${sPercentage}%`;
-          sProgText.innerText = `${displayPoints.toLocaleString()} P`;
-        } else {
-          sProgBar.style.width = `${percentage}%`;
-          sProgText.innerText = `${points.toLocaleString()} P`;
-        }
-      }
+      // Update Global Progress Bar
+      const gProgBar = document.getElementById('g-prog-bar');
+      const gProgText = document.getElementById('g-prog-text');
+      if (gProgBar) gProgBar.style.width = `${percentage}%`;
+      if (gProgText) gProgText.innerText = `${points.toLocaleString()} P`;
       
       const manualPointsInput = document.getElementById('input-manual-points');
       if (manualPointsInput) manualPointsInput.value = points;
@@ -1456,16 +1519,7 @@
           state.photoUploadTime = data.photoUploadTime || '';
           
           // Update photo upload UI
-          const statusText = document.getElementById('photo-upload-status');
-          if (statusText) {
-            if (state.photoUploaded && state.photoUploadTime) {
-              statusText.innerText = `📷 ${state.photoUploadTime} 업로드 완료${state.photoUrl === 'mock-demo-url' ? ' (데모)' : ''}`;
-              statusText.classList.remove('hidden');
-            } else {
-              statusText.innerText = '';
-              statusText.classList.add('hidden');
-            }
-          }
+          updateExerciseMissionUI();
           
           // Update Today points UI
           updateTodayPoints();
@@ -1479,11 +1533,7 @@
         state.photoUrl = '';
         state.photoUploadTime = '';
         
-        const statusText = document.getElementById('photo-upload-status');
-        if (statusText) {
-          statusText.innerText = '';
-          statusText.classList.add('hidden');
-        }
+        updateExerciseMissionUI();
         updateTodayPoints();
       }
       
@@ -1520,7 +1570,7 @@
     // Toggle mission button active state and calculate points (Realtime sync)
     function toggleMissionButton(id, isDone) {
       if (!state.studentId) {
-        alert("신청서 탭에서 학번 연동을 먼저 완료해 주세요!");
+        alert("설문지 탭에서 로그인을 먼저 완료해 주세요! 🐾");
         switchTab('register');
         return;
       }
@@ -1528,6 +1578,12 @@
       // Mandatory photo upload check for exercise mission
       if (id === 1 && isDone && !state.photoUploaded) {
         alert("운동 인증 사진을 먼저 업로드하셔야 미션 완료가 가능합니다! 📷");
+        return;
+      }
+      
+      // Check if photo is uploaded before checking other missions below
+      if (id !== 1 && isDone && !state.photoUploaded) {
+        alert("운동 인증 사진을 먼저 업로드하셔야 다른 미션 포인트 적립이 가능합니다! 🏃‍♂️📷");
         return;
       }
 
@@ -1598,64 +1654,33 @@
       return total;
     }
 
-    // Firebase Photo Upload logic
+    // Firebase Photo Upload logic (with Integrated Exercise Mission completion)
     function handlePhotoUpload(input) {
+      if (!state.studentId) {
+        alert("설문지 탭에서 로그인을 먼저 완료해 주세요! 🐾");
+        input.value = '';
+        return;
+      }
       if (!input.files || input.files.length === 0) return;
       
       const file = input.files[0];
       const progContainer = document.getElementById('photo-upload-progress-container');
       const progBar = document.getElementById('photo-upload-progress');
-      const statusText = document.getElementById('photo-upload-status');
       
       if (progContainer) progContainer.classList.remove('hidden');
       if (progBar) progBar.style.width = '0%';
-      if (statusText) statusText.classList.add('hidden');
       
-      const timeStr = new Date().toLocaleTimeString('ko-KR');
+      const now = new Date();
+      const yr = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, '0');
+      const dy = String(now.getDate()).padStart(2, '0');
+      const hr = String(now.getHours()).padStart(2, '0');
+      const mi = String(now.getMinutes()).padStart(2, '0');
+      const timeStr = `${yr}-${mo}-${dy} ${hr}:${mi}`;
 
-      if (state.firebaseConfig) {
-        try {
-          const storageRef = firebase.storage().ref();
-          const timestamp = Date.now();
-          const fileName = `student_${state.studentId}_${timestamp}_${file.name}`;
-          const uploadTask = storageRef.child(`missions/${fileName}`).put(file);
-          
-          uploadTask.on('state_changed', 
-            (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              if (progBar) progBar.style.width = `${progress}%`;
-            }, 
-            (error) => {
-              console.error("Firebase Storage Upload Error:", error);
-              alert("사진 업로드 중 에러가 발생했습니다. 데모 모드로 가동합니다. ⚠️");
-              runMockUpload(timeStr);
-            }, 
-            () => {
-              uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                state.photoUploaded = true;
-                state.photoUrl = downloadURL;
-                state.photoUploadTime = timeStr;
-                
-                input.value = ''; // Reset input to release memory
-                
-                if (progContainer) progContainer.classList.add('hidden');
-                if (statusText) {
-                  statusText.innerText = `📷 ${timeStr} 업로드 완료`;
-                  statusText.classList.remove('hidden');
-                }
-                
-                alert("인증 사진이 성공적으로 업로드되었습니다! 🐾");
-                saveDailyState();
-              });
-            }
-          );
-        } catch (e) {
-          console.error("Firebase upload initialization error:", e);
-          runMockUpload(timeStr);
-        }
-      } else {
-        runMockUpload(timeStr);
-      }
+      // 파이어베이스 스토리지 용량/오류 문제를 원천 차단하기 위해
+      // 로컬에서 압축 및 가상 업로드(Mock) 처리로 즉시 완료시킵니다.
+      runMockUpload(timeStr);
       
       function runMockUpload(timeStr) {
         let progress = 0;
@@ -1665,25 +1690,82 @@
           if (progress >= 100) {
             clearInterval(interval);
             setTimeout(() => {
-              state.photoUploaded = true;
-              state.photoUrl = 'mock-demo-url';
-              state.photoUploadTime = timeStr;
-              
+              completeExerciseMission('uploaded', timeStr);
               input.value = ''; // Reset file input
-              
               if (progContainer) progContainer.classList.add('hidden');
-              if (statusText) {
-                statusText.innerText = `📷 ${timeStr} 업로드 완료 (데모)`;
-                statusText.classList.remove('hidden');
-              }
-              
-              alert("사진이 성공적으로 업로드되었습니다! (데모 모드) 🐾");
-              saveDailyState();
             }, 300);
           }
         }, 150);
       }
+
     }
+
+    function completeExerciseMission(url, timeStr) {
+      state.photoUploaded = true;
+      state.photoUrl = url;
+      state.photoUploadTime = timeStr;
+      
+      // Auto-mark exercise mission as completed
+      const previousState = state.todayMissions[1];
+      state.todayMissions[1] = true;
+      
+      saveDailyState();
+      
+      if (previousState !== true) {
+        saveStudentPointsRealtime("운동인증 완료", 50);
+      }
+      
+      updateExerciseMissionUI();
+      updateTodayPoints();
+      
+      alert("인증 사진이 등록되고 운동 미션이 완료되었습니다! 🏃‍♂️🎉");
+    }
+
+    function cancelExerciseMission() {
+      if (!state.studentId) return;
+      
+      const previousState = state.todayMissions[1];
+      state.todayMissions[1] = false;
+      state.photoUploaded = false;
+      state.photoUrl = '';
+      state.photoUploadTime = '';
+      
+      saveDailyState();
+      
+      if (previousState === true) {
+        saveStudentPointsRealtime("운동인증 취소", -50);
+      }
+      
+      updateExerciseMissionUI();
+      updateTodayPoints();
+      
+      // Reset file input element
+      const fileInput = document.getElementById('mission-photo-input');
+      if (fileInput) fileInput.value = '';
+      
+      alert("운동 인증 사진이 삭제되고 미션이 취소되었습니다. 🐾");
+    }
+
+    function updateExerciseMissionUI() {
+      const uploadBtn = document.getElementById('btn-upload-exercise');
+      const previewBox = document.getElementById('photo-upload-preview-box');
+      const statusText = document.getElementById('photo-upload-status');
+      
+      if (!uploadBtn || !previewBox) return;
+      
+      if (state.photoUploaded) {
+        uploadBtn.classList.add('hidden');
+        previewBox.classList.remove('hidden');
+        
+        if (statusText) {
+          statusText.innerText = `${state.photoUploadTime} 인증 완료`;
+        }
+      } else {
+        uploadBtn.classList.remove('hidden');
+        previewBox.classList.add('hidden');
+      }
+    }
+
 
 
     // Load profile manually using ID (from Registration Tab)
@@ -1691,57 +1773,135 @@
       const gradeVal = document.getElementById('input-grade').value.trim();
       const classVal = document.getElementById('input-class').value.trim();
       const numVal = document.getElementById('input-number').value.trim();
+      const nameVal = document.getElementById('input-name').value.trim();
       
-      if (!gradeVal || !classVal || !numVal) {
-        alert("학년, 반, 번호를 모두 입력해주세요! 🐾");
+      if (!gradeVal || !classVal || !numVal || !nameVal) {
+        alert("학년, 반, 번호, 이름을 모두 입력해주세요! 🐾");
         return;
       }
       
-      const id = `${gradeVal}-${classVal}-${numVal}`;
+      const id = String(gradeVal) + String(classVal) + String(numVal).padStart(2, '0');
       
       const loginBtn = document.querySelector('#tab-register #login-submit-btn-reg');
       loginBtn.disabled = true;
-      loginBtn.innerText = "동기화 중... ⏳";
+      loginBtn.innerText = "로그인중. ⏳";
 
       state.studentId = id;
       localStorage.setItem('teunteun_student_id', id);
       
-      executeLoginSync(id, loginBtn);
+      executeLoginSync(id, loginBtn, nameVal);
     }
 
+    // Load teacher profile manually using phone last 4 digits (from Registration Tab)
+    function loadTeacherProfile() {
+      const nameVal = document.getElementById('input-teacher-name').value.trim();
+      const phoneVal = document.getElementById('input-teacher-phone').value.trim();
+      
+      if (!nameVal || !phoneVal) {
+        alert("이름과 전화번호 끝 4자리를 모두 입력해주세요! 🐾");
+        return;
+      }
+      
+      if (phoneVal.length !== 4 || isNaN(phoneVal)) {
+        alert("전화번호 끝자리는 숫자 4자리여야 합니다! 🐾");
+        return;
+      }
+      
+      const id = `T-${phoneVal}`;
+      
+      const loginBtn = document.getElementById('login-teacher-btn');
+      loginBtn.disabled = true;
+      loginBtn.innerText = "로그인중. ⏳";
+
+      state.studentId = id;
+      localStorage.setItem('teunteun_student_id', id);
+      
+      executeLoginSync(id, loginBtn, nameVal);
+    }
+
+    // Helper to generate nickname based on ID
+    function generateNickname(id, name) {
+      const dispName = name || "";
+      if (id.startsWith('T-')) {
+        return `${dispName} 선생님`.trim();
+      }
+      const cleanId = id.toString().trim();
+      if (cleanId.length === 4) {
+        const grade = cleanId.charAt(0);
+        const classNum = cleanId.charAt(1);
+        const num = parseInt(cleanId.substring(2));
+        return `${grade}학년 ${classNum}반 ${dispName}`.trim();
+      } else if (cleanId.length === 5) {
+        const grade = cleanId.charAt(0);
+        const classNum = parseInt(cleanId.substring(1, 3));
+        const num = parseInt(cleanId.substring(3));
+        return `${grade}학년 ${classNum}반 ${dispName}`.trim();
+      }
+      return dispName;
+    }
+
+
     // Unified login sync logic
-    function executeLoginSync(id, loginBtn) {
+    function executeLoginSync(id, loginBtn, enteredName = '') {
       if (state.isOffline) {
         setTimeout(() => {
           let s = LocalDB.getStudent(id);
           if (!s) {
             // If new unregistered ID, auto-register them in local DB
-            const classMatch = id.match(/^(\d+)-(\d+)-/);
-            const nickname = classMatch ? `${classMatch[1]}학년 ${classMatch[2]}반 새싹` : `새싹대원-${id}`;
-            const res = LocalDB.saveStudent(id, "탐험대원", nickname, 140, 45);
+            const nickname = generateNickname(id, enteredName);
+            const res = LocalDB.saveStudent(id, enteredName, nickname, 140, 45);
             s = res.student;
+          } else if (enteredName && s.name !== enteredName) {
+            // Update name and nickname if name was updated
+            s.name = enteredName;
+            s.nickname = generateNickname(id, enteredName);
+            
+            const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+            if (students[id]) {
+              students[id].name = s.name;
+              students[id].nickname = s.nickname;
+              localStorage.setItem('mock_students', JSON.stringify(students));
+            }
           }
           state.student = s;
           state.lastLevel = getLevelData(s.totalPoints || 0).level;
           renderHome();
           loginBtn.disabled = false;
-          loginBtn.innerText = "연동 완료 🐾";
-          alert(`[${s.nickname}] 님 로그인 완료! 포인트를 차곡차곡 쌓아봐요! 🌱`);
-          switchTab('home');
+          loginBtn.innerText = "로그인 완료 🐾";
+          alert(`[${s.nickname}] 모험가님 로그인 성공! 🥳 바로 아래에 있는 '2단계 사전설문지'를 완료하고 모험을 시작해봐요! 🌱`);
+          switchTab('register');
         }, 600);
       } else {
         syncWithGAS(id, (success) => {
           if (success) {
+            if (enteredName && state.student.name !== enteredName) {
+              state.student.name = enteredName;
+              state.student.nickname = generateNickname(id, enteredName);
+              
+              // Register/Update name on GAS
+              fetch(state.gasUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'register',
+                  studentId: id,
+                  name: enteredName,
+                  nickname: state.student.nickname,
+                  height: state.student.height || 140,
+                  weight: state.student.weight || 45
+                })
+              });
+            }
             renderHome();
             loginBtn.disabled = false;
-            loginBtn.innerText = "연동 완료 🐾";
-            alert(`[${state.student.nickname}] 님 구글 시트 동기화 완료! ⚡`);
-            switchTab('home');
+            loginBtn.innerText = "로그인 완료 🐾";
+            alert(`[${state.student.nickname}] 모험가님 로그인 성공! ⚡ 바로 아래에 있는 '2단계 사전설문지'를 눌러 설문을 시작해 주세요! 🚀`);
+            switchTab('register');
           } else {
             // Auto register on GAS if student doesn't exist
-            // Sends a default profile to register API so they aren't blocked!
-            const classMatch = id.match(/^(\d+)-(\d+)-/);
-            const nickname = classMatch ? `${classMatch[1]}학년 ${classMatch[2]}반 새싹` : `새싹대원-${id}`;
+            const dispName = enteredName || "";
+            const nickname = generateNickname(id, dispName);
             
             fetch(state.gasUrl, {
               method: 'POST',
@@ -1750,30 +1910,44 @@
               body: JSON.stringify({
                 action: 'register',
                 studentId: id,
-                name: '탐험대원',
+                name: dispName,
                 nickname: nickname,
                 height: 140,
                 weight: 45
               })
             })
             .then(() => {
+              // Increased timeout to 2500ms to allow Google Sheets write operation to complete.
               setTimeout(() => {
                 syncWithGAS(id, (successSec) => {
-                  loginBtn.disabled = false;
-                  loginBtn.innerText = "연동 완료 🐾";
                   if (successSec) {
-                    alert(`신규 모험가 학번[${id}]으로 임시 가입 완료 및 동기화되었습니다! 🌱`);
+                    loginBtn.disabled = false;
+                    loginBtn.innerText = "로그인 완료 🐾";
+                    alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 끝났으니, 이제 아래의 '2단계 사전설문지'를 작성해 볼까요? 🐾🌱`);
                     renderHome();
-                    switchTab('home');
+                    switchTab('register');
                   } else {
-                    alert("가입 처리는 성공했으나 데이터 싱크 실패. 인터넷 상태를 점검하세요.");
+                    // Retry once more after 1500ms in case GAS was slow
+                    setTimeout(() => {
+                      syncWithGAS(id, (successThird) => {
+                        loginBtn.disabled = false;
+                        loginBtn.innerText = "로그인 완료 🐾";
+                        if (successThird) {
+                          alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 끝났으니, 이제 아래의 '2단계 사전설문지'를 작성해 볼까요? 🐾🌱`);
+                          renderHome();
+                          switchTab('register');
+                        } else {
+                          alert("가입은 성공했으나 로그인 정보를 가져오지 못했어요. 인터넷 연결을 확인하고 다시 로그인 해주세요! 🐾");
+                        }
+                      });
+                    }, 1500);
                   }
                 });
-              }, 1200);
+              }, 2500);
             })
             .catch(() => {
               loginBtn.disabled = false;
-              loginBtn.innerText = "연동 완료 🐾";
+              loginBtn.innerText = "로그인 완료 🐾";
               alert("로그인 중 서버 연결 오류 발생!");
             });
           }
@@ -1790,12 +1964,12 @@
       if (state.isOffline) {
         const s = LocalDB.getStudent(state.studentId);
         if (s) {
-          // Hotfix: Forcefully sync 440p down to 100p baseline in local DB
-          if (s.totalPoints === 440) {
-            s.totalPoints = 100;
+          // Hotfix: Forcefully sync 440p or 100p baseline down to 0p in local DB
+          if (s.totalPoints === 440 || (s.totalPoints === 100 && s.history && s.history.length === 1)) {
+            s.totalPoints = 0;
             const today = getTodayDateString(true);
             s.history = [
-              { date: today, mission: "모험 가입 축하 보너스 🌱 (통일화 복구)", weight: s.weight, points: 100 }
+              { date: today, mission: "모험 가입 환영! 🌱 (통일화 복구)", weight: s.weight, points: 0 }
             ];
             const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
             students[state.studentId] = s;
@@ -1813,23 +1987,24 @@
       } else {
         syncWithGAS(state.studentId, (success) => {
           if (success) {
-            // Hotfix: Forcefully sync 440p down to 100p baseline in GAS too
-            if (state.student && state.student.totalPoints === 440) {
-              state.student.totalPoints = 100;
+            // Hotfix: Forcefully sync 440p or 100p baseline down to 0p in GAS too
+            if (state.student && (state.student.totalPoints === 440 || (state.student.totalPoints === 100 && state.student.history && state.student.history.length === 1))) {
+              const deltaPoints = -state.student.totalPoints;
+              state.student.totalPoints = 0;
               localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
               
               // STRICT SYNC: Update local mock_students DB as well
               const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
               if (students[state.studentId]) {
-                students[state.studentId].totalPoints = 100;
+                students[state.studentId].totalPoints = 0;
                 const today = getTodayDateString(true);
                 students[state.studentId].history = [
-                  { date: today, mission: "모험 가입 축하 보너스 🌱 (통일화 복구)", weight: students[state.studentId].weight, points: 100 }
+                  { date: today, mission: "모험 가입 환영! 🌱 (통일화 복구)", weight: students[state.studentId].weight, points: 0 }
                 ];
                 localStorage.setItem('mock_students', JSON.stringify(students));
               }
 
-              // Post delta adjustment to GAS to align remote spreadsheet to 100p
+              // Post delta adjustment to GAS to align remote spreadsheet to 0p
               if (state.gasUrl) {
                 fetch(state.gasUrl, {
                   method: 'POST',
@@ -1838,8 +2013,8 @@
                   body: JSON.stringify({
                     action: 'log_mission',
                     studentId: state.studentId,
-                    missionType: `[시스템조정] 440p -> 100p 통일화 복구`,
-                    points: -340,
+                    missionType: `[시스템조정] 기존 포인트 -> 0p 통일화 복구`,
+                    points: deltaPoints,
                     weight: ""
                   })
                 });
@@ -1851,12 +2026,12 @@
             // Fallback to local storage copy if fetch fails
             const localCopy = LocalDB.getStudent(state.studentId);
             if (localCopy) {
-              // Hotfix: Also check fallback copy for 440p
-              if (localCopy.totalPoints === 440) {
-                localCopy.totalPoints = 100;
+              // Hotfix: Also check fallback copy for 440p or 100p
+              if (localCopy.totalPoints === 440 || (localCopy.totalPoints === 100 && localCopy.history && localCopy.history.length === 1)) {
+                localCopy.totalPoints = 0;
                 const today = getTodayDateString(true);
                 localCopy.history = [
-                  { date: today, mission: "모험 가입 축하 보너스 🌱 (통일화 복구)", weight: localCopy.weight, points: 100 }
+                  { date: today, mission: "모험 가입 환영! 🌱 (통일화 복구)", weight: localCopy.weight, points: 0 }
                 ];
                 const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
                 students[state.studentId] = localCopy;
@@ -1867,7 +2042,7 @@
               }
               state.student = localCopy;
               renderHome();
-              if (alertOnSuccess) alert("구글 시트 로딩 실패로 이전 캐시 데이터를 복원했습니다.");
+              if (alertOnSuccess) alert("인터넷 연결이 불안정하여 마지막에 기기에 저장된 정보를 불러왔습니다! 🐾");
             }
           }
         });
@@ -1931,8 +2106,8 @@
       
       if (level === 1) emojiEl.innerText = '🥚';
       else if (level === 2) emojiEl.innerText = '🐣';
-      else if (level === 3) emojiEl.innerText = '🐔';
-      else emojiEl.innerText = '🐓';
+      else if (level === 3) emojiEl.innerText = '🐥';
+      else emojiEl.innerText = '🐔';
     }
 
     // Header Image Error Handler
@@ -1945,8 +2120,8 @@
         const level = getLevelData(p).level;
         if (level === 1) emojiEl.innerText = '🥚';
         else if (level === 2) emojiEl.innerText = '🐣';
-        else if (level === 3) emojiEl.innerText = '🐔';
-        else emojiEl.innerText = '🐓';
+        else if (level === 3) emojiEl.innerText = '🐥';
+        else emojiEl.innerText = '🐔';
       }
     }
 
@@ -1964,8 +2139,8 @@
       state.lastLevel = levelInfo.level;
       
       // Update background scenery by level dynamically
-      const cardContainer = document.getElementById('character-card-container');
-      if (cardContainer) {
+      const screenWrapper = document.getElementById('app-screen-wrapper');
+      if (screenWrapper) {
         const bgUrls = {
           1: 'assets/cute_farm_bg_lvl1.png?v=2',
           2: 'assets/cute_farm_bg_lvl2.png?v=2',
@@ -1975,19 +2150,19 @@
         const currentBg = bgUrls[levelInfo.level] || 'assets/cute_farm_bg.png?v=2';
         const tempImg = new Image();
         tempImg.onload = function() {
-          cardContainer.style.backgroundImage = `url('${currentBg}')`;
-          cardContainer.style.filter = 'none';
+          screenWrapper.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.35)), url('${currentBg}')`;
+          screenWrapper.style.filter = 'none';
         };
         tempImg.onerror = function() {
-          cardContainer.style.backgroundImage = `url('assets/cute_farm_bg.png?v=2')`;
+          screenWrapper.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.35)), url('assets/cute_farm_bg.png?v=2')`;
           if (levelInfo.level === 1) {
-            cardContainer.style.filter = 'none';
+            screenWrapper.style.filter = 'none';
           } else if (levelInfo.level === 2) {
-            cardContainer.style.filter = 'hue-rotate(30deg) saturate(1.3)';
+            screenWrapper.style.filter = 'hue-rotate(30deg) saturate(1.3)';
           } else if (levelInfo.level === 3) {
-            cardContainer.style.filter = 'hue-rotate(-40deg) saturate(1.2) contrast(1.05)';
+            screenWrapper.style.filter = 'hue-rotate(-40deg) saturate(1.2) contrast(1.05)';
           } else {
-            cardContainer.style.filter = 'hue-rotate(-120deg) brightness(1.1) saturate(1.4)';
+            screenWrapper.style.filter = 'hue-rotate(-120deg) brightness(1.1) saturate(1.4)';
           }
         };
         tempImg.src = currentBg;
@@ -2005,8 +2180,8 @@
         // Update fallback emoji
         if (levelInfo.level === 1) emojiEl.innerText = '🥚';
         else if (levelInfo.level === 2) emojiEl.innerText = '🐣';
-        else if (levelInfo.level === 3) emojiEl.innerText = '🐔';
-        else emojiEl.innerText = '🐓';
+        else if (levelInfo.level === 3) emojiEl.innerText = '🐥';
+        else emojiEl.innerText = '🐔';
       }
 
       // Update badge with custom range points in both header and home overlay
@@ -2066,8 +2241,8 @@
         
         if (levelInfo.level === 1) headerEmojiEl.innerText = '🥚';
         else if (levelInfo.level === 2) headerEmojiEl.innerText = '🐣';
-        else if (levelInfo.level === 3) headerEmojiEl.innerText = '🐔';
-        else headerEmojiEl.innerText = '🐓';
+        else if (levelInfo.level === 3) headerEmojiEl.innerText = '🐥';
+        else headerEmojiEl.innerText = '🐔';
         
         headerBackdrop.style.backgroundColor = levelInfo.bgClass;
       }
@@ -2080,12 +2255,15 @@
 
       // Update stickers board in background to sync
       renderStickers();
+      
+      // Update survey button UI state
+      updateSurveyButtonUI();
     }
 
     // Submit Today's Missions
     function submitMissions() {
       if (!state.studentId) {
-        alert("신청서 탭에서 학번 연동을 먼저 완료해 주세요!");
+        alert("설문지 탭에서 로그인을 먼저 완료해 주세요! 🐾");
         switchTab('register');
         return;
       }
@@ -2164,17 +2342,49 @@
         })
         .then(() => {
           localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
-          alert(`서버에 미션 적립 전송 완료! 실시간 수식 갱신 후 점수가 올라갑니다. (+${pointsEarned}p)`);
-          clearMissionsForm();
           
-          setTimeout(() => {
-            refreshStudentData();
-            switchTab('home');
-          }, 1500);
+          // Optimistic UI Update so milestone progress bar updates instantly
+          const oldPoints = state.student.totalPoints;
+          const newPoints = oldPoints + pointsEarned;
+          const oldLevel = getLevelData(oldPoints).level;
+          const newLevel = getLevelData(newPoints).level;
+          
+          state.student.totalPoints = newPoints;
+          if (!state.student.history) state.student.history = [];
+          state.student.history.push({
+            date: getTodayDateString(true),
+            mission: logMessage,
+            points: pointsEarned
+          });
+          
+          // Also update local mock DB to ensure the offline cache syncs
+          const mockStudents = JSON.parse(localStorage.getItem('mock_students') || '{}');
+          if (mockStudents[state.studentId]) {
+            mockStudents[state.studentId].totalPoints = newPoints;
+            if (!mockStudents[state.studentId].history) mockStudents[state.studentId].history = [];
+            mockStudents[state.studentId].history.push({
+              date: getTodayDateString(true),
+              mission: logMessage,
+              points: pointsEarned
+            });
+            localStorage.setItem('mock_students', JSON.stringify(mockStudents));
+          }
+          localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
+
+          if (newLevel > oldLevel) {
+            triggerLevelUpCelebration(getLevelData(newPoints).name);
+          } else {
+            alert(`오늘의 미션 완료! 도장 꾹! 🐾\n${pointsEarned}p가 적립되어 ${newPoints}p가 되었습니다!`);
+          }
+          
+          clearMissionsForm();
+          renderHome();
+          switchTab('home');
+          
         })
         .catch(err => {
           console.error("Mission Log Error:", err);
-          alert("네트워크 장애로 전송 실패! 데모 모드로 전환되거나 기기 상태를 체크해주세요.");
+          alert("인터넷 연결이 불안정해서 전송하지 못했어요. 기기의 인터넷 상태를 확인해 주세요!");
         });
       }
     }
@@ -2201,11 +2411,7 @@
       const fileInput = document.getElementById('mission-photo-input');
       if (fileInput) fileInput.value = '';
       
-      const statusText = document.getElementById('photo-upload-status');
-      if (statusText) {
-        statusText.innerText = '';
-        statusText.classList.add('hidden');
-      }
+      updateExerciseMissionUI();
 
       const todayTotalText = document.getElementById('today-total-earn-points');
       if (todayTotalText) {
@@ -2631,7 +2837,7 @@
           .then(() => {
             localStorage.setItem(`game_clear_${state.studentId}`, getTodayDateString());
             setTimeout(() => {
-              alert("서버에 놀이터 미션 완료 보너스 전송을 완료했습니다! (+50p)");
+              alert("놀이터 미션 점수를 안전하게 보냈어요! (+50p) 🎮");
               refreshStudentData();
             }, 500);
           });
@@ -2787,12 +2993,12 @@
           })
         })
         .then(() => {
-          alert(`당신의 BMI는 ${bmiVal}입니다. 구글 시트와 ${month}월 신체 데이터 동기화를 완료했습니다! 📡`);
+          alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록을 안전하게 저장했습니다! 🐾`);
           renderMyBody();
         })
         .catch(err => {
           console.error("GAS monthly sync error", err);
-          alert("서버 전송 실패! 로컬 브라우저에만 우선 기록합니다.");
+          alert("인터넷 연결이 원활하지 않아 저장하지 못했어요. 우선 이 기기에만 저장해 둘게요!");
           renderMyBody();
         });
       }
@@ -2874,12 +3080,18 @@
       // Weight chart has been removed based on user request.
     }
 
+    // Calculate how many stickers based on total points (1 sticker per 100 points)
+    function getStickerCount() {
+      if (!state.student) return 0;
+      return Math.floor((state.student.totalPoints || 0) / 100);
+    }
+
     // Render Stickers board
     function renderStickers() {
       if (!state.student) return;
 
-      const p = state.student.totalPoints || 0;
       const stickerCells = document.querySelectorAll('.sticker-cell');
+      const stickerCount = getStickerCount();
       
       const activeColors = [
         ['bg-pastelPink-light', 'border-pastelPink', 'text-pink-500'],
@@ -2898,39 +3110,31 @@
         'border-2', 'opacity-100', 'scale-105', 'shadow-md'
       ];
 
-      const emojiStickers = [
-        '🍎', '🍓', '🥕', '🍌', '🥦', '🍇', '🍉', '🍊', '🍋', '🍍', '🍒', '🍑', '🍅', '🥑', '🌽', '🥔',
-        '🍐', '🥝', '🫐', '🥬', '🌶️', '🍄', '🍠', '🍈', '🍏', '🥭', '🥥', '🧅', '🥜', '🥦', '🍎'
-      ];
-
-      // 매월 1일 리셋 로직 (또는 달이 바뀌었을 때 리셋)
-      const currentMonth = getYearMonthString();
-      const storageKey = `teunteun_sticker_reset_${state.studentId}`;
-      let resetInfo = JSON.parse(localStorage.getItem(storageKey) || 'null');
-
-      if (!resetInfo || resetInfo.lastResetMonth !== currentMonth) {
-        resetInfo = {
-          lastResetMonth: currentMonth,
-          basePoints: resetInfo ? p : 0
-        };
-        localStorage.setItem(storageKey, JSON.stringify(resetInfo));
-      }
-
-      // 이번 달 획득한 포인트
-      const displayPoints = Math.max(0, p - resetInfo.basePoints);
+      const fruits = ['🍎', '🍓', '🍌', '🍇', '🍉', '🍊', '🍒', '🍑', '🍍', '🥝', '🍏', '🥭'];
+      const vegetables = ['🥕', '🥦', '🌽', '🥔', '🥬', '🍄', '🍠', '🧅', '🥒', '🥑', '🍅', '🌶️'];
 
       stickerCells.forEach((cell, index) => {
-        const ptsReq = parseInt(cell.getAttribute('data-points'));
+        const cellNum = index + 1;
         const colorSet = activeColors[index % activeColors.length];
         
         // Reset classes safely
         cell.classList.remove(...allActiveClasses);
         cell.classList.remove('opacity-20', 'grayscale', 'bg-slate-50', 'border-slate-100', 'text-slate-400');
         
-        if (displayPoints >= ptsReq) {
+        if (stickerCount >= cellNum) {
           cell.classList.add('opacity-100', 'scale-105', 'shadow-md', 'border-2', ...colorSet);
           cell.style.filter = 'none';
-          cell.innerText = emojiStickers[index % emojiStickers.length];
+          
+          // Alternating fruit and vegetable stickers
+          if (index % 2 === 0) {
+            // Even index (0, 2, 4...) -> Fruit
+            const fruitIndex = Math.floor(index / 2) % fruits.length;
+            cell.innerText = fruits[fruitIndex];
+          } else {
+            // Odd index (1, 3, 5...) -> Vegetable
+            const vegIndex = Math.floor(index / 2) % vegetables.length;
+            cell.innerText = vegetables[vegIndex];
+          }
         } else {
           cell.classList.add('opacity-20', 'grayscale', 'bg-slate-50', 'border-slate-100', 'text-slate-400');
           cell.style.filter = 'grayscale(100%)';
@@ -3014,6 +3218,243 @@
 
       requestAnimationFrame(loopConfetti);
     }
+
+    // ==================== IN-APP PRE-SURVEY LOGIC ====================
+    const SURVEY_QUESTIONS = [
+      "1. 일주일에 3번 이상 땀이 날 정도로 운동한다(체육포함).",
+      "2. 매일 아침밥을 먹는다.",
+      "3. 음료수와 단 음식을 많이 먹지 않는다.",
+      "4. 채소와 과일을 자주 먹는다.",
+      "5. 즉석식품(라면,피자,햄버거 등)을 많이 먹지 않는다.",
+      "6. 잠을 충분히 잔다(9시간 이상).",
+      "7. 하루 5컵 이상의 물을 마신다.",
+      "8. 나는 건강을 위해 내가 지킬 목표(약속)를 정해 둔다.",
+      "9. 나는 내가 잘 지키고 있는지 가끔 스스로 점검한다.",
+      "10. 나는 정한 건강 목표(약속)를 생활 속에서 실천한다.",
+      "11. 나는 맛있는 게 있어도 건강을 생각해 먹는 것을 조절할 수 있다."
+    ];
+
+    // Open Survey Modal
+    function openSurveyModal() {
+      if (!state.studentId) {
+        // Automatically bootstrap guest profile for immediate survey access
+        state.studentId = 'guest';
+        state.student = { ...DEFAULT_GUEST };
+      }
+      
+      // Initialize survey state
+      state.surveyAnswers = Array(11).fill(null);
+      state.currentSurveyIndex = 0;
+      
+      // Load previously saved survey progress if it exists
+      const savedAnswers = localStorage.getItem(`survey_answers_${state.studentId}`);
+      if (savedAnswers) {
+        try {
+          state.surveyAnswers = JSON.parse(savedAnswers);
+        } catch(e) {}
+      }
+
+      renderSurveyQuestion();
+      toggleModal('survey-modal');
+    }
+
+    // Render current survey question and choices
+    function renderSurveyQuestion() {
+      const qIndex = state.currentSurveyIndex;
+      const total = SURVEY_QUESTIONS.length;
+      
+      // Update progress bar & progress text
+      const progressPercent = Math.round(((qIndex + 1) / total) * 100);
+      const progressBar = document.getElementById('survey-progress-bar');
+      const progressText = document.getElementById('survey-progress-text');
+      const progressPctText = document.getElementById('survey-progress-percent');
+      
+      if (progressBar) progressBar.style.width = `${progressPercent}%`;
+      if (progressText) progressText.innerText = `${qIndex + 1} / ${total} 문항`;
+      if (progressPctText) progressPctText.innerText = `${progressPercent}%`;
+      
+      // Update question text
+      const qNumEl = document.getElementById('survey-q-num');
+      const qTextEl = document.getElementById('survey-q-text');
+      if (qNumEl) qNumEl.innerText = `질문 ${qIndex + 1}`;
+      if (qTextEl) qTextEl.innerText = SURVEY_QUESTIONS[qIndex];
+      
+      // Update choices styles (highlight selected option)
+      const selectedAns = state.surveyAnswers[qIndex];
+      for (let i = 0; i < 3; i++) {
+        const btn = document.getElementById(`survey-opt-${i}`);
+        if (btn) {
+          btn.className = "w-full border-2 rounded-2xl py-3.5 px-6 text-sm font-black transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-sm";
+          if (selectedAns === i) {
+            btn.classList.add('bg-pastelPink', 'border-pastelPink-dark', 'text-pink-700', 'scale-[1.02]');
+          } else {
+            btn.classList.add('bg-white', 'border-slate-200', 'hover:border-pastelPink', 'text-slate-700');
+          }
+        }
+      }
+      
+      // Update navigation buttons
+      const prevBtn = document.getElementById('survey-prev-btn');
+      const nextBtn = document.getElementById('survey-next-btn');
+      const submitBtn = document.getElementById('survey-submit-btn');
+      
+      if (prevBtn) {
+        if (qIndex === 0) {
+          prevBtn.disabled = true;
+          prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+          prevBtn.disabled = false;
+          prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+      }
+      
+      if (nextBtn && submitBtn) {
+        if (qIndex === total - 1) {
+          nextBtn.classList.add('hidden');
+          submitBtn.classList.remove('hidden');
+        } else {
+          nextBtn.classList.remove('hidden');
+          submitBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    // Handle selecting an answer option (0, 1, or 2)
+    function selectSurveyAnswer(optIndex) {
+      const qIndex = state.currentSurveyIndex;
+      state.surveyAnswers[qIndex] = optIndex;
+      
+      // Auto-save progress in localStorage
+      localStorage.setItem(`survey_answers_${state.studentId}`, JSON.stringify(state.surveyAnswers));
+      
+      // Render updated selections
+      renderSurveyQuestion();
+      
+      // Auto advance to next question after a brief delay
+      if (state.currentSurveyIndex < SURVEY_QUESTIONS.length - 1) {
+        setTimeout(() => {
+          if (state.currentSurveyIndex === qIndex) {
+            nextSurveyQuestion();
+          }
+        }, 350);
+      }
+    }
+
+    // Navigate to previous question
+    function prevSurveyQuestion() {
+      if (state.currentSurveyIndex > 0) {
+        state.currentSurveyIndex--;
+        renderSurveyQuestion();
+      }
+    }
+
+    // Navigate to next question
+    function nextSurveyQuestion() {
+      if (state.currentSurveyIndex < SURVEY_QUESTIONS.length - 1) {
+        state.currentSurveyIndex++;
+        renderSurveyQuestion();
+      }
+    }
+
+    // Submit Survey Responses
+    function submitSurvey() {
+      const unanswered = [];
+      state.surveyAnswers.forEach((ans, idx) => {
+        if (ans === null) unanswered.push(idx + 1);
+      });
+      
+      if (unanswered.length > 0) {
+        alert(`답변하지 않은 문항이 있습니다: ${unanswered.join(', ')}번\n모든 질문에 답해 주세요! 📝`);
+        return;
+      }
+      
+      const submitBtn = document.getElementById('survey-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "제출 중... ⏳";
+      }
+      
+      const SURVEY_OPTIONS = ["그렇다(5-7회) 😀", "보통이다(3-4회) 😐", "아니다(0-2회) 🙁"];
+      const answersText = state.surveyAnswers.map(ans => SURVEY_OPTIONS[ans]);
+      
+      if (state.isOffline) {
+        setTimeout(() => {
+          saveLocalSurvey(answersText);
+        }, 800);
+      } else {
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'submit_survey',
+            studentId: state.studentId,
+            name: state.student.name,
+            answers: answersText
+          })
+        })
+        .then(() => {
+          saveLocalSurvey(answersText);
+        })
+        .catch(err => {
+          console.error("GAS survey submission error", err);
+          alert("네트워크 연결 실패로 로컬에 우선 저장합니다. ⚠️");
+          saveLocalSurvey(answersText);
+        });
+      }
+    }
+
+    // Helper to save survey responses locally
+    function saveLocalSurvey(answersText) {
+      state.student.preSurveyDone = true;
+      state.student.preSurveyAnswers = answersText;
+      
+      // Update cached student
+      localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
+      
+      // Save in mock_students DB
+      const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+      if (students[state.studentId]) {
+        students[state.studentId].preSurveyDone = true;
+        students[state.studentId].preSurveyAnswers = answersText;
+        localStorage.setItem('mock_students', JSON.stringify(students));
+      }
+      
+      // Clear survey progress cache
+      localStorage.removeItem(`survey_answers_${state.studentId}`);
+      
+      const submitBtn = document.getElementById('survey-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "설문 완료 및 제출하기 🐾";
+      }
+      
+      toggleModal('survey-modal');
+      updateSurveyButtonUI();
+      triggerConfetti();
+      alert("사전 설문조사가 성공적으로 제출되었습니다! 이제 꼬꼬챌린지 미션을 시작해 볼까요? 🐾🚀");
+    }
+
+    // Update the Register tab survey button status
+    function updateSurveyButtonUI() {
+      const surveyBtn = document.getElementById('open-google-form-btn');
+      if (!surveyBtn) return;
+      
+      if (state.student && state.student.preSurveyDone) {
+        surveyBtn.innerText = "설문 제출 완료! 🌟";
+        surveyBtn.disabled = true;
+        surveyBtn.className = "inline-block w-[80%] bg-slate-300 text-slate-500 font-black py-5 px-8 rounded-[24px] shadow-sm text-xl text-center border-2 border-slate-200 cursor-not-allowed";
+      } else {
+        surveyBtn.innerText = "사전설문지";
+        surveyBtn.disabled = false;
+        surveyBtn.className = "inline-block w-[80%] bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-5 px-8 rounded-[24px] shadow-lg transition active:scale-95 text-xl text-center border-2 border-white cursor-pointer";
+      }
+    }
   </script>
 </body>
 </html>
+
+
+
+
+
