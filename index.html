@@ -403,12 +403,12 @@
           <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
             <div class="flex justify-between items-start">
               <div class="flex items-center gap-4">
-                <span class="text-3xl">🍚</span>
+                <span class="text-3xl">🥗</span>
                 <div>
-                  <span class="font-bold text-slate-800 text-base block">아침밥 먹기</span>
+                  <span class="font-bold text-slate-800 text-base block">하루 한번 야채 반찬 먹기</span>
                 </div>
               </div>
-              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+20p</span>
+              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
             </div>
             <div class="flex gap-2">
               <button id="btn-done-2" onclick="toggleMissionButton(2, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
@@ -464,6 +464,23 @@
             <div class="flex gap-2">
               <button id="btn-done-5" onclick="toggleMissionButton(5, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
               <button id="btn-cancel-5" onclick="toggleMissionButton(5, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
+            </div>
+          </div>
+
+          <!-- Mission 6 -->
+          <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center gap-4">
+                <span class="text-3xl">🪥</span>
+                <div>
+                  <span class="font-bold text-slate-800 text-base block">식후 3분 이내에 양치질 하기</span>
+                </div>
+              </div>
+              <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-done-6" onclick="toggleMissionButton(6, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
+              <button id="btn-cancel-6" onclick="toggleMissionButton(6, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
             </div>
           </div>
 
@@ -925,10 +942,11 @@
       photoUploadTime: '',
       todayMissions: {
         1: null, // 숨이 찰 정도의 운동 (+50)
-        2: null, // 아침밥 먹기 (+20)
+        2: null, // 하루 한번 야채 반찬 먹기 (+10)
         3: null, // 잠 충분히 자기 (+10)
         4: null, // 단맛 음료 줄이기 (+10)
-        5: null  // 1일 5컵 이상 물 마시기 (+10)
+        5: null, // 1일 5컵 이상 물 마시기 (+10)
+        6: null  // 식후 3분 이내에 양치질 하기 (+10)
       },
       surveyAnswers: Array(11).fill(null),
       currentSurveyIndex: 0
@@ -1513,7 +1531,7 @@
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          state.todayMissions = data.todayMissions || { 1: null, 2: null, 3: null, 4: null, 5: null };
+          state.todayMissions = data.todayMissions || { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
           state.photoUploaded = !!data.photoUploaded;
           state.photoUrl = data.photoUrl || '';
           state.photoUploadTime = data.photoUploadTime || '';
@@ -1528,7 +1546,7 @@
         }
       } else {
         // Reset to default if no saved state for today
-        state.todayMissions = { 1: null, 2: null, 3: null, 4: null, 5: null };
+        state.todayMissions = { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null };
         state.photoUploaded = false;
         state.photoUrl = '';
         state.photoUploadTime = '';
@@ -1547,7 +1565,7 @@
       const activeCancelClass = "flex-1 bg-[#FDE2E4] border border-[#FFCAD4] text-[#800F2F] text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95 shadow-sm";
       const inactiveClass = "flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95";
 
-      for (let id = 1; id <= 5; id++) {
+      for (let id = 1; id <= 6; id++) {
         const doneBtn = document.getElementById(`btn-done-${id}`);
         const cancelBtn = document.getElementById(`btn-cancel-${id}`);
         if (!doneBtn || !cancelBtn) continue;
@@ -1591,8 +1609,8 @@
       const previousState = state.todayMissions[id];
       if (previousState === isDone) return; // No change, return early
 
-      const pointsConfig = { 1: 50, 2: 20, 3: 10, 4: 10, 5: 10 };
-      const missionNames = { 1: "운동🏃", 2: "아침밥🍚", 3: "잠🛌", 4: "단음료🥤", 5: "물💧" };
+      const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+      const missionNames = { 1: "운동🏃", 2: "야채🥗", 3: "잠🛌", 4: "단음료🥤", 5: "물💧", 6: "양치질🪥" };
       
       // Calculate points delta dynamically based on transition from previousState to isDone
       let pointsDelta = 0;
@@ -1622,7 +1640,7 @@
     // Calculate today's potential earned points
     function updateTodayPoints() {
       let total = 0;
-      const pointsConfig = { 1: 50, 2: 20, 3: 10, 4: 10, 5: 10 };
+      const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
       
       for (const [id, isDone] of Object.entries(state.todayMissions)) {
         if (isDone === true) {
@@ -2278,8 +2296,8 @@
       // Calculate points
       let pointsEarned = 0;
       let missionsList = [];
-      const pointsConfig = { 1: 50, 2: 20, 3: 10, 4: 10, 5: 10 };
-      const missionNames = { 1: "운동🏃", 2: "아침밥🍚", 3: "잠🛌", 4: "단음료🥤", 5: "물💧" };
+      const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+      const missionNames = { 1: "운동🏃", 2: "야채🥗", 3: "잠🛌", 4: "단음료🥤", 5: "물💧", 6: "양치질🪥" };
 
       // Verify photo requirement for exercise mission
       if (state.todayMissions[1] && !state.photoUploaded) {
@@ -2287,7 +2305,7 @@
         return;
       }
 
-      for (let id = 1; id <= 5; id++) {
+      for (let id = 1; id <= 6; id++) {
         if (state.todayMissions[id]) {
           pointsEarned += pointsConfig[id];
           missionsList.push(missionNames[id]);
@@ -2391,7 +2409,7 @@
 
     function clearMissionsForm() {
       // Reset state missions
-      for (let id = 1; id <= 5; id++) {
+      for (let id = 1; id <= 6; id++) {
         state.todayMissions[id] = false;
         
         // Reset UI buttons to bright inactive layout
