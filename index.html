@@ -307,7 +307,7 @@
               <span class="text-[10px] sm:text-xs font-bold text-slate-400 block mb-1.5 cursor-pointer select-none animate-pulse" ondblclick="toggleModal('settings-modal')" title="더블클릭 시 보건교사 설정창이 열립니다.">👩‍🏫 교사 참여자 로그인</span>
               <div class="flex justify-center items-center gap-1.5 max-w-[340px] mx-auto">
                 <input type="text" id="input-teacher-name" placeholder="이름" class="w-16 sm:w-20 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
-                <input type="text" id="input-teacher-phone" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="끝 4자리" class="w-20 sm:w-28 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+                <input type="text" id="input-teacher-phone" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="전화번호 끝4자리" class="w-24 sm:w-32 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
                 <button onclick="loadTeacherProfile()" id="login-teacher-btn" class="bg-slate-500 hover:bg-slate-600 text-white text-[10px] sm:text-xs font-bold py-1 sm:py-1.5 px-2 rounded-[10px] sm:rounded-[12px] active:scale-95 transition-all">
                   로그인
                 </button>
@@ -320,7 +320,7 @@
         <div class="bg-pastelPink-light border-4 border-pastelPink rounded-[24px] sm:rounded-[36px] p-4 sm:p-8 text-center shadow-md">
           <span class="text-xl sm:text-2xl mb-2 sm:mb-3 block">📝 2단계</span>
           <button id="open-google-form-btn" onclick="openSurveyModal()" class="inline-block w-[85%] bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-3 sm:py-5 px-6 sm:px-8 rounded-[20px] sm:rounded-[24px] shadow-md transition active:scale-95 text-base sm:text-xl text-center border-2 border-white cursor-pointer">
-            사전설문지
+            사전설문
           </button>
         </div>
       </section>
@@ -722,7 +722,7 @@
         <div class="bottom-tab-grid w-full">
           <button onclick="switchTab('register')" id="btn-tab-register" class="tab-btn flex flex-col items-center justify-center py-0.5 rounded-lg hover:bg-slate-50 transition active:scale-95 text-slate-600 min-w-0">
             <span class="text-xl sm:text-2xl">📝</span>
-            <span class="text-[12.5px] sm:text-[14px] font-black whitespace-nowrap">사전설문</span>
+            <span class="text-[12.5px] sm:text-[14px] font-black whitespace-nowrap">시작하기</span>
           </button>
 
           <button onclick="switchTab('mission')" id="btn-tab-mission" class="tab-btn flex flex-col items-center justify-center py-0.5 rounded-lg hover:bg-slate-50 transition active:scale-95 text-slate-600 min-w-0">
@@ -793,7 +793,7 @@
       </button>
 
       <h3 class="text-xl font-black text-slate-800 text-center mb-1 flex items-center justify-center gap-1.5">📝 사전 설문조사</h3>
-      <p class="text-xs font-bold text-slate-500 text-center mb-4">나의 평소 건강 습관 알아보기</p>
+      <p class="text-xs font-bold text-slate-500 text-center mb-4">나의 평소 건강 습관 알아보기 (최근 1주일 기준)</p>
 
       <!-- Progress Bar -->
       <div class="w-full bg-slate-100 h-2.5 rounded-full mb-1 overflow-hidden">
@@ -929,13 +929,15 @@
 
   <!-- BUSINESS LOGIC JAVASCRIPT -->
   <script>
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyMI-cbIiPDjkQpaRfopOhxx2ILy0wLeo7oKQ2b4F_JkCdowD8D1XbwNjVX5lfdHuhUsQ/exec';
+
     // State management
     const state = {
       studentId: localStorage.getItem('teunteun_student_id') || '',
       student: null, // Holds profile info
-      gasUrl: localStorage.getItem('teunteun_gas_url') || '',
+      gasUrl: localStorage.getItem('teunteun_gas_url') || DEFAULT_GAS_URL,
       firebaseConfig: null,
-      isOffline: true, // Default to true, switches if gasUrl is verified
+      isOffline: false, // Default to online sync with GAS URL
       todayMissionsSubmitted: false,
       photoUploaded: false,
       photoUrl: '',
@@ -1089,7 +1091,7 @@
         updateSurveyButtonUI();
       } else if (tabId === 'mybody') {
         if (!state.student || !state.studentId) {
-          alert("신청서 작성을 먼저 마쳐주세요! 📋");
+          alert("로그인해 주세요! 🐾");
           switchTab('register');
           return;
         }
@@ -1097,7 +1099,7 @@
         renderMyBody();
       } else if (tabId === 'stickers') {
         if (!state.student || !state.studentId) {
-          alert("신청서 작성을 먼저 마쳐주세요! 📋");
+          alert("로그인해 주세요! 🐾");
           switchTab('register');
           return;
         }
@@ -1229,12 +1231,11 @@
 
     // Load setup configurations
     window.onload = function() {
-      // Setup connection status based on GAS URL presence
-      if (!state.gasUrl) {
-        state.isOffline = true;
-      } else {
-        state.isOffline = false;
+      if (!localStorage.getItem('teunteun_gas_url')) {
+        localStorage.setItem('teunteun_gas_url', DEFAULT_GAS_URL);
       }
+      state.gasUrl = localStorage.getItem('teunteun_gas_url') || DEFAULT_GAS_URL;
+      state.isOffline = !state.gasUrl;
       
       document.getElementById('settings-gas-url').value = state.gasUrl;
       
@@ -1312,8 +1313,9 @@
 
     // Save Teacher Settings
     function saveSettings() {
-      const url = document.getElementById('settings-gas-url').value.trim();
+      const url = document.getElementById('settings-gas-url').value.trim() || DEFAULT_GAS_URL;
       state.gasUrl = url;
+      state.isOffline = !url;
       localStorage.setItem('teunteun_gas_url', url);
       
       const fbConfigStr = document.getElementById('settings-firebase-config').value.trim();
@@ -1353,7 +1355,7 @@
     // Manual points save & update UI
     function saveManualPoints() {
       if (!state.studentId) {
-        alert("설문지 탭에서 로그인을 먼저 완료해 주세요! 🐾");
+        alert("시작하기 탭에서 로그인을 먼저 완료해 주세요! 🐾");
         switchTab('register');
         return;
       }
@@ -1588,7 +1590,7 @@
     // Toggle mission button active state and calculate points (Realtime sync)
     function toggleMissionButton(id, isDone) {
       if (!state.studentId) {
-        alert("설문지 탭에서 로그인을 먼저 완료해 주세요! 🐾");
+        alert("시작하기 탭에서 로그인을 먼저 완료해 주세요! 🐾");
         switchTab('register');
         return;
       }
@@ -1675,7 +1677,7 @@
     // Firebase Photo Upload logic (with Integrated Exercise Mission completion)
     function handlePhotoUpload(input) {
       if (!state.studentId) {
-        alert("설문지 탭에서 로그인을 먼저 완료해 주세요! 🐾");
+        alert("시작하기 탭에서 로그인을 먼저 완료해 주세요! 🐾");
         input.value = '';
         return;
       }
@@ -1886,7 +1888,7 @@
           renderHome();
           loginBtn.disabled = false;
           loginBtn.innerText = "로그인 완료 🐾";
-          alert(`[${s.nickname}] 모험가님 로그인 성공! 🥳 바로 아래에 있는 '2단계 사전설문지'를 완료하고 모험을 시작해봐요! 🌱`);
+          alert(`[${s.nickname}] 모험가님 로그인 성공! 🥳 바로 아래에 있는 '2단계 사전설문'을 완료하고 모험을 시작해봐요! 🌱`);
           switchTab('register');
         }, 600);
       } else {
@@ -1914,7 +1916,7 @@
             renderHome();
             loginBtn.disabled = false;
             loginBtn.innerText = "로그인 완료 🐾";
-            alert(`[${state.student.nickname}] 모험가님 로그인 성공! ⚡ 바로 아래에 있는 '2단계 사전설문지'를 눌러 설문을 시작해 주세요! 🚀`);
+            alert(`[${state.student.nickname}] 모험가님 로그인 성공! ⚡ 바로 아래에 있는 '2단계 사전설문'을 눌러 설문을 시작해 주세요! 🚀`);
             switchTab('register');
           } else {
             // Auto register on GAS if student doesn't exist
@@ -1941,7 +1943,7 @@
                   if (successSec) {
                     loginBtn.disabled = false;
                     loginBtn.innerText = "로그인 완료 🐾";
-                    alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 끝났으니, 이제 아래의 '2단계 사전설문지'를 작성해 볼까요? 🐾🌱`);
+                    alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 끝났으니, 이제 아래의 '2단계 사전설문'을 작성해 볼까요? 🐾🌱`);
                     renderHome();
                     switchTab('register');
                   } else {
@@ -1951,7 +1953,7 @@
                         loginBtn.disabled = false;
                         loginBtn.innerText = "로그인 완료 🐾";
                         if (successThird) {
-                          alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 끝났으니, 이제 아래의 '2단계 사전설문지'를 작성해 볼까요? 🐾🌱`);
+                          alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 끝났으니, 이제 아래의 '2단계 사전설문'을 작성해 볼까요? 🐾🌱`);
                           renderHome();
                           switchTab('register');
                         } else {
@@ -2281,7 +2283,7 @@
     // Submit Today's Missions
     function submitMissions() {
       if (!state.studentId) {
-        alert("설문지 탭에서 로그인을 먼저 완료해 주세요! 🐾");
+        alert("시작하기 탭에서 로그인을 먼저 완료해 주세요! 🐾");
         switchTab('register');
         return;
       }
@@ -2818,7 +2820,7 @@
         triggerConfetti();
 
         if (!state.studentId) {
-          alert("와아! 건강 음식 받기 게임을 모두 클리어했어요! 🎮\n포인트를 적립하려면 [신청서] 탭에서 등록을 먼저 마쳐주세요!");
+          alert("와아! 건강 음식 받기 게임을 모두 클리어했어요! 🎮\n포인트를 적립하려면 로그인해 주세요! 🐾");
           return;
         }
 
@@ -2957,7 +2959,7 @@
     
     function saveMonthlyBmi() {
       if (!state.studentId) {
-        alert("신청서 작성을 먼저 마쳐주세요! 📋");
+        alert("로그인해 주세요! 🐾");
         switchTab('register');
         return;
       }
@@ -3241,9 +3243,9 @@
     const SURVEY_QUESTIONS = [
       "1. 일주일에 3번 이상 땀이 날 정도로 운동한다(체육포함).",
       "2. 매일 아침밥을 먹는다.",
-      "3. 음료수와 단 음식을 많이 먹지 않는다.",
+      "3. 음료수와 단 음식을 많이 먹는다.",
       "4. 채소와 과일을 자주 먹는다.",
-      "5. 즉석식품(라면,피자,햄버거 등)을 많이 먹지 않는다.",
+      "5. 즉석식품(라면,피자,햄버거 등)을 많이 먹는다.",
       "6. 잠을 충분히 잔다(9시간 이상).",
       "7. 하루 5컵 이상의 물을 마신다.",
       "8. 나는 건강을 위해 내가 지킬 목표(약속)를 정해 둔다.",
@@ -3463,7 +3465,7 @@
         surveyBtn.disabled = true;
         surveyBtn.className = "inline-block w-[80%] bg-slate-300 text-slate-500 font-black py-5 px-8 rounded-[24px] shadow-sm text-xl text-center border-2 border-slate-200 cursor-not-allowed";
       } else {
-        surveyBtn.innerText = "사전설문지";
+        surveyBtn.innerText = "사전설문";
         surveyBtn.disabled = false;
         surveyBtn.className = "inline-block w-[80%] bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-5 px-8 rounded-[24px] shadow-lg transition active:scale-95 text-xl text-center border-2 border-white cursor-pointer";
       }
