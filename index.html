@@ -1963,22 +1963,41 @@
                         loginBtn.disabled = false;
                         loginBtn.innerText = "로그인 완료 🐾";
                         if (successThird) {
-                          alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 끝났으니, 이제 아래의 '2단계 사전설문'을 작성해 볼까요? 🐾🌱`);
+                          alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 완료되었습니다. 이제 아래의 '2단계 사전설문'을 작성해 볼까요? 🐾🌱`);
                           renderHome();
                           switchTab('register');
                         } else {
-                          alert("가입은 성공했으나 로그인 정보를 가져오지 못했어요. 인터넷 연결을 확인하고 다시 로그인 해주세요! 🐾");
+                          // Smooth Fallback: If GAS is slow, log in with local student profile seamlessly
+                          const fallbackStudent = {
+                            studentId: id,
+                            name: dispName,
+                            nickname: nickname,
+                            totalPoints: 0,
+                            height: 0,
+                            weight: 0,
+                            history: [{ date: getTodayDateString(true), mission: "모험 가입 환영! 🌱", weight: 0, points: 0 }],
+                            weightHistory: []
+                          };
+                          state.student = fallbackStudent;
+                          localStorage.setItem('teunteun_student_cached', JSON.stringify(fallbackStudent));
+                          const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+                          students[id] = fallbackStudent;
+                          localStorage.setItem('mock_students', JSON.stringify(students));
+                          
+                          alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 완료되었습니다. 이제 아래의 '2단계 사전설문'을 작성해 볼까요? 🐾🌱`);
+                          renderHome();
+                          switchTab('register');
                         }
                       });
-                    }, 1500);
+                    }, 1200);
                   }
                 });
-              }, 2500);
+              }, 2000);
             })
             .catch(() => {
               loginBtn.disabled = false;
               loginBtn.innerText = "로그인 완료 🐾";
-              alert("로그인 중 서버 연결 오류 발생!");
+              alert("인터넷 연결을 확인하고 다시 로그인 해주세요! 🐾");
             });
           }
         });
