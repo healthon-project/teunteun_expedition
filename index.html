@@ -240,8 +240,7 @@
       <section id="tab-home" class="tab-content flex flex-col items-center justify-start min-h-[500px] sm:min-h-[580px] w-full pb-4">
         
         <!-- Main Card Wrapper (Contains character drawing, speech, and gift btn) -->
-        <div class="w-full pt-6 pb-6 px-5 bg-transparent text-slate-800 flex flex-col items-center justify-start">
-          <h1 class="text-5xl font-black text-transparent bg-clip-text drop-shadow-[0_4px_6px_rgba(239,68,68,0.25)] tracking-wider text-center mb-1 title-playful hover:scale-110 active:scale-95 transition-transform duration-200 cursor-pointer" style="background: linear-gradient(to right, #ff3b30, #ff9500, #ffcc00, #34c759, #007aff, #5856d6, #af52de); -webkit-background-clip: text; color: transparent;">꼬꼬챌린지</h1>
+        <div class="w-full pt-2 pb-6 px-5 bg-transparent text-slate-800 flex flex-col items-center justify-start">
           <p class="text-xs sm:text-sm font-black text-slate-500 text-center mb-4 sm:mb-6">알콩이에서 꼬꼬대장까지, 나는 건강왕</p>
 
           <!-- Character display area (Enlarged to make the egg 3x larger) -->
@@ -296,20 +295,29 @@
               <input type="text" id="input-name" placeholder="이름을 입력하세요" class="w-full bg-white border-2 border-slate-200 rounded-[15px] sm:rounded-[20px] py-2 sm:py-3 px-3.5 sm:px-4 text-center text-sm sm:text-base font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
             </div>
 
-            <button onclick="loadProfileFromIdReg()" id="login-submit-btn-reg" class="inline-flex w-[85%] bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white font-black py-3 sm:py-5 px-6 sm:px-8 rounded-[20px] sm:rounded-[24px] shadow-md hover:shadow-lg active:scale-95 transition-all text-base sm:text-xl border-2 border-white justify-center items-center text-center">
-              로그인
-            </button>
+            <!-- Student Login & Logout Buttons Side-by-Side -->
+            <div class="flex justify-center items-center gap-2.5 w-[85%] mx-auto">
+              <button onclick="loadProfileFromIdReg()" id="login-submit-btn-reg" class="flex-1 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white font-black py-3 sm:py-4 px-4 rounded-[20px] sm:rounded-[24px] shadow-md hover:shadow-lg active:scale-95 transition-all text-base sm:text-xl border-2 border-white justify-center items-center text-center cursor-pointer">
+                로그인
+              </button>
+              <button onclick="logoutUser()" id="logout-submit-btn-reg" class="bg-gradient-to-r from-rose-400 to-red-500 hover:from-rose-500 hover:to-red-600 text-white font-black py-3 sm:py-4 px-4 sm:px-6 rounded-[20px] sm:rounded-[24px] shadow-md hover:shadow-lg active:scale-95 transition-all text-base sm:text-xl border-2 border-white justify-center items-center text-center cursor-pointer whitespace-nowrap">
+                로그아웃
+              </button>
+            </div>
 
             <!-- Divider and Teacher Participant Login inside 1st Step Card -->
             <hr class="border-t border-dashed border-pastelBlue my-2 opacity-35">
 
             <div class="pt-1">
               <span class="text-[10px] sm:text-xs font-bold text-slate-400 block mb-1.5 cursor-pointer select-none animate-pulse" ondblclick="toggleModal('settings-modal')" title="더블클릭 시 보건교사 설정창이 열립니다.">👩‍🏫 교사 참여자 로그인</span>
-              <div class="flex justify-center items-center gap-1.5 max-w-[340px] mx-auto">
+              <div class="flex justify-center items-center gap-1.5 max-w-[360px] mx-auto">
                 <input type="text" id="input-teacher-name" placeholder="이름" class="w-16 sm:w-20 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
-                <input type="text" id="input-teacher-phone" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="전화번호 끝4자리" class="w-24 sm:w-32 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
-                <button onclick="loadTeacherProfile()" id="login-teacher-btn" class="bg-slate-500 hover:bg-slate-600 text-white text-[10px] sm:text-xs font-bold py-1 sm:py-1.5 px-2 rounded-[10px] sm:rounded-[12px] active:scale-95 transition-all">
+                <input type="text" id="input-teacher-phone" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="전화번호 끝4자리" class="w-24 sm:w-28 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
+                <button onclick="loadTeacherProfile()" id="login-teacher-btn" class="bg-slate-500 hover:bg-slate-600 text-white text-[10px] sm:text-xs font-bold py-1 sm:py-1.5 px-2 sm:px-3 rounded-[10px] sm:rounded-[12px] active:scale-95 transition-all cursor-pointer">
                   로그인
+                </button>
+                <button onclick="logoutUser()" id="logout-teacher-btn" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] sm:text-xs font-bold py-1 sm:py-1.5 px-2 sm:px-3 rounded-[10px] sm:rounded-[12px] active:scale-95 transition-all cursor-pointer whitespace-nowrap">
+                  로그아웃
                 </button>
               </div>
             </div>
@@ -960,8 +968,8 @@
       name: '게스트',
       nickname: '게스트 모험가',
       totalPoints: 0,
-      height: 140,
-      weight: 40,
+      height: 0,
+      weight: 0,
       history: [],
       weightHistory: []
     };
@@ -1007,10 +1015,10 @@
         const p = state.student.totalPoints || 0;
         updateMissionLevelMilestones(p);
       }
-      // Switch header container visibility (hidden on all tabs except Register to pull content to the top)
+      // Switch header container visibility (shown on Home and Register tabs)
       const appHeader = document.getElementById('app-header');
       if (appHeader) {
-        if (tabId === 'register') {
+        if (tabId === 'home' || tabId === 'register') {
           appHeader.style.display = 'flex';
         } else {
           appHeader.style.display = 'none';
@@ -1869,7 +1877,9 @@
           if (!s) {
             // If new unregistered ID, auto-register them in local DB
             const nickname = generateNickname(id, enteredName);
-            const res = LocalDB.saveStudent(id, enteredName, nickname, 140, 45);
+            const curH = (state.student && state.student.height) ? state.student.height : 0;
+            const curW = (state.student && state.student.weight) ? state.student.weight : 0;
+            const res = LocalDB.saveStudent(id, enteredName, nickname, curH, curW);
             s = res.student;
           } else if (enteredName && s.name !== enteredName) {
             // Update name and nickname if name was updated
@@ -1908,8 +1918,8 @@
                   studentId: id,
                   name: enteredName,
                   nickname: state.student.nickname,
-                  height: state.student.height || 140,
-                  weight: state.student.weight || 45
+                  height: state.student.height || 0,
+                  weight: state.student.weight || 0
                 })
               });
             }
@@ -1932,8 +1942,8 @@
                 studentId: id,
                 name: dispName,
                 nickname: nickname,
-                height: 140,
-                weight: 45
+                height: (state.student && state.student.height) ? state.student.height : 0,
+                weight: (state.student && state.student.weight) ? state.student.weight : 0
               })
             })
             .then(() => {
@@ -2083,14 +2093,31 @@
             state.lastLevel = getLevelData(res.student.totalPoints || 0).level;
           }
           state.student = res.student;
+          
+          // Preserve locally updated monthly height & weight if local monthly bmi exists
+          const key = `teunteun_monthly_bmi_${id}`;
+          const stored = JSON.parse(localStorage.getItem(key) || '{}');
+          let latestM = 0;
+          for (let m = 12; m >= 6; m--) {
+            if (stored[m] && stored[m].height) { latestM = m; break; }
+          }
+          if (latestM > 0) {
+            state.student.height = parseFloat(stored[latestM].height);
+            state.student.weight = parseFloat(stored[latestM].weight);
+          }
+
           // Sync to local mock database for backup
-          localStorage.setItem('teunteun_student_cached', JSON.stringify(res.student));
+          localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
           
           // STRICT SYNC: Keep local mock_students DB synchronized with GAS server data
           const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
           if (students[id]) {
             students[id].totalPoints = res.student.totalPoints;
             students[id].history = res.student.history || [];
+            if (latestM > 0) {
+              students[id].height = state.student.height;
+              students[id].weight = state.student.weight;
+            }
             localStorage.setItem('mock_students', JSON.stringify(students));
           }
           callback(true);
@@ -2984,6 +3011,12 @@
       stored[month] = { height: hVal, weight: wVal, bmi: bmiVal };
       localStorage.setItem(key, JSON.stringify(stored));
       
+      if (state.student) {
+        state.student.height = hVal;
+        state.student.weight = wVal;
+        localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
+      }
+
       // Sync local state
       syncBmiHistoryToState();
       
@@ -2991,15 +3024,29 @@
       if (state.isOffline) {
         const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
         if (students[state.studentId]) {
-          students[state.studentId].height = state.student.height;
-          students[state.studentId].weight = state.student.weight;
+          students[state.studentId].height = hVal;
+          students[state.studentId].weight = wVal;
           students[state.studentId].weightHistory = state.student.weightHistory;
           localStorage.setItem('mock_students', JSON.stringify(students));
         }
-        alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록이 저장되었습니다! 📊`);
+        alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록(키 ${hVal}cm, 몸무게 ${wVal}kg)이 저장되었습니다! 📊`);
         renderMyBody();
       } else {
-        // Send data to GAS backend
+        // Send register API to force-update Profile sheet (Column D: height, Column E: weight)
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'register',
+            studentId: state.studentId,
+            name: state.student ? state.student.name : '',
+            height: hVal,
+            weight: wVal
+          })
+        });
+
+        // Send log_mission API to append/update daily mission log
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
@@ -3009,11 +3056,12 @@
             studentId: state.studentId,
             missionType: `[내몸탐험] ${month}월 신체 측정 📏`,
             points: 0,
+            height: hVal,
             weight: wVal
           })
         })
         .then(() => {
-          alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록을 안전하게 저장했습니다! 🐾`);
+          alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록(키 ${hVal}cm, 몸무게 ${wVal}kg)을 안전하게 저장했습니다! 🐾`);
           renderMyBody();
         })
         .catch(err => {
@@ -3028,22 +3076,32 @@
     function renderMyBody() {
       if (!state.student) return;
 
-      const h = state.student.height;
-      const w = state.student.weight;
+      const validH = (state.student.height && state.student.height > 0) ? state.student.height : null;
+      const validW = (state.student.weight && state.student.weight > 0) ? state.student.weight : null;
       
       const displayHeight = document.getElementById('bmi-display-height');
       const displayWeight = document.getElementById('bmi-display-weight');
-      if (displayHeight) displayHeight.innerText = `키: ${h} cm`;
-      if (displayWeight) displayWeight.innerText = `몸무게: ${w} kg`;
+      if (displayHeight) displayHeight.innerText = validH ? `키: ${validH} cm` : `키: 미입력`;
+      if (displayWeight) displayWeight.innerText = validW ? `몸무게: ${validW} kg` : `몸무게: 미입력`;
+
+      const valueText = document.getElementById('bmi-value-text');
+      const badge = document.getElementById('bmi-status-badge');
+
+      if (!validH || !validW) {
+        if (valueText) valueText.innerText = "-";
+        if (badge) {
+          badge.innerText = "📏 측정 수치를 입력해 주세요";
+          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-slate-500 bg-slate-100";
+        }
+        return;
+      }
 
       // Calculate BMI
-      const bmi = (w / ((h / 100) ** 2)).toFixed(1);
-      const valueText = document.getElementById('bmi-value-text');
+      const bmi = (validW / ((validH / 100) ** 2)).toFixed(1);
       if (valueText) valueText.innerText = bmi;
 
       // Pediatric BMI zones (standard thresholds approximately)
       // Underweight < 15, Healthy 15~19, Overweight 19~21, Obese 21+
-      const badge = document.getElementById('bmi-status-badge');
       if (badge) {
         if (bmi < 15) {
           badge.innerText = "🌱 가벼워요 (날씬새싹)";
@@ -3468,6 +3526,41 @@
         surveyBtn.innerText = "사전설문";
         surveyBtn.disabled = false;
         surveyBtn.className = "inline-block w-[80%] bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-5 px-8 rounded-[24px] shadow-lg transition active:scale-95 text-xl text-center border-2 border-white cursor-pointer";
+      }
+    }
+
+    // Logout Functionality
+    function logoutUser() {
+      if (confirm("로그아웃 하시겠습니까?\n로그아웃 후 다른 계정으로 로그인할 수 있습니다.")) {
+        state.studentId = '';
+        state.student = null;
+        localStorage.removeItem('teunteun_student_id');
+        localStorage.removeItem('teunteun_student_cached');
+        
+        const g = document.getElementById('input-grade');
+        const c = document.getElementById('input-class');
+        const n = document.getElementById('input-number');
+        const nm = document.getElementById('input-name');
+        if (g) g.value = '';
+        if (c) c.value = '';
+        if (n) n.value = '';
+        if (nm) nm.value = '';
+
+        const loginBtn = document.querySelector('#tab-register #login-submit-btn-reg');
+        if (loginBtn) {
+          loginBtn.disabled = false;
+          loginBtn.innerText = "로그인";
+        }
+        
+        const teacherBtn = document.getElementById('login-teacher-btn');
+        if (teacherBtn) {
+          teacherBtn.disabled = false;
+          teacherBtn.innerText = "로그인";
+        }
+
+        updateSurveyButtonUI();
+        renderHome();
+        alert("로그아웃 되었습니다. 🐾");
       }
     }
   </script>
