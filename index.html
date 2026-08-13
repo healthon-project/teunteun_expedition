@@ -3061,10 +3061,16 @@
     // Calculate how many stickers based on current month's points (1 sticker per 100 points, resets on the 1st of every month)
     function getStickerCount() {
       if (!state.student) return 0;
-      const mPoints = (state.student.monthlyPoints !== undefined && state.student.monthlyPoints !== null)
-        ? Number(state.student.monthlyPoints) || 0
-        : Number(state.student.totalPoints) || 0;
-      return Math.floor(mPoints / 100);
+      let mPts = Number(state.student.monthlyPoints);
+      let tPts = Number(state.student.totalPoints) || 0;
+      
+      if (isNaN(mPts) || state.student.monthlyPoints === undefined || state.student.monthlyPoints === null) {
+        mPts = tPts;
+      } else if (tPts > 0 && tPts <= 100 && mPts === 0) {
+        mPts = tPts;
+      }
+      
+      return Math.floor(mPts / 100);
     }
 
     // Render Stickers board
