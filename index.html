@@ -3058,10 +3058,13 @@
       // Weight chart has been removed based on user request.
     }
 
-    // Calculate how many stickers based on total points (1 sticker per 100 points)
+    // Calculate how many stickers based on current month's points (1 sticker per 100 points, resets on the 1st of every month)
     function getStickerCount() {
       if (!state.student) return 0;
-      return Math.floor((state.student.totalPoints || 0) / 100);
+      const mPoints = (state.student.monthlyPoints !== undefined && state.student.monthlyPoints !== null)
+        ? Number(state.student.monthlyPoints) || 0
+        : Number(state.student.totalPoints) || 0;
+      return Math.floor(mPoints / 100);
     }
 
     // Render Stickers board

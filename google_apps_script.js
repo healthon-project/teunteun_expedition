@@ -265,7 +265,7 @@ function handleLogMission(sheet, data) {
     }
   }
   
-  // 일일 포인트 업데이트 (기존 오늘 날짜 행이 있으면 누적 가산 및 최신 일시 업데이트, 없으면 새로 추가)
+  // 일일 포인트 업데이트 (기존 오늘 날짜 행이 있으면 누적 가산 및 최신 일시 업데이트, 없으면 새로 추가 - 하루 100P 상한)
   var dRows = dailySheet.getDataRange().getValues();
   var foundDailyRow = -1;
   for (var j = 1; j < dRows.length; j++) {
@@ -280,9 +280,9 @@ function handleLogMission(sheet, data) {
   if (foundDailyRow > -1) {
     var curPoints = parseInt(dailySheet.getRange(foundDailyRow, 4).getValue()) || 0;
     dailySheet.getRange(foundDailyRow, 1).setValue(todayStr); // 일시 업데이트
-    dailySheet.getRange(foundDailyRow, 4).setValue(Math.max(0, curPoints + pointsDelta));
+    dailySheet.getRange(foundDailyRow, 4).setValue(Math.min(100, Math.max(0, curPoints + pointsDelta)));
   } else {
-    dailySheet.appendRow([todayStr, "'" + p.cleanId, name, Math.max(0, pointsDelta)]);
+    dailySheet.appendRow([todayStr, "'" + p.cleanId, name, Math.min(100, Math.max(0, pointsDelta))]);
   }
   
   // 키/몸무게 수치 전송 시 현재 월의 프로필 행을 찾아서 업데이트 및 BMI 자동 계산
@@ -385,13 +385,19 @@ function handleGetStudent(sheet, studentId) {
   var height = parseFloat(pRows[latestRowIndex][3]) || 0;
   var weight = parseFloat(pRows[latestRowIndex][4]) || 0;
   
-  // 총포인트는 모든 일별 포인트 합산으로 실시간 제공 (전체 누적)
+  // 총포인트는 모든 일별 포인트 합산, 월총포인트는 당월 합산으로 제공
   var totalPoints = 0;
+  var monthlyPoints = 0;
+  var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM");
   var dailySheet = sheet.getSheetByName(p.dailySheet);
   var dRows = dailySheet.getDataRange().getValues();
   for (var j = 1; j < dRows.length; j++) {
     if (dRows[j][1].toString().trim() === p.cleanId) {
-      totalPoints += parseInt(dRows[j][3]) || 0;
+      var pts = parseInt(dRows[j][3]) || 0;
+      totalPoints += pts;
+      if (formatDateToYYYYMM(dRows[j][0]) === currentMonthStr) {
+        monthlyPoints += pts;
+      }
     }
   }
   
@@ -416,6 +422,7 @@ function handleGetStudent(sheet, studentId) {
     height: height,
     weight: weight,
     totalPoints: totalPoints,
+    monthlyPoints: monthlyPoints,
     preSurveyDone: preSurveyDone
   };
   
