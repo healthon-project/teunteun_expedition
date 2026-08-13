@@ -1138,10 +1138,10 @@
           history = students[id].history || [];
           weightHistory = students[id].weightHistory || [];
         } else {
-          // Sign-up bonus 100p
-          existingPoints = 100;
+          // New student starts from 0P
+          existingPoints = 0;
           const today = getTodayDateString(true);
-          history.push({ date: today, mission: "모험 가입 환영! 🌱 (100P 보너스)", weight: weight, points: 100 });
+          history.push({ date: today, mission: "모험 가입 환영! 🌱", weight: weight, points: 0 });
           weightHistory.push({ date: today.split(" ")[0], weight: weight });
         }
         

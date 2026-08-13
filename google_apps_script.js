@@ -148,6 +148,40 @@ function setupSheets(sheet) {
   });
 }
 
+// 헬퍼: 오늘자 일일 포인트 행 중복 정리 및 100P 상한 적용
+function syncDailyRowForToday(dailySheet, cleanId, name, pointsDelta, todayStr, todayDateStr, isSetAbsolute) {
+  var dRows = dailySheet.getDataRange().getValues();
+  var matchingRowIndices = [];
+  
+  for (var j = 1; j < dRows.length; j++) {
+    var dDateStr = formatDateToYYYYMMDD(dRows[j][0]);
+    if (dDateStr === todayDateStr && dRows[j][1].toString().trim() === cleanId) {
+      matchingRowIndices.push(j + 1); // 1-based index
+    }
+  }
+  
+  var targetPoints = 0;
+  if (matchingRowIndices.length > 0) {
+    var primaryRowIndex = matchingRowIndices[0];
+    var curPoints = parseInt(dailySheet.getRange(primaryRowIndex, 4).getValue()) || 0;
+    targetPoints = isSetAbsolute ? Math.min(100, Math.max(0, pointsDelta)) : Math.min(100, Math.max(0, curPoints + pointsDelta));
+    
+    dailySheet.getRange(primaryRowIndex, 1).setValue(todayStr);
+    if (name) dailySheet.getRange(primaryRowIndex, 3).setValue(name);
+    dailySheet.getRange(primaryRowIndex, 4).setValue(targetPoints);
+    
+    // 중복 생성된 오늘자 행 삭제 (아래 행부터 안전하게 삭제)
+    for (var k = matchingRowIndices.length - 1; k > 0; k--) {
+      dailySheet.deleteRow(matchingRowIndices[k]);
+    }
+  } else {
+    targetPoints = Math.min(100, Math.max(0, pointsDelta));
+    dailySheet.appendRow([todayStr, "'" + cleanId, name, targetPoints]);
+  }
+  
+  SpreadsheetApp.flush();
+}
+
 // 1. 참여자 가입/기록 저장 API
 function handleRegister(sheet, data) {
   var p = getParticipantDetails(data.studentId);
@@ -159,45 +193,36 @@ function handleRegister(sheet, data) {
   var bmi = (height > 0) ? parseFloat((weight / ((height / 100) * (height / 100))).toFixed(1)) : 0;
   
   var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
-  var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM"); // 예: "2026-06"
+  var todayDateStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
+  var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM");
   
   var rows = profileSheet.getDataRange().getValues();
   var foundRowIndex = -1;
   
-  // 현재 월에 등록된 기록이 있는지 검색 (개인번호 + 일시의 년-월 비교)
   for (var i = 1; i < rows.length; i++) {
     var cellValue = rows[i][0];
     var rowMonthStr = formatDateToYYYYMM(cellValue);
-    var rowId = rows[i][1].toString().trim();      // B: 개인번호
+    var rowId = rows[i][1].toString().trim();
     if (rowId === p.cleanId && rowMonthStr === currentMonthStr) {
-      foundRowIndex = i + 1; // 1-based row index
+      foundRowIndex = i + 1;
       break;
     }
   }
   
   if (foundRowIndex > -1) {
-    // 현재 월의 기존 신체 기록 업데이트 (일시, 이름, 키, 몸무게, BMI 순서, 월총포인트/레벨 수식은 그대로 유지)
-    profileSheet.getRange(foundRowIndex, 1).setValue(todayStr); // A: 일시
-    if (name) profileSheet.getRange(foundRowIndex, 3).setValue(name); // C: 이름
-    if (height > 0) profileSheet.getRange(foundRowIndex, 4).setValue(height); // D: 키
-    if (weight > 0) profileSheet.getRange(foundRowIndex, 5).setValue(weight); // E: 몸무게
+    profileSheet.getRange(foundRowIndex, 1).setValue(todayStr);
+    if (name) profileSheet.getRange(foundRowIndex, 3).setValue(name);
+    if (height > 0) profileSheet.getRange(foundRowIndex, 4).setValue(height);
+    if (weight > 0) profileSheet.getRange(foundRowIndex, 5).setValue(weight);
     
     var curH = parseFloat(profileSheet.getRange(foundRowIndex, 4).getValue()) || 0;
     var curW = parseFloat(profileSheet.getRange(foundRowIndex, 5).getValue()) || 0;
     var curBmi = (curH > 0) ? parseFloat((curW / ((curH / 100) * (curH / 100))).toFixed(1)) : 0;
-    profileSheet.getRange(foundRowIndex, 6).setValue(curBmi); // F: BMI
-    
-    return createJsonResponse({
-      success: true,
-      message: "이번 달 신체 정보 기록이 수정되었습니다!",
-      isNew: false
-    });
+    profileSheet.getRange(foundRowIndex, 6).setValue(curBmi);
   } else {
-    // 새로운 달의 기록이 없거나 신규 참여자이면 이전 최근 기록에서 키/몸무게 조회 후 신규 행 추가
     var prevH = height;
     var prevW = weight;
     
-    // 만약 전달받은 수치가 0이면 이전 기록에서 가장 최근 키/몸무게 가져오기
     if (prevH <= 0 || prevW <= 0) {
       for (var r = rows.length - 1; r >= 1; r--) {
         if (rows[r][1].toString().trim() === p.cleanId) {
@@ -209,35 +234,21 @@ function handleRegister(sheet, data) {
     }
     
     var calcBmi = (prevH > 0 && prevW > 0) ? parseFloat((prevW / ((prevH / 100) * (prevH / 100))).toFixed(1)) : 0;
-    
-    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, prevH, prevW, calcBmi, 100, 100, "알콩이"]);
-    
-    // 신규 가입 시 가입일 보너스 포인트 (100P) 일일 포인트 시트에 초기 적립 (오늘 행 100P로 고정)
-    var dailySheet = sheet.getSheetByName(p.dailySheet);
-    var dailyRows = dailySheet.getDataRange().getValues();
-    var todayDateStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
-    var foundDailyRow = -1;
-    
-    for (var j = 1; j < dailyRows.length; j++) {
-      var dDateStr = formatDateToYYYYMMDD(dailyRows[j][0]);
-      if (dDateStr === todayDateStr && dailyRows[j][1].toString().trim() === p.cleanId) {
-        foundDailyRow = j + 1;
-        break;
-      }
-    }
-    
-    if (foundDailyRow > -1) {
-      dailySheet.getRange(foundDailyRow, 4).setValue(100);
-    } else {
-      dailySheet.appendRow([todayStr, "'" + p.cleanId, name, 100]);
-    }
-    
-    return createJsonResponse({
-      success: true,
-      message: "새로운 참여자 기록(100P 보너스)이 추가되고 정상 등록되었습니다!",
-      isNew: true
-    });
+    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, prevH, prevW, calcBmi, 0, 0, "알콩이"]);
   }
+  
+  // 신규 가입/로그인 시 오늘자 일일 행을 0P에서 시작 (미션 수행에 따라 100P까지 누적)
+  var dailySheet = sheet.getSheetByName(p.dailySheet);
+  syncDailyRowForToday(dailySheet, p.cleanId, name, 0, todayStr, todayDateStr, false);
+  
+  // 대표 시트 월총포인트, 누적총포인트 실시간 계산 및 갱신
+  updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr);
+  
+  return createJsonResponse({
+    success: true,
+    message: "새로운 참여자 기록(0P 시작)이 추가되고 정상 등록되었습니다!",
+    isNew: true
+  });
 }
 
 // 2. 미션 및 보너스 포인트 기록 API
@@ -254,7 +265,6 @@ function handleLogMission(sheet, data) {
   var todayDateStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
   var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM");
   
-  // 이름 정보 미입력 시 기존 프로필에서 자동 매칭
   if (!name) {
     var pRows = profileSheet.getDataRange().getValues();
     for (var i = 1; i < pRows.length; i++) {
@@ -265,27 +275,10 @@ function handleLogMission(sheet, data) {
     }
   }
   
-  // 일일 포인트 업데이트 (기존 오늘 날짜 행이 있으면 누적 가산 및 최신 일시 업데이트, 없으면 새로 추가 - 하루 100P 상한)
-  var dRows = dailySheet.getDataRange().getValues();
-  var foundDailyRow = -1;
-  for (var j = 1; j < dRows.length; j++) {
-    var cellValue = dRows[j][0];
-    var rowDateStr = formatDateToYYYYMMDD(cellValue);
-    if (rowDateStr === todayDateStr && dRows[j][1].toString().trim() === p.cleanId) {
-      foundDailyRow = j + 1;
-      break;
-    }
-  }
+  // 일일 포인트 100P 상한 및 중복행 정리 후 동기화
+  syncDailyRowForToday(dailySheet, p.cleanId, name, pointsDelta, todayStr, todayDateStr, false);
   
-  if (foundDailyRow > -1) {
-    var curPoints = parseInt(dailySheet.getRange(foundDailyRow, 4).getValue()) || 0;
-    dailySheet.getRange(foundDailyRow, 1).setValue(todayStr); // 일시 업데이트
-    dailySheet.getRange(foundDailyRow, 4).setValue(Math.min(100, Math.max(0, curPoints + pointsDelta)));
-  } else {
-    dailySheet.appendRow([todayStr, "'" + p.cleanId, name, Math.min(100, Math.max(0, pointsDelta))]);
-  }
-  
-  // 키/몸무게 수치 전송 시 현재 월의 프로필 행을 찾아서 업데이트 및 BMI 자동 계산
+  // 키/몸무게 전송 시 신체수치 업데이트
   if (weight !== "" || height !== "") {
     var pRows2 = profileSheet.getDataRange().getValues();
     for (var k = 1; k < pRows2.length; k++) {
@@ -294,26 +287,37 @@ function handleLogMission(sheet, data) {
       var rowId = pRows2[k][1].toString().trim();
       if (rowId === p.cleanId && rowMonthStr === currentMonthStr) {
         var rowIdx = k + 1;
-        profileSheet.getRange(rowIdx, 1).setValue(todayStr); // 일시 업데이트
-        if (height !== "" && parseFloat(height) > 0) {
-          profileSheet.getRange(rowIdx, 4).setValue(parseFloat(height)); // D: 키 업데이트
-        }
-        if (weight !== "" && parseFloat(weight) > 0) {
-          profileSheet.getRange(rowIdx, 5).setValue(parseFloat(weight)); // E: 몸무게 업데이트
-        }
+        profileSheet.getRange(rowIdx, 1).setValue(todayStr);
+        if (height !== "" && parseFloat(height) > 0) profileSheet.getRange(rowIdx, 4).setValue(parseFloat(height));
+        if (weight !== "" && parseFloat(weight) > 0) profileSheet.getRange(rowIdx, 5).setValue(parseFloat(weight));
         var curHeight = parseFloat(profileSheet.getRange(rowIdx, 4).getValue()) || 0;
         var curWeight = parseFloat(profileSheet.getRange(rowIdx, 5).getValue()) || 0;
         var newBmi = (curHeight > 0) ? parseFloat((curWeight / ((curHeight / 100) * (curHeight / 100))).toFixed(1)) : 0;
-        profileSheet.getRange(rowIdx, 6).setValue(newBmi);    // F: BMI 업데이트
+        profileSheet.getRange(rowIdx, 6).setValue(newBmi);
         break;
       }
     }
   }
 
-  // 대표 기록 시트(학생기록/교사기록)의 월총포인트(G열), 누적총포인트(H열), 레벨(I열) 실시간 동기화
+  // 대표 시트 실시간 업데이트
+  updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr);
+  
+  return createJsonResponse({
+    success: true,
+    message: "포인트 정보가 실시간 적립/수정되었습니다."
+  });
+}
+
+// 헬퍼: 대표 시트(학생기록/교사기록)의 월총포인트, 누적총포인트, 레벨 실시간 동기화
+function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) {
+  var dailySheet = sheet.getSheetByName(p.dailySheet);
+  var profileSheet = sheet.getSheetByName(p.profileSheet);
+  
+  SpreadsheetApp.flush();
   var updatedDRows = dailySheet.getDataRange().getValues();
   var cumulativePoints = 0;
   var monthlyPoints = 0;
+  
   for (var m = 1; m < updatedDRows.length; m++) {
     var dId = updatedDRows[m][1].toString().trim();
     if (dId === p.cleanId) {
@@ -352,10 +356,7 @@ function handleLogMission(sheet, data) {
     profileSheet.appendRow([todayStr, "'" + p.cleanId, name, 0, 0, 0, monthlyPoints, cumulativePoints, level]);
   }
   
-  return createJsonResponse({
-    success: true,
-    message: "포인트 정보가 실시간 적립/수정되었습니다."
-  });
+  SpreadsheetApp.flush();
 }
 
 // 3. 참여자 신상 정보 및 누적 기록 조회 API
