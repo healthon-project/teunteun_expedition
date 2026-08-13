@@ -558,6 +558,18 @@ function handleSubmitSurvey(sheet, data) {
   var answers = data.answers;
   var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
   
+  // 구글 시트 헤더(1행) 자동 확장 검증 (문항12까지 O열 헤더 자동 생성)
+  if (surveySheet.getLastRow() === 0) {
+    surveySheet.appendRow(["일시", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
+  } else {
+    var lastCol = surveySheet.getLastColumn();
+    if (lastCol < 15) {
+      for (var col = lastCol + 1; col <= 15; col++) {
+        surveySheet.getRange(1, col).setValue("문항" + (col - 3));
+      }
+    }
+  }
+  
   var rowData = [todayStr, "'" + p.cleanId, name];
   var totalQ = (answers && answers.length) ? answers.length : 12;
   for (var i = 0; i < totalQ; i++) {
@@ -565,10 +577,11 @@ function handleSubmitSurvey(sheet, data) {
   }
   
   surveySheet.appendRow(rowData);
+  SpreadsheetApp.flush();
   
   return createJsonResponse({
     success: true,
-    message: "사전 설문조사가 성공적으로 제출되었습니다! 🌟"
+    message: "사전 설문조사(12문항)가 성공적으로 제출되었습니다! 🌟"
   });
 }
 
