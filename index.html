@@ -1389,7 +1389,7 @@
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
             action: 'log_mission',
             studentId: state.studentId,
@@ -1498,7 +1498,7 @@
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
             action: 'log_mission',
             studentId: state.studentId,
@@ -1912,7 +1912,7 @@
               fetch(state.gasUrl, {
                 method: 'POST',
                 mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                   action: 'register',
                   studentId: id,
@@ -1936,7 +1936,7 @@
             fetch(state.gasUrl, {
               method: 'POST',
               mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
               body: JSON.stringify({
                 action: 'register',
                 studentId: id,
@@ -2769,7 +2769,7 @@
           fetch(state.gasUrl, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
               action: 'log_mission',
               studentId: state.studentId,
@@ -2928,12 +2928,11 @@
         }
         alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록(키 ${hVal}cm, 몸무게 ${wVal}kg)이 저장되었습니다! 📊`);
         renderMyBody();
-      } else {
         // Send register API to force-update Profile sheet (Column D: height, Column E: weight)
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
             action: 'register',
             studentId: state.studentId,
@@ -2947,7 +2946,7 @@
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
             action: 'log_mission',
             studentId: state.studentId,
@@ -3360,7 +3359,7 @@
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
             action: 'submit_survey',
             studentId: state.studentId,

@@ -178,10 +178,14 @@ function handleRegister(sheet, data) {
   if (foundRowIndex > -1) {
     // 현재 월의 기존 신체 기록 업데이트 (일시, 이름, 키, 몸무게, BMI 순서, 월총포인트/레벨 수식은 그대로 유지)
     profileSheet.getRange(foundRowIndex, 1).setValue(todayStr); // A: 일시
-    profileSheet.getRange(foundRowIndex, 3).setValue(name);     // C: 이름
-    profileSheet.getRange(foundRowIndex, 4).setValue(height);   // D: 키
-    profileSheet.getRange(foundRowIndex, 5).setValue(weight);   // E: 몸무게
-    profileSheet.getRange(foundRowIndex, 6).setValue(bmi);      // F: BMI
+    if (name) profileSheet.getRange(foundRowIndex, 3).setValue(name); // C: 이름
+    if (height > 0) profileSheet.getRange(foundRowIndex, 4).setValue(height); // D: 키
+    if (weight > 0) profileSheet.getRange(foundRowIndex, 5).setValue(weight); // E: 몸무게
+    
+    var curH = parseFloat(profileSheet.getRange(foundRowIndex, 4).getValue()) || 0;
+    var curW = parseFloat(profileSheet.getRange(foundRowIndex, 5).getValue()) || 0;
+    var curBmi = (curH > 0) ? parseFloat((curW / ((curH / 100) * (curH / 100))).toFixed(1)) : 0;
+    profileSheet.getRange(foundRowIndex, 6).setValue(curBmi); // F: BMI
     
     return createJsonResponse({
       success: true,
@@ -189,11 +193,24 @@ function handleRegister(sheet, data) {
       isNew: false
     });
   } else {
-    // 새로운 달의 기록이 없거나 신규 참여자이면 새로운 행 추가 (매월 기록 누적)
-    var newRow = profileSheet.getLastRow() + 1;
+    // 새로운 달의 기록이 없거나 신규 참여자이면 이전 최근 기록에서 키/몸무게 조회 후 신규 행 추가
+    var prevH = height;
+    var prevW = weight;
     
-    // 시트에 실시간 수식 대신 기본값 0을 삽입 (매월 30일 배치가 업데이트함)
-    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, height, weight, bmi, 0, 0, "알콩이"]);
+    // 만약 전달받은 수치가 0이면 이전 기록에서 가장 최근 키/몸무게 가져오기
+    if (prevH <= 0 || prevW <= 0) {
+      for (var r = rows.length - 1; r >= 1; r--) {
+        if (rows[r][1].toString().trim() === p.cleanId) {
+          if (prevH <= 0 && parseFloat(rows[r][3]) > 0) prevH = parseFloat(rows[r][3]);
+          if (prevW <= 0 && parseFloat(rows[r][4]) > 0) prevW = parseFloat(rows[r][4]);
+          if (prevH > 0 && prevW > 0) break;
+        }
+      }
+    }
+    
+    var calcBmi = (prevH > 0 && prevW > 0) ? parseFloat((prevW / ((prevH / 100) * (prevH / 100))).toFixed(1)) : 0;
+    
+    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, prevH, prevW, calcBmi, 0, 0, "알콩이"]);
     
     // 신규 가입 시 가입일 보너스 포인트 (100P) 일일 포인트 시트에 초기 적립 (생애 처음 1회만)
     var dailySheet = sheet.getSheetByName(p.dailySheet);
@@ -226,6 +243,7 @@ function handleLogMission(sheet, data) {
   
   var name = data.name ? data.name.trim() : "";
   var pointsDelta = parseInt(data.points) || 0;
+  var height = data.height ? parseFloat(data.height) : "";
   var weight = data.weight ? parseFloat(data.weight) : "";
   var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
   var todayDateStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
@@ -257,15 +275,13 @@ function handleLogMission(sheet, data) {
   if (foundDailyRow > -1) {
     var curPoints = parseInt(dailySheet.getRange(foundDailyRow, 4).getValue()) || 0;
     dailySheet.getRange(foundDailyRow, 1).setValue(todayStr); // 일시 업데이트
-    // 일일 총포인트는 최대 100점으로 제한
-    dailySheet.getRange(foundDailyRow, 4).setValue(Math.min(100, Math.max(0, curPoints + pointsDelta)));
+    dailySheet.getRange(foundDailyRow, 4).setValue(Math.max(0, curPoints + pointsDelta));
   } else {
-    // 일일 총포인트는 최대 100점으로 제한
-    dailySheet.appendRow([todayStr, "'" + p.cleanId, name, Math.min(100, Math.max(0, pointsDelta))]);
+    dailySheet.appendRow([todayStr, "'" + p.cleanId, name, Math.max(0, pointsDelta)]);
   }
   
-  // 몸무게 수치 전송 시 현재 월의 프로필 행을 찾아서 업데이트 및 BMI 자동 계산
-  if (weight !== "") {
+  // 키/몸무게 수치 전송 시 현재 월의 프로필 행을 찾아서 업데이트 및 BMI 자동 계산
+  if (weight !== "" || height !== "") {
     var pRows2 = profileSheet.getDataRange().getValues();
     for (var k = 1; k < pRows2.length; k++) {
       var cellValue = pRows2[k][0];
@@ -274,13 +290,61 @@ function handleLogMission(sheet, data) {
       if (rowId === p.cleanId && rowMonthStr === currentMonthStr) {
         var rowIdx = k + 1;
         profileSheet.getRange(rowIdx, 1).setValue(todayStr); // 일시 업데이트
-        profileSheet.getRange(rowIdx, 5).setValue(weight);   // 몸무게 업데이트
-        var height = parseFloat(profileSheet.getRange(rowIdx, 4).getValue()) || 0;
-        var newBmi = (height > 0) ? parseFloat((weight / ((height / 100) * (height / 100))).toFixed(1)) : 0;
-        profileSheet.getRange(rowIdx, 6).setValue(newBmi);    // BMI 업데이트
+        if (height !== "" && parseFloat(height) > 0) {
+          profileSheet.getRange(rowIdx, 4).setValue(parseFloat(height)); // D: 키 업데이트
+        }
+        if (weight !== "" && parseFloat(weight) > 0) {
+          profileSheet.getRange(rowIdx, 5).setValue(parseFloat(weight)); // E: 몸무게 업데이트
+        }
+        var curHeight = parseFloat(profileSheet.getRange(rowIdx, 4).getValue()) || 0;
+        var curWeight = parseFloat(profileSheet.getRange(rowIdx, 5).getValue()) || 0;
+        var newBmi = (curHeight > 0) ? parseFloat((curWeight / ((curHeight / 100) * (curHeight / 100))).toFixed(1)) : 0;
+        profileSheet.getRange(rowIdx, 6).setValue(newBmi);    // F: BMI 업데이트
         break;
       }
     }
+  }
+
+  // 대표 기록 시트(학생기록/교사기록)의 월총포인트(G열), 누적총포인트(H열), 레벨(I열) 실시간 동기화
+  var updatedDRows = dailySheet.getDataRange().getValues();
+  var cumulativePoints = 0;
+  var monthlyPoints = 0;
+  for (var m = 1; m < updatedDRows.length; m++) {
+    var dId = updatedDRows[m][1].toString().trim();
+    if (dId === p.cleanId) {
+      var pts = parseInt(updatedDRows[m][3]) || 0;
+      cumulativePoints += pts;
+      if (formatDateToYYYYMM(updatedDRows[m][0]) === currentMonthStr) {
+        monthlyPoints += pts;
+      }
+    }
+  }
+
+  var level = "알콩이";
+  if (cumulativePoints > 3000) level = "꼬꼬대장";
+  else if (cumulativePoints > 2000) level = "튼튼이";
+  else if (cumulativePoints > 1000) level = "삐약이";
+
+  var pRows3 = profileSheet.getDataRange().getValues();
+  var foundProfileRow = -1;
+  for (var pIdx = 1; pIdx < pRows3.length; pIdx++) {
+    var cellVal = pRows3[pIdx][0];
+    var pMonthStr = formatDateToYYYYMM(cellVal);
+    var pId = pRows3[pIdx][1].toString().trim();
+    if (pId === p.cleanId && pMonthStr === currentMonthStr) {
+      foundProfileRow = pIdx + 1;
+      break;
+    }
+  }
+
+  if (foundProfileRow > -1) {
+    profileSheet.getRange(foundProfileRow, 1).setValue(todayStr);       // A: 일시
+    if (name) profileSheet.getRange(foundProfileRow, 3).setValue(name); // C: 이름
+    profileSheet.getRange(foundProfileRow, 7).setValue(monthlyPoints);   // G: 월총포인트
+    profileSheet.getRange(foundProfileRow, 8).setValue(cumulativePoints);// H: 누적총포인트
+    profileSheet.getRange(foundProfileRow, 9).setValue(level);           // I: 레벨
+  } else {
+    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, 0, 0, 0, monthlyPoints, cumulativePoints, level]);
   }
   
   return createJsonResponse({
