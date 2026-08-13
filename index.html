@@ -1473,10 +1473,11 @@
 
     // Realtime points delta sync helper
     function saveStudentPointsRealtime(missionName, pointsDelta) {
-      if (!state.studentId || pointsDelta === 0) return;
+      if (!state.studentId || !state.student || pointsDelta === 0) return;
 
-      // Update state points
-      state.student.totalPoints = Math.max(0, state.student.totalPoints + pointsDelta);
+      // Update state points in real time
+      state.student.totalPoints = Math.max(0, (Number(state.student.totalPoints) || 0) + pointsDelta);
+      state.student.monthlyPoints = Math.max(0, (Number(state.student.monthlyPoints) || 0) + pointsDelta);
 
       // ALWAYS sync to mock_students DB to keep Single Source of Truth
       const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
@@ -1677,6 +1678,16 @@
         const circumference = 339.3;
         const offset = circumference - (percent / 100) * circumference;
         circle.style.strokeDashoffset = offset;
+      }
+
+      // Ensure state student totalPoints & monthlyPoints reflect real-time checked missions if student exists
+      if (state.student) {
+        if ((Number(state.student.totalPoints) || 0) < percent) {
+          state.student.totalPoints = percent;
+          state.student.monthlyPoints = percent;
+          renderHome();
+          renderStickers();
+        }
       }
 
       return total;
