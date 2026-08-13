@@ -212,25 +212,23 @@ function handleRegister(sheet, data) {
     
     profileSheet.appendRow([todayStr, "'" + p.cleanId, name, prevH, prevW, calcBmi, 100, 100, "알콩이"]);
     
-    // 신규 가입 시 가입일 보너스 포인트 (100P) 일일 포인트 시트에 초기 적립 (생애 처음 1회만)
+    // 신규 가입 시 가입일 보너스 포인트 (100P) 일일 포인트 시트에 초기 적립 (오늘 행 100P로 고정)
     var dailySheet = sheet.getSheetByName(p.dailySheet);
     var dailyRows = dailySheet.getDataRange().getValues();
-    var hasDailyPoints = false;
+    var todayDateStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
+    var foundDailyRow = -1;
+    
     for (var j = 1; j < dailyRows.length; j++) {
-      if (dailyRows[j][1].toString().trim() === p.cleanId) {
-        hasDailyPoints = true;
+      var dDateStr = formatDateToYYYYMMDD(dailyRows[j][0]);
+      if (dDateStr === todayDateStr && dailyRows[j][1].toString().trim() === p.cleanId) {
+        foundDailyRow = j + 1;
         break;
       }
     }
     
-    if (!hasDailyPoints || data.resetPoints) {
-      if (data.resetPoints) {
-        for (var d = dailyRows.length - 1; d >= 1; d--) {
-          if (dailyRows[d][1].toString().trim() === p.cleanId) {
-            dailySheet.deleteRow(d + 1);
-          }
-        }
-      }
+    if (foundDailyRow > -1) {
+      dailySheet.getRange(foundDailyRow, 4).setValue(100);
+    } else {
       dailySheet.appendRow([todayStr, "'" + p.cleanId, name, 100]);
     }
     
