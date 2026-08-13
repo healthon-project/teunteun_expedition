@@ -210,7 +210,7 @@ function handleRegister(sheet, data) {
     
     var calcBmi = (prevH > 0 && prevW > 0) ? parseFloat((prevW / ((prevH / 100) * (prevH / 100))).toFixed(1)) : 0;
     
-    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, prevH, prevW, calcBmi, 0, 0, "알콩이"]);
+    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, prevH, prevW, calcBmi, 100, 100, "알콩이"]);
     
     // 신규 가입 시 가입일 보너스 포인트 (100P) 일일 포인트 시트에 초기 적립 (생애 처음 1회만)
     var dailySheet = sheet.getSheetByName(p.dailySheet);
@@ -223,13 +223,20 @@ function handleRegister(sheet, data) {
       }
     }
     
-    if (!hasDailyPoints) {
+    if (!hasDailyPoints || data.resetPoints) {
+      if (data.resetPoints) {
+        for (var d = dailyRows.length - 1; d >= 1; d--) {
+          if (dailyRows[d][1].toString().trim() === p.cleanId) {
+            dailySheet.deleteRow(d + 1);
+          }
+        }
+      }
       dailySheet.appendRow([todayStr, "'" + p.cleanId, name, 100]);
     }
     
     return createJsonResponse({
       success: true,
-      message: "새로운 달의 기록이 추가되고 정상 등록되었습니다!",
+      message: "새로운 참여자 기록(100P 보너스)이 추가되고 정상 등록되었습니다!",
       isNew: true
     });
   }
