@@ -1138,10 +1138,10 @@
           history = students[id].history || [];
           weightHistory = students[id].weightHistory || [];
         } else {
-          // Sign-up bonus 0p (Start milestone from 0 as requested)
-          existingPoints = 0;
+          // Sign-up bonus 100p
+          existingPoints = 100;
           const today = getTodayDateString(true);
-          history.push({ date: today, mission: "모험 가입 환영! 🌱", weight: weight, points: 0 });
+          history.push({ date: today, mission: "모험 가입 환영! 🌱 (100P 보너스)", weight: weight, points: 100 });
           weightHistory.push({ date: today.split(" ")[0], weight: weight });
         }
         
@@ -1871,6 +1871,10 @@
 
     // Unified login sync logic
     function executeLoginSync(id, loginBtn, enteredName = '') {
+      state.studentId = id;
+      localStorage.setItem('teunteun_student_id', id);
+      loadDailyState();
+
       if (state.isOffline) {
         setTimeout(() => {
           let s = LocalDB.getStudent(id);
