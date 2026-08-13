@@ -559,8 +559,9 @@ function handleSubmitSurvey(sheet, data) {
   var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
   
   var rowData = [todayStr, "'" + p.cleanId, name];
-  for (var i = 0; i < 11; i++) {
-    rowData.push(answers[i] || "");
+  var totalQ = (answers && answers.length) ? answers.length : 12;
+  for (var i = 0; i < totalQ; i++) {
+    rowData.push(answers[i] !== undefined && answers[i] !== null ? answers[i] : "");
   }
   
   surveySheet.appendRow(rowData);

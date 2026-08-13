@@ -958,7 +958,7 @@
         5: null, // 1일 5컵 이상 물 마시기 (+10)
         6: null  // 식후 3분 이내에 양치질 하기 (+10)
       },
-      surveyAnswers: Array(11).fill(null),
+      surveyAnswers: Array(12).fill(null),
       currentSurveyIndex: 0
     };
 
@@ -3226,10 +3226,11 @@
       "5. 즉석식품(라면,피자,햄버거 등)을 많이 먹는다.",
       "6. 잠을 충분히 잔다(9시간 이상).",
       "7. 하루 5컵 이상의 물을 마신다.",
-      "8. 나는 건강을 위해 내가 지킬 목표(약속)를 정해 둔다.",
-      "9. 나는 내가 잘 지키고 있는지 가끔 스스로 점검한다.",
-      "10. 나는 정한 건강 목표(약속)를 생활 속에서 실천한다.",
-      "11. 나는 맛있는 게 있어도 건강을 생각해 먹는 것을 조절할 수 있다."
+      "8. 식사 후 양치질을 잘한다(하루 4회 이상)",
+      "9. 나는 맛있는 게 있어도 건강을 생각해 먹는 것을 조절할 수 있다.",
+      "10. 나는 건강을 위해 내가 지킬 목표(약속)를 정해 둔다.",
+      "11. 나는 정한 건강 목표(약속)를 생활 속에서 실천한다.",
+      "12. 나는 내가 잘 지키고 있는지 가끔 스스로 점검한다."
     ];
 
     // Open Survey Modal
@@ -3241,7 +3242,7 @@
       }
       
       // Initialize survey state
-      state.surveyAnswers = Array(11).fill(null);
+      state.surveyAnswers = Array(12).fill(null);
       state.currentSurveyIndex = 0;
       
       // Load previously saved survey progress if it exists
