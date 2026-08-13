@@ -2013,17 +2013,6 @@
       if (state.isOffline) {
         const s = LocalDB.getStudent(state.studentId);
         if (s) {
-          // Hotfix: Forcefully sync 440p or 100p baseline down to 0p in local DB
-          if (s.totalPoints === 440 || (s.totalPoints === 100 && s.history && s.history.length === 1)) {
-            s.totalPoints = 0;
-            const today = getTodayDateString(true);
-            s.history = [
-              { date: today, mission: "모험 가입 환영! 🌱 (통일화 복구)", weight: s.weight, points: 0 }
-            ];
-            const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
-            students[state.studentId] = s;
-            localStorage.setItem('mock_students', JSON.stringify(students));
-          }
           if (!state.student) {
             state.lastLevel = getLevelData(s.totalPoints || 0).level;
           }
@@ -2036,56 +2025,12 @@
       } else {
         syncWithGAS(state.studentId, (success) => {
           if (success) {
-            // Hotfix: Forcefully sync 440p or 100p baseline down to 0p in GAS too
-            if (state.student && (state.student.totalPoints === 440 || (state.student.totalPoints === 100 && state.student.history && state.student.history.length === 1))) {
-              const deltaPoints = -state.student.totalPoints;
-              state.student.totalPoints = 0;
-              localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
-              
-              // STRICT SYNC: Update local mock_students DB as well
-              const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
-              if (students[state.studentId]) {
-                students[state.studentId].totalPoints = 0;
-                const today = getTodayDateString(true);
-                students[state.studentId].history = [
-                  { date: today, mission: "모험 가입 환영! 🌱 (통일화 복구)", weight: students[state.studentId].weight, points: 0 }
-                ];
-                localStorage.setItem('mock_students', JSON.stringify(students));
-              }
-
-              // Post delta adjustment to GAS to align remote spreadsheet to 0p
-              if (state.gasUrl) {
-                fetch(state.gasUrl, {
-                  method: 'POST',
-                  mode: 'no-cors',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    action: 'log_mission',
-                    studentId: state.studentId,
-                    missionType: `[시스템조정] 기존 포인트 -> 0p 통일화 복구`,
-                    points: deltaPoints,
-                    weight: ""
-                  })
-                });
-              }
-            }
             renderHome();
             if (alertOnSuccess) alert("구글 시트에서 성공적으로 최신 정보를 불렀습니다!");
           } else {
             // Fallback to local storage copy if fetch fails
             const localCopy = LocalDB.getStudent(state.studentId);
             if (localCopy) {
-              // Hotfix: Also check fallback copy for 440p or 100p
-              if (localCopy.totalPoints === 440 || (localCopy.totalPoints === 100 && localCopy.history && localCopy.history.length === 1)) {
-                localCopy.totalPoints = 0;
-                const today = getTodayDateString(true);
-                localCopy.history = [
-                  { date: today, mission: "모험 가입 환영! 🌱 (통일화 복구)", weight: localCopy.weight, points: 0 }
-                ];
-                const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
-                students[state.studentId] = localCopy;
-                localStorage.setItem('mock_students', JSON.stringify(students));
-              }
               if (!state.student) {
                 state.lastLevel = getLevelData(localCopy.totalPoints || 0).level;
               }
@@ -2370,89 +2315,22 @@
         logMessage += ` (인증샷 첨부됨)`;
       }
 
-      // Post implementation
-      if (state.isOffline) {
-        LocalDB.addMission(state.studentId, logMessage, pointsEarned, null);
-        localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
-        
-        // Trigger Level up effects
-        const oldPoints = state.student.totalPoints;
-        const newPoints = oldPoints + pointsEarned;
-        const oldLevel = getLevelData(oldPoints).level;
-        const newLevel = getLevelData(newPoints).level;
+      // Save daily submit stamp
+      localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
 
-        state.student.totalPoints = newPoints;
-        
-        if (newLevel > oldLevel) {
-          triggerLevelUpCelebration(getLevelData(newPoints).name);
-        } else {
-          alert(`오늘의 미션 완료! 도장 꾹! 🐾\n${pointsEarned}p가 적립되어 ${newPoints}p가 되었습니다!`);
-        }
-        
-        clearMissionsForm();
-        refreshStudentData();
-        switchTab('home');
+      // Current total points (already synced in real time by toggleMissionButton)
+      const currentPoints = state.student ? (state.student.totalPoints || 0) : 0;
+      const currentLevel = getLevelData(currentPoints).level;
+      if (state.lastLevel && currentLevel > state.lastLevel) {
+        triggerLevelUpCelebration(getLevelData(currentPoints).name);
+        state.lastLevel = currentLevel;
       } else {
-        // GAS Remote Post
-        fetch(state.gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'log_mission',
-            studentId: state.studentId,
-            missionType: logMessage,
-            points: pointsEarned,
-            weight: ""
-          })
-        })
-        .then(() => {
-          localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
-          
-          // Optimistic UI Update so milestone progress bar updates instantly
-          const oldPoints = state.student.totalPoints;
-          const newPoints = oldPoints + pointsEarned;
-          const oldLevel = getLevelData(oldPoints).level;
-          const newLevel = getLevelData(newPoints).level;
-          
-          state.student.totalPoints = newPoints;
-          if (!state.student.history) state.student.history = [];
-          state.student.history.push({
-            date: getTodayDateString(true),
-            mission: logMessage,
-            points: pointsEarned
-          });
-          
-          // Also update local mock DB to ensure the offline cache syncs
-          const mockStudents = JSON.parse(localStorage.getItem('mock_students') || '{}');
-          if (mockStudents[state.studentId]) {
-            mockStudents[state.studentId].totalPoints = newPoints;
-            if (!mockStudents[state.studentId].history) mockStudents[state.studentId].history = [];
-            mockStudents[state.studentId].history.push({
-              date: getTodayDateString(true),
-              mission: logMessage,
-              points: pointsEarned
-            });
-            localStorage.setItem('mock_students', JSON.stringify(mockStudents));
-          }
-          localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
-
-          if (newLevel > oldLevel) {
-            triggerLevelUpCelebration(getLevelData(newPoints).name);
-          } else {
-            alert(`오늘의 미션 완료! 도장 꾹! 🐾\n${pointsEarned}p가 적립되어 ${newPoints}p가 되었습니다!`);
-          }
-          
-          clearMissionsForm();
-          renderHome();
-          switchTab('home');
-          
-        })
-        .catch(err => {
-          console.error("Mission Log Error:", err);
-          alert("인터넷 연결이 불안정해서 전송하지 못했어요. 기기의 인터넷 상태를 확인해 주세요!");
-        });
+        alert(`오늘의 미션 완료! 도장 꾹! 🐾\n총 ${currentPoints}p를 달성하였습니다!`);
       }
+      
+      clearMissionsForm();
+      renderHome();
+      switchTab('home');
     }
 
     function clearMissionsForm() {
