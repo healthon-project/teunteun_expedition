@@ -965,7 +965,7 @@
 
   <!-- BUSINESS LOGIC JAVASCRIPT -->
   <script>
-    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyMI-cbIiPDjkQpaRfopOhxx2ILy0wLeo7oKQ2b4F_JkCdowD8D1XbwNjVX5lfdHuhUsQ/exec';
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbx0nAfLgMG30LRVZ7xXThN4Ie_eAkPJBY0tVoV3cS6iEF7XdFybH2IKP-DI6tc9d9rpdA/exec';
 
     // State management
     const state = {
@@ -1332,13 +1332,17 @@
 
     // Load setup configurations
     window.onload = function() {
-      if (!localStorage.getItem('teunteun_gas_url')) {
+      const storedGasUrl = localStorage.getItem('teunteun_gas_url');
+      if (!storedGasUrl || storedGasUrl.includes('AKfycbyMI')) {
         localStorage.setItem('teunteun_gas_url', DEFAULT_GAS_URL);
+        state.gasUrl = DEFAULT_GAS_URL;
+      } else {
+        state.gasUrl = storedGasUrl;
       }
-      state.gasUrl = localStorage.getItem('teunteun_gas_url') || DEFAULT_GAS_URL;
       state.isOffline = !state.gasUrl;
       
-      document.getElementById('settings-gas-url').value = state.gasUrl;
+      const settingsInput = document.getElementById('settings-gas-url');
+      if (settingsInput) settingsInput.value = state.gasUrl;
       
       // Load and Initialize Firebase config
       initFirebase();
