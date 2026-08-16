@@ -337,9 +337,6 @@
       <!-- ==================== TABS 2: 미션인증 (MISSION) ==================== -->
       <section id="tab-mission" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800">
 
-
-        <!-- Manual point adjuster (Removed) -->
-
         <!-- Title -->
         <h4 class="text-2xl font-black text-center text-slate-800 tracking-widest mb-4 flex items-center justify-center gap-2">🏃 오늘의 미션 🏃</h4>
 
@@ -579,27 +576,51 @@
 
         <h3 class="text-3xl font-black text-slate-800 mb-6 flex items-center gap-1.5">🔍 내몸탐험대 보고서</h3>
 
-        <!-- Monthly BMI Input Card -->
-        <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 shadow-sm mb-6 w-full max-w-[440px] mx-auto select-none text-slate-800">
+        <!-- Monthly BMI Input & Result Card -->
+        <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 shadow-sm mb-6 w-full max-w-[440px] mx-auto text-slate-800">
           <h4 class="text-xl font-black text-center mb-1 text-slate-800 flex items-center justify-center gap-1">나의 신체 성장 기록</h4>
-          <p class="text-[11px] text-slate-500 text-center mb-5">한달에 한번 키와 몸무게를 측정해요</p>
+          <p class="text-[11px] text-slate-500 text-center mb-4">측정 월을 선택하고 키와 몸무게를 입력해 보세요</p>
+
+          <!-- Month Selector Pills (6월~12월) -->
+          <div class="flex justify-between items-center gap-1 mb-5 bg-slate-50 p-1.5 rounded-2xl border border-slate-200/70 overflow-x-auto custom-scrollbar">
+            <button onclick="selectBmiMonth(6)" id="bmi-month-btn-6" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">6월</button>
+            <button onclick="selectBmiMonth(7)" id="bmi-month-btn-7" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">7월</button>
+            <button onclick="selectBmiMonth(8)" id="bmi-month-btn-8" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">8월</button>
+            <button onclick="selectBmiMonth(9)" id="bmi-month-btn-9" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">9월</button>
+            <button onclick="selectBmiMonth(10)" id="bmi-month-btn-10" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">10월</button>
+            <button onclick="selectBmiMonth(11)" id="bmi-month-btn-11" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">11월</button>
+            <button onclick="selectBmiMonth(12)" id="bmi-month-btn-12" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">12월</button>
+          </div>
 
           <!-- Inputs -->
-          <div class="grid grid-cols-2 gap-4 mb-5">
+          <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label class="block text-slate-600 text-[11px] font-bold mb-1.5">📏 키 (cm)</label>
-              <input type="number" step="0.1" id="input-bmi-height" placeholder="예) 145" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl py-3.5 px-4 text-center text-slate-800 text-base font-bold focus:outline-none focus:border-pastelPink placeholder-slate-400">
+              <input type="number" step="0.1" id="input-bmi-height" placeholder="예) 145" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl py-3.5 px-4 text-center text-slate-800 text-base font-bold focus:outline-none focus:border-sky-400 placeholder-slate-400">
             </div>
             <div>
               <label class="block text-slate-600 text-[11px] font-bold mb-1.5">⚖️ 몸무게 (kg)</label>
-              <input type="number" step="0.1" id="input-bmi-weight" placeholder="예) 42" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl py-3.5 px-4 text-center text-slate-800 text-base font-bold focus:outline-none focus:border-pastelPink placeholder-slate-400">
+              <input type="number" step="0.1" id="input-bmi-weight" placeholder="예) 42" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl py-3.5 px-4 text-center text-slate-800 text-base font-bold focus:outline-none focus:border-sky-400 placeholder-slate-400">
             </div>
           </div>
 
-          <!-- Enlarge Button -->
-          <button onclick="saveMonthlyBmi()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black py-6 rounded-[24px] shadow-lg active:scale-95 transition duration-150 text-lg flex items-center justify-center gap-1.5">
+          <!-- Calculate Button -->
+          <button onclick="saveMonthlyBmi()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black py-4 rounded-[20px] shadow-md active:scale-95 transition duration-150 text-base flex items-center justify-center gap-1.5 cursor-pointer mb-5">
             <span>📊 BMI 계산하고 저장하기</span>
           </button>
+
+          <!-- BMI Result Display Card -->
+          <div id="bmi-result-card" class="p-4 bg-gradient-to-br from-sky-50 to-indigo-50 border-2 border-sky-200/80 rounded-2xl text-center shadow-inner">
+            <span class="text-xs font-bold text-slate-500 block mb-1">나의 체질량지수 (BMI) 계산 결과</span>
+            <div class="text-3xl sm:text-4xl font-black text-slate-800 my-1" id="bmi-value-text">-</div>
+            <div class="inline-block px-4 py-1.5 rounded-2xl text-xs font-bold text-slate-600 bg-white border border-slate-200 shadow-sm mt-1 mb-2" id="bmi-status-badge">
+              📏 측정 수치를 입력하고 계산을 눌러주세요
+            </div>
+            <div class="flex justify-center gap-4 text-xs font-bold text-slate-500 mt-2 pt-2 border-t border-sky-100/80">
+              <span id="bmi-display-height">키: - cm</span>
+              <span id="bmi-display-weight">몸무게: - kg</span>
+            </div>
+          </div>
         </div>
 
         <!-- Korean Society for the Study of Obesity Standard Guideline Card -->
@@ -673,9 +694,8 @@
       <!-- ==================== TABS 5: 스티커판 (STICKERS) ==================== -->
       <section id="tab-stickers" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800 flex flex-col items-center">
 
-
         <h3 class="text-3xl font-black text-slate-800 mb-2 self-start flex items-center gap-1.5">🥦 과일 야채 스티커판</h3>
-        <p class="text-sm text-slate-500 mb-8 self-start">100포인트가 모일 때마다 스티커가 붙어요. <span class="text-xs text-pastelPink font-bold">(매월 1일 리셋)</span></p>
+        <p class="text-sm text-slate-500 mb-8 self-start">오늘의 미션 100P 달성 시 스티커 1개 획득! <span class="text-xs text-pastelPink font-bold">(매월 1일 리셋)</span></p>
 
         <!-- Sticker Grid -->
         <div class="grid grid-cols-4 gap-3 sm:gap-5 p-4 sm:p-6 bg-white border-4 border-pastelPink-light rounded-[36px] shadow-inner w-full max-w-[420px]">
@@ -863,10 +883,18 @@
           <textarea id="settings-firebase-config" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..." }' class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-[10px] focus:outline-none focus:border-pastelBlue custom-scrollbar font-mono"></textarea>
         </div>
 
-        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-[10px] text-slate-500 space-y-1.5">
-          <p class="font-bold text-slate-700">📌 설치 참고사항:</p>
-          <p>1. `google_apps_script.js` 코드를 구글 시트 Apps Script에 배포하여 웹앱 URL을 획득합니다.</p>
-          <p>2. 파이어베이스 인증 사진 저장을 위해 Firebase Web App SDK Config JSON을 복사해 넣습니다. (입력 안하면 데모 모드로 가동)</p>
+        <!-- 교사용 테스트 시뮬레이터 -->
+        <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs space-y-2">
+          <p class="font-black text-amber-900 text-center">🧪 리셋 & 누적 테스트 도구</p>
+          <button onclick="testComplete100P()" class="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
+            ⚡ 오늘 100P 달성
+          </button>
+          <button onclick="testSimulateTomorrow()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
+            🌙 자고 일어나기 (+1일 시뮬레이션)
+          </button>
+          <button onclick="testSimulateNextMonth()" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
+            📅 다음 달 1일로 이동 (+1달 시뮬레이션)
+          </button>
         </div>
       </div>
 
@@ -1185,9 +1213,12 @@
       }
     };
 
-    // Helper: format today's date
+    // Helper: format today's date (with virtualDateOffset support for instant testing)
     function getTodayDateString(withTime = false) {
       const d = new Date();
+      if (window.virtualDateOffset) {
+        d.setDate(d.getDate() + window.virtualDateOffset);
+      }
       const yr = d.getFullYear();
       const mo = String(d.getMonth() + 1).padStart(2, '0');
       const dy = String(d.getDate()).padStart(2, '0');
@@ -1201,10 +1232,72 @@
 
     function getYearMonthString() {
       const d = new Date();
+      if (window.virtualDateOffset) {
+        d.setDate(d.getDate() + window.virtualDateOffset);
+      }
       const yr = d.getFullYear();
       const mo = String(d.getMonth() + 1).padStart(2, '0');
       return `${yr}-${mo}`;
     }
+
+    // Test simulator helpers for instant verification
+    window.testSimulateTomorrow = function() {
+      if (!state.studentId) {
+        alert("시작하기 탭에서 먼저 로그인을 해 주세요! 🐾");
+        switchTab('register');
+        return;
+      }
+      window.virtualDateOffset = (window.virtualDateOffset || 0) + 1;
+      checkDailyReset();
+      renderHome();
+      switchTab('mission');
+      alert(`🌙 [테스트] 자고 일어났습니다! (내일 날짜 시뮬레이션: ${getTodayDateString()})\n\n- 오늘의 미션: 0P로 리셋됨! (0%)\n- 상단 레벨바 누적 포인트: 리셋 없이 그대로 유지됨! ✨`);
+    };
+
+    window.testSimulateNextMonth = function() {
+      if (!state.studentId) {
+        alert("시작하기 탭에서 먼저 로그인을 해 주세요! 🐾");
+        switchTab('register');
+        return;
+      }
+      window.virtualDateOffset = (window.virtualDateOffset || 0) + 31;
+      checkDailyReset();
+      renderHome();
+      switchTab('stickers');
+      alert(`📅 [테스트] 다음 달 1일로 이동했습니다! (날짜 시뮬레이션: ${getTodayDateString()})\n\n- 오늘의 미션: 0P 리셋됨\n- 스티커판: 매월 1일 리셋 완료 (0개)\n- 상단 레벨바 누적 포인트: 리셋 없이 그대로 유지됨! ✨`);
+    };
+
+    window.testComplete100P = function() {
+      if (!state.studentId) {
+        alert("시작하기 탭에서 먼저 로그인을 해 주세요! 🐾");
+        switchTab('register');
+        return;
+      }
+      state.photoUploaded = true;
+      state.photoUrl = 'uploaded';
+      state.photoUploadTime = getTodayDateString(true);
+      
+      let delta = 0;
+      for (let i = 1; i <= 6; i++) {
+        if (!state.todayMissions[i]) {
+          const config = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+          delta += config[i];
+          state.todayMissions[i] = true;
+        }
+      }
+      saveDailyState();
+      if (delta > 0) {
+        saveStudentPointsRealtime("테스트 100P 달성", delta);
+      } else {
+        saveStickerProgress();
+      }
+      updateExerciseMissionUI();
+      updateTodayPoints();
+      updateMissionButtonsUI();
+      renderHome();
+      switchTab('mission');
+      alert("⚡ [테스트] 오늘 100P 만점을 완료했습니다!\n- 오늘의 미션 100P (100% 달성)\n- 이달의 스티커 1개 획득 완료! 🥳");
+    };
 
     // Helper: Initialize Firebase Storage
     function initFirebase() {
@@ -1252,6 +1345,21 @@
       
       // Auto-load profile if saved, else use Guest template
       if (state.studentId) {
+        const cached = localStorage.getItem('teunteun_student_cached');
+        if (cached) {
+          try {
+            state.student = JSON.parse(cached);
+            state.lastLevel = getLevelData(state.student.totalPoints || 0).level;
+          } catch(e){}
+        }
+        if (!state.student) {
+          const localCopy = LocalDB.getStudent(state.studentId);
+          if (localCopy) {
+            state.student = localCopy;
+            state.lastLevel = getLevelData(localCopy.totalPoints || 0).level;
+          }
+        }
+        renderHome();
         refreshStudentData();
         if (state.studentId.startsWith('T-')) {
           // Auto-fill teacher registration inputs from stored ID
@@ -1451,8 +1559,8 @@
       updateLvlElements(h_lvls);
       updateLvlElements(g_lvls);
 
-      // Progress bar calculation (Max 5000 for standard display)
-      const maxRepresentPoints = 5000;
+      // Progress bar calculation (Max 3000 for 꼬꼬대장 milestone)
+      const maxRepresentPoints = 3000;
       const percentage = Math.min(100, Math.max(0, (points / maxRepresentPoints) * 100));
       
       // Update Home Progress Bar
@@ -1479,11 +1587,19 @@
       state.student.totalPoints = Math.max(0, (Number(state.student.totalPoints) || 0) + pointsDelta);
       state.student.monthlyPoints = Math.max(0, (Number(state.student.monthlyPoints) || 0) + pointsDelta);
 
+      // Compute today's total mission points (0 ~ 100)
+      let todayTotal = 0;
+      const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+      for (const [id, isDone] of Object.entries(state.todayMissions)) {
+        if (isDone === true) todayTotal += pointsConfig[id];
+      }
+
       // ALWAYS sync to mock_students DB to keep Single Source of Truth
       const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
       if (students[state.studentId]) {
         students[state.studentId].totalPoints = state.student.totalPoints;
         const today = getTodayDateString(true);
+        students[state.studentId].history = students[state.studentId].history || [];
         students[state.studentId].history.unshift({
           date: today,
           mission: missionName,
@@ -1495,7 +1611,7 @@
       if (state.isOffline) {
         refreshStudentData();
       } else {
-        // GAS sync (Run asynchronously in the background)
+        // GAS sync (Run asynchronously in the background with today's absolute points & student name)
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
@@ -1503,8 +1619,10 @@
           body: JSON.stringify({
             action: 'log_mission',
             studentId: state.studentId,
+            name: state.student.name || '',
             missionType: missionName,
-            points: pointsDelta,
+            points: todayTotal,
+            isSetAbsolute: true,
             weight: ""
           })
         })
@@ -1680,15 +1798,9 @@
         circle.style.strokeDashoffset = offset;
       }
 
-      // Ensure state student totalPoints & monthlyPoints reflect real-time checked missions if student exists
-      if (state.student) {
-        if ((Number(state.student.totalPoints) || 0) < percent) {
-          state.student.totalPoints = percent;
-          state.student.monthlyPoints = percent;
-          renderHome();
-          renderStickers();
-        }
-      }
+      // Update sticker board status (earned when today's mission equals 100P)
+      saveStickerProgress();
+      renderStickers();
 
       return total;
     }
@@ -2333,6 +2445,24 @@
       // Save daily submit stamp
       localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
 
+      // Sync submission log to Google Apps Script Sheet
+      if (!state.isOffline && state.gasUrl) {
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            studentId: state.studentId,
+            name: state.student ? state.student.name : '',
+            missionType: logMessage,
+            points: pointsEarned,
+            isSetAbsolute: true,
+            weight: ""
+          })
+        }).catch(e => console.error("GAS submit sync error", e));
+      }
+
       // Current total points (already synced in real time by toggleMissionButton)
       const currentPoints = state.student ? (state.student.totalPoints || 0) : 0;
       const currentLevel = getLevelData(currentPoints).level;
@@ -2877,28 +3007,12 @@
     function selectBmiMonth(month) {
       if (!state.studentId) return;
       state.activeBmiMonth = month;
-      
-      // Load stored metrics to input fields
-      const key = `teunteun_monthly_bmi_${state.studentId}`;
-      const stored = JSON.parse(localStorage.getItem(key) || '{}');
-      
-      const heightInput = document.getElementById('input-bmi-height');
-      const weightInput = document.getElementById('input-bmi-weight');
-      
-      if (heightInput && weightInput) {
-        if (stored[month]) {
-          heightInput.value = stored[month].height;
-          weightInput.value = stored[month].weight;
-        } else {
-          heightInput.value = '';
-          weightInput.value = '';
-        }
-      }
+      renderMyBody();
     }
     
     function saveMonthlyBmi() {
       if (!state.studentId) {
-        alert("로그인해 주세요! 🐾");
+        alert("시작하기 탭에서 로그인을 먼저 완료해 주세요! 🐾");
         switchTab('register');
         return;
       }
@@ -2910,8 +3024,13 @@
       const wVal = parseFloat(weightInput.value.trim());
       
       if (isNaN(hVal) || hVal <= 0 || isNaN(wVal) || wVal <= 0) {
-        alert("올바른 키와 몸무게 수치를 입력해 주세요! 🐾");
+        alert("올바른 키(cm)와 몸무게(kg) 수치를 입력해 주세요! 🐾");
         return;
+      }
+      
+      if (!state.activeBmiMonth) {
+        const curM = new Date().getMonth() + 1;
+        state.activeBmiMonth = (curM >= 6 && curM <= 12) ? curM : 8;
       }
       
       const month = state.activeBmiMonth;
@@ -2933,16 +3052,18 @@
       syncBmiHistoryToState();
       
       // Update mock database locally
-      if (state.isOffline) {
-        const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
-        if (students[state.studentId]) {
-          students[state.studentId].height = hVal;
-          students[state.studentId].weight = wVal;
-          students[state.studentId].weightHistory = state.student.weightHistory;
-          localStorage.setItem('mock_students', JSON.stringify(students));
-        }
-        alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록(키 ${hVal}cm, 몸무게 ${wVal}kg)이 저장되었습니다! 📊`);
-        renderMyBody();
+      const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+      if (students[state.studentId]) {
+        students[state.studentId].height = hVal;
+        students[state.studentId].weight = wVal;
+        students[state.studentId].weightHistory = state.student ? state.student.weightHistory : [];
+        localStorage.setItem('mock_students', JSON.stringify(students));
+      }
+      
+      renderMyBody();
+      alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록(키 ${hVal}cm, 몸무게 ${wVal}kg)이 저장되었습니다! 📊`);
+
+      if (!state.isOffline && state.gasUrl) {
         // Send register API to force-update Profile sheet (Column D: height, Column E: weight)
         fetch(state.gasUrl, {
           method: 'POST',
@@ -2955,7 +3076,7 @@
             height: hVal,
             weight: wVal
           })
-        });
+        }).catch(err => console.error("GAS BMI sync error", err));
 
         // Send log_mission API to append/update daily mission log
         fetch(state.gasUrl, {
@@ -2965,31 +3086,49 @@
           body: JSON.stringify({
             action: 'log_mission',
             studentId: state.studentId,
+            name: state.student ? state.student.name : '',
             missionType: `[내몸탐험] ${month}월 신체 측정 📏`,
             points: 0,
             height: hVal,
             weight: wVal
           })
-        })
-        .then(() => {
-          alert(`당신의 BMI는 ${bmiVal}입니다. ${month}월 신체 기록(키 ${hVal}cm, 몸무게 ${wVal}kg)을 안전하게 저장했습니다! 🐾`);
-          renderMyBody();
-        })
-        .catch(err => {
-          console.error("GAS monthly sync error", err);
-          alert("인터넷 연결이 원활하지 않아 저장하지 못했어요. 우선 이 기기에만 저장해 둘게요!");
-          renderMyBody();
-        });
+        }).catch(err => console.error("GAS BMI mission log error", err));
       }
     }
 
-    // Render MyBody Report (BMI & Canvas Chart)
+    // Render MyBody Report (BMI Calculation & Results)
     function renderMyBody() {
-      if (!state.student) return;
+      if (!state.studentId) return;
 
-      const validH = (state.student.height && state.student.height > 0) ? state.student.height : null;
-      const validW = (state.student.weight && state.student.weight > 0) ? state.student.weight : null;
+      const key = `teunteun_monthly_bmi_${state.studentId}`;
+      const stored = JSON.parse(localStorage.getItem(key) || '{}');
       
+      // Determine active month
+      if (!state.activeBmiMonth) {
+        const curM = new Date().getMonth() + 1;
+        state.activeBmiMonth = (curM >= 6 && curM <= 12) ? curM : 8;
+      }
+      
+      const mData = stored[state.activeBmiMonth];
+      let validH = mData ? mData.height : (state.student ? state.student.height : null);
+      let validW = mData ? mData.weight : (state.student ? state.student.weight : null);
+      
+      if (!validH || validH <= 0) validH = null;
+      if (!validW || validW <= 0) validW = null;
+
+      // Populate input values if available
+      const heightInput = document.getElementById('input-bmi-height');
+      const weightInput = document.getElementById('input-bmi-weight');
+      if (heightInput && weightInput) {
+        if (mData) {
+          heightInput.value = mData.height;
+          weightInput.value = mData.weight;
+        } else if (validH && validW) {
+          heightInput.value = validH;
+          weightInput.value = validW;
+        }
+      }
+
       const displayHeight = document.getElementById('bmi-display-height');
       const displayWeight = document.getElementById('bmi-display-weight');
       if (displayHeight) displayHeight.innerText = validH ? `키: ${validH} cm` : `키: 미입력`;
@@ -3001,40 +3140,53 @@
       if (!validH || !validW) {
         if (valueText) valueText.innerText = "-";
         if (badge) {
-          badge.innerText = "📏 측정 수치를 입력해 주세요";
+          badge.innerText = "📏 측정 수치를 입력하고 계산을 눌러주세요";
           badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-slate-500 bg-slate-100";
         }
-        return;
+      } else {
+        // Calculate BMI
+        const bmi = parseFloat((validW / ((validH / 100) ** 2)).toFixed(1));
+        if (valueText) valueText.innerText = bmi;
+
+        // Korean Society for the Study of Obesity Pediatric & Asian BMI Thresholds
+        if (badge) {
+          if (bmi < 18.5) {
+            badge.innerText = "🔵 저체중 (날씬새싹)";
+            badge.className = "px-4 py-1.5 rounded-2xl text-xs font-bold text-blue-700 bg-blue-100 border border-blue-300";
+          } else if (bmi >= 18.5 && bmi < 23.0) {
+            badge.innerText = "🟢 정상 (튼튼새싹)";
+            badge.className = "px-4 py-1.5 rounded-2xl text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-300";
+          } else if (bmi >= 23.0 && bmi < 25.0) {
+            badge.innerText = "🟡 과체중 (토실새싹)";
+            badge.className = "px-4 py-1.5 rounded-2xl text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300";
+          } else if (bmi >= 25.0 && bmi < 30.0) {
+            badge.innerText = "🟠 비만 1단계(경도비만)";
+            badge.className = "px-4 py-1.5 rounded-2xl text-xs font-bold text-orange-800 bg-orange-100 border border-orange-300";
+          } else if (bmi >= 30.0 && bmi < 35.0) {
+            badge.innerText = "🔴 비만 2단계(중등도비만)";
+            badge.className = "px-4 py-1.5 rounded-2xl text-xs font-bold text-red-800 bg-red-100 border border-red-300";
+          } else {
+            badge.innerText = "🟤 비만 3단계(고도비만)";
+            badge.className = "px-4 py-1.5 rounded-2xl text-xs font-bold text-yellow-900 bg-yellow-100 border border-yellow-400";
+          }
+        }
       }
 
-      // Calculate BMI
-      const bmi = (validW / ((validH / 100) ** 2)).toFixed(1);
-      if (valueText) valueText.innerText = bmi;
-
-      // Pediatric BMI zones (standard thresholds approximately)
-      // Underweight < 15, Healthy 15~19, Overweight 19~21, Obese 21+
-      if (badge) {
-        if (bmi < 15) {
-          badge.innerText = "🌱 가벼워요 (날씬새싹)";
-          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-white bg-pastelBlue-dark";
-        } else if (bmi >= 15 && bmi < 19) {
-          badge.innerText = "🌻 건강해요 (튼튼새싹)";
-          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-white bg-emerald-400";
-        } else if (bmi >= 19 && bmi < 21) {
-          badge.innerText = "🍊 토실해요 (토실새싹)";
-          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-white bg-amber-400";
-        } else {
-          badge.innerText = "🍇 통통해요 (통통새싹)";
-          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-white bg-red-400";
+      // Update Month Selector Buttons UI
+      for (let m = 6; m <= 12; m++) {
+        const btn = document.getElementById(`bmi-month-btn-${m}`);
+        if (btn) {
+          if (m === state.activeBmiMonth) {
+            btn.className = "bmi-month-btn flex-1 py-1.5 px-2 text-xs font-black rounded-xl transition bg-sky-500 text-white shadow-sm cursor-pointer";
+          } else {
+            btn.className = "bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer";
+          }
         }
       }
 
       // Render Monthly History Table
       const tableBody = document.getElementById('bmi-history-table-body');
       if (tableBody) {
-        const key = `teunteun_monthly_bmi_${state.studentId}`;
-        const stored = JSON.parse(localStorage.getItem(key) || '{}');
-        
         let html = '';
         let hasRecords = false;
         
@@ -3069,19 +3221,38 @@
       // Weight chart has been removed based on user request.
     }
 
-    // Calculate how many stickers based on current month's points (1 sticker per 100 points, resets on the 1st of every month)
-    function getStickerCount() {
-      if (!state.student) return 0;
-      let mPts = Number(state.student.monthlyPoints);
-      let tPts = Number(state.student.totalPoints) || 0;
+    // Update and save monthly 100P stickers progress
+    function saveStickerProgress() {
+      if (!state.studentId) return;
+      const ymKey = `teunteun_stickers_${state.studentId}_${getYearMonthString()}`;
+      let daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
+      const todayStr = getTodayDateString();
       
-      if (isNaN(mPts) || state.student.monthlyPoints === undefined || state.student.monthlyPoints === null) {
-        mPts = tPts;
-      } else if (tPts > 0 && tPts <= 100 && mPts === 0) {
-        mPts = tPts;
+      let todayTotal = 0;
+      const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+      for (const [id, isDone] of Object.entries(state.todayMissions)) {
+        if (isDone === true) todayTotal += pointsConfig[id];
       }
-      
-      return Math.floor(mPts / 100);
+
+      if (todayTotal === 100) {
+        if (!daysList.includes(todayStr)) {
+          daysList.push(todayStr);
+          localStorage.setItem(ymKey, JSON.stringify(daysList));
+        }
+      } else {
+        if (daysList.includes(todayStr)) {
+          daysList = daysList.filter(d => d !== todayStr);
+          localStorage.setItem(ymKey, JSON.stringify(daysList));
+        }
+      }
+    }
+
+    // Calculate how many stickers earned in current month (1 sticker per day when today's mission reached 100P)
+    function getStickerCount() {
+      if (!state.studentId) return 0;
+      const ymKey = `teunteun_stickers_${state.studentId}_${getYearMonthString()}`;
+      const daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
+      return daysList.length;
     }
 
     // Render Stickers board
