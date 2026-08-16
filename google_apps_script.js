@@ -4,7 +4,7 @@
  */
 
 function doGet(e) {
-  var action = e.parameter.action;
+  var action = (e && e.parameter) ? e.parameter.action : null;
   var sheet = SpreadsheetApp.getActiveSpreadsheet();
   
   try {
@@ -19,14 +19,14 @@ function doGet(e) {
   if (action === 'get_leaderboard') {
     return handleGetLeaderboard(sheet);
   } else if (action === 'get_student') {
-    var studentId = e.parameter.studentId;
+    var studentId = (e && e.parameter) ? e.parameter.studentId : "";
     return handleGetStudent(sheet, studentId);
   }
   
-  return ContentService.createTextOutput(JSON.stringify({
+  return createJsonResponse({
     success: false, 
     message: "잘못된 action 요청입니다. (get_leaderboard, get_student 필요)"
-  })).setMimeType(ContentService.MimeType.JSON);
+  });
 }
 
 function doPost(e) {
@@ -187,7 +187,7 @@ function handleRegister(sheet, data) {
   var p = getParticipantDetails(data.studentId);
   var profileSheet = sheet.getSheetByName(p.profileSheet);
   
-  var name = data.name.trim();
+  var name = (data.name ? data.name : "").toString().trim();
   var height = parseFloat(data.height) || 0;
   var weight = parseFloat(data.weight) || 0;
   var bmi = (height > 0) ? parseFloat((weight / ((height / 100) * (height / 100))).toFixed(1)) : 0;
@@ -554,7 +554,7 @@ function handleSubmitSurvey(sheet, data) {
   var p = getParticipantDetails(data.studentId);
   var surveySheet = sheet.getSheetByName(p.surveySheet);
   
-  var name = data.name.trim();
+  var name = (data.name ? data.name : "").toString().trim();
   var answers = data.answers;
   var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
   
