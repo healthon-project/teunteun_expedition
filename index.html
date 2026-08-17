@@ -933,6 +933,9 @@
         <!-- 교사용 테스트 시뮬레이터 -->
         <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs space-y-2">
           <p class="font-black text-amber-900 text-center">🧪 리셋 & 누적 테스트 도구</p>
+          <button onclick="testShowLevelUpModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
+            🎉 레벨업 축하 팝업 미리보기 (테스트)
+          </button>
           <button onclick="testComplete100P()" class="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
             ⚡ 오늘 100P 달성
           </button>
@@ -1299,6 +1302,9 @@
       renderHome();
       switchTab('mission');
       alert(`🌙 [테스트] 자고 일어났습니다! (내일 날짜 시뮬레이션: ${getTodayDateString()})\n\n- 오늘의 미션: 0P로 리셋됨! (0%)\n- 상단 레벨바 누적 포인트: 리셋 없이 그대로 유지됨! ✨`);
+    window.testShowLevelUpModal = function() {
+      const sampleLevel = getLevelData(3500); // Level 2 삐약이 sample
+      triggerLevelUpCelebration(sampleLevel);
     };
 
     window.testSimulateNextMonth = function() {
