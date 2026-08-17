@@ -820,7 +820,7 @@
   </div>
 
   <!-- ==================== DIALOG 1.2: LEVEL UP CELEBRATION BOX MODAL ==================== -->
-  <div id="levelup-celebration-modal" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-md flex justify-center items-center z-50 p-4">
+  <div id="levelup-celebration-modal" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-md flex justify-center items-center z-[100] p-4">
     <div class="bg-white rounded-[40px] border-4 border-amber-400 w-full max-w-[360px] p-6 text-center shadow-2xl scale-95 transition-all duration-500 relative overflow-hidden">
       
       <!-- Sparkle Background Glow -->
@@ -833,10 +833,10 @@
       </div>
 
       <h3 id="levelup-modal-title" class="text-2xl font-black text-slate-800 mb-1">
-        축하합니다! 레벨업!
+        🎉 레벨업 달성! 🎉
       </h3>
       <p id="levelup-modal-subtitle" class="text-xs font-bold text-slate-500 mb-3">
-        새로운 대표 캐릭터 진화 완료!
+        새로운 대표 캐릭터 진화!
       </p>
       
       <!-- Representative Character Image Display Container -->
@@ -852,7 +852,7 @@
 
       <!-- Confirm / Gift Button -->
       <button onclick="closeLevelUpCelebrationModal()" class="w-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-black py-4 px-6 rounded-2xl shadow-lg active:scale-95 transition-all text-base border-2 border-white cursor-pointer">
-        🥳 축하 박스 확인 완료! 🎁
+        확인!🎁
       </button>
     </div>
   </div>
@@ -1054,10 +1054,10 @@
 
     // Level settings based on points (Chicken series with custom thresholds)
     const LEVEL_CONFIG = [
-      { max: 3000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~3000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야! 🌱<br>새로운 모험이 시작되었어. 매일매일 열심히 힘내보자! 💪", bgClass: '#fde2e4' },
-      { max: 6000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~6000p)", img: "assets/level2.png?v=2", dialog: "🎉 새로운 2단계 삐약이로 레벨업 된 것을 축하드려요!<br>앞으로도 힘차게 힘내보자! 🏃✨", bgClass: '#fffdf0' },
-      { max: 9000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~9000p)", img: "assets/level3.png?v=3", dialog: "🎉 새로운 3단계 튼튼이로 레벨업 된 것을 축하드려요!<br>멋진 건강 대장을 향해 계속 힘내보자! 🥦🔥", bgClass: '#d8f3dc' },
-      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(9001p~)", img: "assets/level4.png?v=2", dialog: "🎉 최종 4단계 꼬꼬대장으로 레벨업 된 것을 축하드려요!<br>최고의 건강 탐험가 달성! 항상 화이팅! 👑✨", bgClass: '#cddafd' }
+      { max: 3000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~3000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야! 🌱<br>새로운 모험이 시작되었어. 열심히 힘내보자! 💪", bgClass: '#fde2e4' },
+      { max: 6000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~6000p)", img: "assets/level2.png?v=2", dialog: "새로운 단계로 레벨업 된 것을 축하드려요!<br>앞으로도 힘차게 힘내보자! 🏃✨", bgClass: '#fffdf0' },
+      { max: 9000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~9000p)", img: "assets/level3.png?v=3", dialog: "새로운 단계로 레벨업 된 것을 축하드려요!<br>멋진 건강 대장을 향해 힘내보자! 🥦🔥", bgClass: '#d8f3dc' },
+      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(9001p~)", img: "assets/level4.png?v=2", dialog: "새로운 단계로 레벨업 된 것을 축하드려요!<br>최고의 건강 탐험가 달성! 화이팅! 👑✨", bgClass: '#cddafd' }
     ];
 
     function getLevelData(points) {
@@ -1302,7 +1302,12 @@
       renderHome();
       switchTab('mission');
       alert(`🌙 [테스트] 자고 일어났습니다! (내일 날짜 시뮬레이션: ${getTodayDateString()})\n\n- 오늘의 미션: 0P로 리셋됨! (0%)\n- 상단 레벨바 누적 포인트: 리셋 없이 그대로 유지됨! ✨`);
+    };
+
     window.testShowLevelUpModal = function() {
+      const settingsModal = document.getElementById('settings-modal');
+      if (settingsModal) settingsModal.classList.add('hidden');
+
       window.testLevelStep = ((window.testLevelStep || 0) % 3) + 1;
       const ptsMap = { 1: 3500, 2: 6500, 3: 9500 };
       const sampleLevel = getLevelData(ptsMap[window.testLevelStep]);
@@ -2499,9 +2504,10 @@
 
       // Current total points (already synced in real time by toggleMissionButton)
       const currentPoints = state.student ? (state.student.totalPoints || 0) : 0;
-      const currentLevel = getLevelData(currentPoints).level;
+      const currentLevelData = getLevelData(currentPoints);
+      const currentLevel = currentLevelData.level;
       if (state.lastLevel && currentLevel > state.lastLevel) {
-        triggerLevelUpCelebration(getLevelData(currentPoints).name);
+        triggerLevelUpCelebration(currentLevelData);
         state.lastLevel = currentLevel;
       } else {
         alert(`오늘의 미션 완료! 도장 꾹! 🐾\n총 ${currentPoints}p를 달성하였습니다!`);
@@ -3372,8 +3378,8 @@
       const dialogEl = document.getElementById('levelup-modal-dialog');
       const backdropEl = document.getElementById('levelup-backdrop');
 
-      if (titleEl) titleEl.innerHTML = `🎉 [${levelInfo.name}] 달성! 🎉`;
-      if (subtitleEl) subtitleEl.innerText = `새로운 단계로 레벨업 된 것을 축하드려요!`;
+      if (titleEl) titleEl.innerHTML = `🎉 ${levelInfo.name} 달성! 🎉`;
+      if (subtitleEl) subtitleEl.innerText = `${levelInfo.badge}`;
       if (imgEl) imgEl.src = levelInfo.img;
       if (dialogEl) dialogEl.innerHTML = `"${levelInfo.dialog}"`;
       if (backdropEl) backdropEl.style.backgroundColor = levelInfo.bgClass || '#fde2e4';
