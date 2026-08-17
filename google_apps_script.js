@@ -30,81 +30,96 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet();
-  
+  var lock = LockService.getScriptLock();
   try {
-    setupSheets(sheet);
+    lock.waitLock(10000); // 10초 동시성 대기
   } catch(err) {
     return createJsonResponse({
       success: false,
-      message: "초기화 에러: " + err.message
+      message: "동시 요청이 많아 처리가 지연되었습니다. 잠시 후 다시 시도해주세요."
     });
   }
-  
-  var postData;
-  try {
-    postData = JSON.parse(e.postData.contents);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({
-      success: false, 
-      message: "JSON 파싱 에러: " + err.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-  
-  var action = postData.action;
-  
-  if (action === 'register') {
-    return handleRegister(sheet, postData);
-  } else if (action === 'log_mission') {
-    return handleLogMission(sheet, postData);
-  } else if (action === 'submit_survey') {
-    return handleSubmitSurvey(sheet, postData);
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify({
-    success: false, 
-    message: "잘못된 action 요청입니다."
-  })).setMimeType(ContentService.MimeType.JSON);
-}
 
-// 헬퍼: ID 구조 파싱 및 매핑 정보 반환 (한국어 시트 매핑)
-function getParticipantDetails(studentId) {
-  var id = studentId.toString().trim();
-  var isTeacher = id.indexOf("T-") === 0;
-  var cleanId = isTeacher ? id.substring(2) : id;
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet();
+    
+    try {
+      setupSheets(sheet);
+    } catch(err) {
+      return createJsonResponse({
+        success: false,
+        message: "초기화 에러: " + err.message
+      });
+    }
+    
+    var postData;
+    try {
+      postData = JSON.parse(e.postData.contents);
+    } catch(err) {
+      return createJsonResponse({
+        success: false, 
+        message: "JSON 파싱 에러: " + err.toString()
+      });
+    }
+    
+    var action = postData.action;
+    
+    if (action === 'register') {
+      return handleRegister(sheet, postData);
+    } else if (action === 'log_mission') {
+      return handleLogMission(sheet, postData);
+    } else if (action === 'submit_survey') {
+      return handleSubmitSurvey(sheet// 헬퍼: ID 구조 파싱 및 매핑 정보 반환 (한국어 시트 매핑 + 학교 정보 파싱)
+function getParticipantDetails(studentId, schoolFromData) {
+  var rawId = studentId ? studentId.toString().trim() : "";
+  var school = schoolFromData || "";
+  var cleanId = rawId;
+  
+  if (rawId.indexOf("_") > -1) {
+    var parts = rawId.split("_");
+    if (!school) school = parts[0];
+    cleanId = parts[1];
+  }
+  if (!school) school = "A초";
+  
+  var isTeacher = cleanId.indexOf("T-") === 0;
+  if (isTeacher) cleanId = cleanId.substring(2);
   
   return {
+    rawId: rawId,
+    school: school,
     isTeacher: isTeacher,
     cleanId: cleanId,
-    profileSheet: isTeacher ? "교사기록" : "학생기록", // 키,몸무게,BMI,월총포인트,레벨 통합 탭
-    dailySheet: isTeacher ? "교사일별포인트" : "학생일별포인트", // 매일 적립포인트 탭
-    surveySheet: isTeacher ? "교사설문응답" : "학생설문응답" // 설문내용 탭
+    profileSheet: isTeacher ? "교사기록" : "학생기록",
+    dailySheet: isTeacher ? "교사일별포인트" : "학생일별포인트",
+    surveySheet: isTeacher ? "교사설문응답" : "학생설문응답"
   };
 }
 
 // 헬퍼: 학번/개인번호 파싱 닉네임 생성
-function getStudentNickname(cleanId, name) {
+function getStudentNickname(cleanId, name, school) {
+  var prefix = school ? "[" + school + "] " : "";
   if (cleanId.length === 4) {
     var grade = cleanId.charAt(0);
     var classNum = cleanId.charAt(1);
     var num = parseInt(cleanId.substring(2));
-    return grade + "학년 " + classNum + "반 " + name;
+    return prefix + grade + "학년 " + classNum + "반 " + name;
   } else if (cleanId.length === 5) {
     var grade = cleanId.charAt(0);
     var classNum = parseInt(cleanId.substring(1, 3));
     var num = parseInt(cleanId.substring(3));
-    return grade + "학년 " + classNum + "반 " + name;
+    return prefix + grade + "학년 " + classNum + "반 " + name;
   }
-  return name;
+  return prefix + name;
 }
 
-// 시트 초기화 및 헤더 생성
+// 시트 초기화 및 헤더 생성 (학교 컬럼 추가)
 function setupSheets(sheet) {
   if (!sheet) {
     throw new Error("스프레드시트를 활성화할 수 없습니다.");
   }
 
-  // 1. 기존 사용하지 않는 삭제 대상 탭 삭제 (기존 영문 탭들 포함하여 자동 청소)
+  // 1. 기존 사용하지 않는 삭제 대상 탭 삭제
   var deleteTabs = [
     "시트1", "Sheet1", "MissionLogs", 
     "Students", "Teachers", 
@@ -117,20 +132,18 @@ function setupSheets(sheet) {
     if (target) {
       try {
         sheet.deleteSheet(target);
-      } catch(e) {
-        // 스프레드시트에 최소 1개의 시트는 남아있어야 함
-      }
+      } catch(e) {}
     }
   });
 
-  // 2. 신규 6개 탭 구조 초기화 (학생기록/교사기록의 월별포인트를 월총포인트로 변경, 일별포인트의 일일포인트를 일총포인트로 변경)
+  // 2. 신규 6개 탭 구조 초기화 (학교 컬럼 B열 추가)
   var tabConfigs = [
-    { name: "학생기록", headers: ["일시", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총포인트", "누적총포인트", "레벨"], color: "#E2F0D9" },
-    { name: "교사기록", headers: ["일시", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총포인트", "누적총포인트", "레벨"], color: "#DDEBF7" },
-    { name: "학생일별포인트", headers: ["일시", "개인번호", "이름", "일총포인트"], color: "#F2F2F2" },
-    { name: "교사일별포인트", headers: ["일시", "개인번호", "이름", "일총포인트"], color: "#FFF2CC" },
-    { name: "학생설문응답", headers: ["일시", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11"], color: "#E2EFDA" },
-    { name: "교사설문응답", headers: ["일시", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11"], color: "#F8CBAD" }
+    { name: "학생기록", headers: ["일시", "학교", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총포인트", "누적총포인트", "레벨"], color: "#E2F0D9" },
+    { name: "교사기록", headers: ["일시", "학교", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총포인트", "누적총포인트", "레벨"], color: "#DDEBF7" },
+    { name: "학생일별포인트", headers: ["일시", "학교", "개인번호", "이름", "일총포인트"], color: "#F2F2F2" },
+    { name: "교사일별포인트", headers: ["일시", "학교", "개인번호", "이름", "일총포인트"], color: "#FFF2CC" },
+    { name: "학생설문응답", headers: ["일시", "학교", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"], color: "#E2EFDA" },
+    { name: "교사설문응답", headers: ["일시", "학교", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"], color: "#F8CBAD" }
   ];
 
   tabConfigs.forEach(function(config) {
@@ -143,40 +156,42 @@ function setupSheets(sheet) {
     targetSheet.getRange(1, 1, 1, config.headers.length).setValues([config.headers]);
     targetSheet.getRange(1, 1, 1, config.headers.length).setFontWeight("bold").setBackground(config.color);
     
-    // 개인번호 열(B열) 텍스트 포맷 설정으로 자릿수 보존
-    targetSheet.getRange("B:B").setNumberFormat("@");
+    // 개인번호 열(C열) 텍스트 포맷 설정으로 자릿수 보존
+    targetSheet.getRange("C:C").setNumberFormat("@");
   });
 }
 
 // 헬퍼: 오늘자 일일 포인트 행 중복 정리 및 100P 상한 적용
-function syncDailyRowForToday(dailySheet, cleanId, name, pointsDelta, todayStr, todayDateStr, isSetAbsolute) {
+function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayDateStr, isSetAbsolute) {
   var dRows = dailySheet.getDataRange().getValues();
   var matchingRowIndices = [];
   
   for (var j = 1; j < dRows.length; j++) {
     var dDateStr = formatDateToYYYYMMDD(dRows[j][0]);
-    if (dDateStr === todayDateStr && dRows[j][1].toString().trim() === cleanId) {
-      matchingRowIndices.push(j + 1); // 1-based index
+    var dSchool = dRows[j][1] ? dRows[j][1].toString().trim() : "";
+    var dId = dRows[j][2] ? dRows[j][2].toString().trim() : "";
+    if (dDateStr === todayDateStr && dId === p.cleanId && (dSchool === p.school || !dSchool)) {
+      matchingRowIndices.push(j + 1);
     }
   }
   
   var targetPoints = 0;
   if (matchingRowIndices.length > 0) {
     var primaryRowIndex = matchingRowIndices[0];
-    var curPoints = parseInt(dailySheet.getRange(primaryRowIndex, 4).getValue()) || 0;
+    var curPoints = parseInt(dailySheet.getRange(primaryRowIndex, 5).getValue()) || 0;
     targetPoints = isSetAbsolute ? Math.min(100, Math.max(0, pointsDelta)) : Math.min(100, Math.max(0, curPoints + pointsDelta));
     
     dailySheet.getRange(primaryRowIndex, 1).setValue(todayStr);
-    if (name) dailySheet.getRange(primaryRowIndex, 3).setValue(name);
-    dailySheet.getRange(primaryRowIndex, 4).setValue(targetPoints);
+    dailySheet.getRange(primaryRowIndex, 2).setValue(p.school);
+    if (name) dailySheet.getRange(primaryRowIndex, 4).setValue(name);
+    dailySheet.getRange(primaryRowIndex, 5).setValue(targetPoints);
     
-    // 중복 생성된 오늘자 행 삭제 (아래 행부터 안전하게 삭제)
     for (var k = matchingRowIndices.length - 1; k > 0; k--) {
       dailySheet.deleteRow(matchingRowIndices[k]);
     }
   } else {
     targetPoints = Math.min(100, Math.max(0, pointsDelta));
-    dailySheet.appendRow([todayStr, "'" + cleanId, name, targetPoints]);
+    dailySheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, targetPoints]);
   }
   
   SpreadsheetApp.flush();
@@ -184,7 +199,7 @@ function syncDailyRowForToday(dailySheet, cleanId, name, pointsDelta, todayStr, 
 
 // 1. 참여자 가입/기록 저장 API
 function handleRegister(sheet, data) {
-  var p = getParticipantDetails(data.studentId);
+  var p = getParticipantDetails(data.studentId, data.school);
   var profileSheet = sheet.getSheetByName(p.profileSheet);
   
   var name = (data.name ? data.name : "").toString().trim();
@@ -202,8 +217,9 @@ function handleRegister(sheet, data) {
   for (var i = 1; i < rows.length; i++) {
     var cellValue = rows[i][0];
     var rowMonthStr = formatDateToYYYYMM(cellValue);
-    var rowId = rows[i][1].toString().trim();
-    if (rowId === p.cleanId && rowMonthStr === currentMonthStr) {
+    var rowSchool = rows[i][1] ? rows[i][1].toString().trim() : "";
+    var rowId = rows[i][2] ? rows[i][2].toString().trim() : "";
+    if (rowId === p.cleanId && (rowSchool === p.school || !rowSchool) && rowMonthStr === currentMonthStr) {
       foundRowIndex = i + 1;
       break;
     }
@@ -211,49 +227,49 @@ function handleRegister(sheet, data) {
   
   if (foundRowIndex > -1) {
     profileSheet.getRange(foundRowIndex, 1).setValue(todayStr);
-    if (name) profileSheet.getRange(foundRowIndex, 3).setValue(name);
-    if (height > 0) profileSheet.getRange(foundRowIndex, 4).setValue(height);
-    if (weight > 0) profileSheet.getRange(foundRowIndex, 5).setValue(weight);
+    profileSheet.getRange(foundRowIndex, 2).setValue(p.school);
+    if (name) profileSheet.getRange(foundRowIndex, 4).setValue(name);
+    if (height > 0) profileSheet.getRange(foundRowIndex, 5).setValue(height);
+    if (weight > 0) profileSheet.getRange(foundRowIndex, 6).setValue(weight);
     
-    var curH = parseFloat(profileSheet.getRange(foundRowIndex, 4).getValue()) || 0;
-    var curW = parseFloat(profileSheet.getRange(foundRowIndex, 5).getValue()) || 0;
+    var curH = parseFloat(profileSheet.getRange(foundRowIndex, 5).getValue()) || 0;
+    var curW = parseFloat(profileSheet.getRange(foundRowIndex, 6).getValue()) || 0;
     var curBmi = (curH > 0) ? parseFloat((curW / ((curH / 100) * (curH / 100))).toFixed(1)) : 0;
-    profileSheet.getRange(foundRowIndex, 6).setValue(curBmi);
+    profileSheet.getRange(foundRowIndex, 7).setValue(curBmi);
   } else {
     var prevH = height;
     var prevW = weight;
     
     if (prevH <= 0 || prevW <= 0) {
       for (var r = rows.length - 1; r >= 1; r--) {
-        if (rows[r][1].toString().trim() === p.cleanId) {
-          if (prevH <= 0 && parseFloat(rows[r][3]) > 0) prevH = parseFloat(rows[r][3]);
-          if (prevW <= 0 && parseFloat(rows[r][4]) > 0) prevW = parseFloat(rows[r][4]);
+        var rSch = rows[r][1] ? rows[r][1].toString().trim() : "";
+        var rId = rows[r][2] ? rows[r][2].toString().trim() : "";
+        if (rId === p.cleanId && (rSch === p.school || !rSch)) {
+          if (prevH <= 0 && parseFloat(rows[r][4]) > 0) prevH = parseFloat(rows[r][4]);
+          if (prevW <= 0 && parseFloat(rows[r][5]) > 0) prevW = parseFloat(rows[r][5]);
           if (prevH > 0 && prevW > 0) break;
         }
       }
     }
     
     var calcBmi = (prevH > 0 && prevW > 0) ? parseFloat((prevW / ((prevH / 100) * (prevH / 100))).toFixed(1)) : 0;
-    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, prevH, prevW, calcBmi, 0, 0, "알콩이"]);
+    profileSheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, prevH, prevW, calcBmi, 0, 0, "알콩이"]);
   }
   
-  // 신규 가입/로그인 시 오늘자 일일 행을 0P에서 시작 (미션 수행에 따라 100P까지 누적)
   var dailySheet = sheet.getSheetByName(p.dailySheet);
-  syncDailyRowForToday(dailySheet, p.cleanId, name, 0, todayStr, todayDateStr, false);
-  
-  // 대표 시트 월총포인트, 누적총포인트 실시간 계산 및 갱신
+  syncDailyRowForToday(dailySheet, p, name, 0, todayStr, todayDateStr, false);
   updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr);
   
   return createJsonResponse({
     success: true,
-    message: "새로운 참여자 기록(0P 시작)이 추가되고 정상 등록되었습니다!",
+    message: "새로운 참여자 기록이 추가되고 정상 등록되었습니다!",
     isNew: true
   });
 }
 
 // 2. 미션 및 보너스 포인트 기록 API
 function handleLogMission(sheet, data) {
-  var p = getParticipantDetails(data.studentId);
+  var p = getParticipantDetails(data.studentId, data.school);
   var dailySheet = sheet.getSheetByName(p.dailySheet);
   var profileSheet = sheet.getSheetByName(p.profileSheet);
   
@@ -268,38 +284,39 @@ function handleLogMission(sheet, data) {
   if (!name) {
     var pRows = profileSheet.getDataRange().getValues();
     for (var i = 1; i < pRows.length; i++) {
-      if (pRows[i][1].toString().trim() === p.cleanId) {
-        name = pRows[i][2];
+      var rSch = pRows[i][1] ? pRows[i][1].toString().trim() : "";
+      var rId = pRows[i][2] ? pRows[i][2].toString().trim() : "";
+      if (rId === p.cleanId && (rSch === p.school || !rSch)) {
+        name = pRows[i][3];
         break;
       }
     }
   }
   
-  // 일일 포인트 100P 상한 및 중복행 정리 후 동기화
-  syncDailyRowForToday(dailySheet, p.cleanId, name, pointsDelta, todayStr, todayDateStr, false);
+  syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayDateStr, data.isSetAbsolute);
   
-  // 키/몸무게 전송 시 신체수치 업데이트
   if (weight !== "" || height !== "") {
     var pRows2 = profileSheet.getDataRange().getValues();
     for (var k = 1; k < pRows2.length; k++) {
       var cellValue = pRows2[k][0];
       var rowMonthStr = formatDateToYYYYMM(cellValue);
-      var rowId = pRows2[k][1].toString().trim();
-      if (rowId === p.cleanId && rowMonthStr === currentMonthStr) {
+      var rSch2 = pRows2[k][1] ? pRows2[k][1].toString().trim() : "";
+      var rId2 = pRows2[k][2] ? pRows2[k][2].toString().trim() : "";
+      if (rId2 === p.cleanId && (rSch2 === p.school || !rSch2) && rowMonthStr === currentMonthStr) {
         var rowIdx = k + 1;
         profileSheet.getRange(rowIdx, 1).setValue(todayStr);
-        if (height !== "" && parseFloat(height) > 0) profileSheet.getRange(rowIdx, 4).setValue(parseFloat(height));
-        if (weight !== "" && parseFloat(weight) > 0) profileSheet.getRange(rowIdx, 5).setValue(parseFloat(weight));
-        var curHeight = parseFloat(profileSheet.getRange(rowIdx, 4).getValue()) || 0;
-        var curWeight = parseFloat(profileSheet.getRange(rowIdx, 5).getValue()) || 0;
+        profileSheet.getRange(rowIdx, 2).setValue(p.school);
+        if (height !== "" && parseFloat(height) > 0) profileSheet.getRange(rowIdx, 5).setValue(parseFloat(height));
+        if (weight !== "" && parseFloat(weight) > 0) profileSheet.getRange(rowIdx, 6).setValue(parseFloat(weight));
+        var curHeight = parseFloat(profileSheet.getRange(rowIdx, 5).getValue()) || 0;
+        var curWeight = parseFloat(profileSheet.getRange(rowIdx, 6).getValue()) || 0;
         var newBmi = (curHeight > 0) ? parseFloat((curWeight / ((curHeight / 100) * (curHeight / 100))).toFixed(1)) : 0;
-        profileSheet.getRange(rowIdx, 6).setValue(newBmi);
+        profileSheet.getRange(rowIdx, 7).setValue(newBmi);
         break;
       }
     }
   }
 
-  // 대표 시트 실시간 업데이트
   updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr);
   
   return createJsonResponse({
@@ -319,9 +336,10 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
   var monthlyPoints = 0;
   
   for (var m = 1; m < updatedDRows.length; m++) {
-    var dId = updatedDRows[m][1].toString().trim();
-    if (dId === p.cleanId) {
-      var pts = parseInt(updatedDRows[m][3]) || 0;
+    var dSch = updatedDRows[m][1] ? updatedDRows[m][1].toString().trim() : "";
+    var dId = updatedDRows[m][2] ? updatedDRows[m][2].toString().trim() : "";
+    if (dId === p.cleanId && (dSch === p.school || !dSch)) {
+      var pts = parseInt(updatedDRows[m][4]) || 0;
       cumulativePoints += pts;
       if (formatDateToYYYYMM(updatedDRows[m][0]) === currentMonthStr) {
         monthlyPoints += pts;
@@ -339,8 +357,9 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
   for (var pIdx = 1; pIdx < pRows3.length; pIdx++) {
     var cellVal = pRows3[pIdx][0];
     var pMonthStr = formatDateToYYYYMM(cellVal);
-    var pId = pRows3[pIdx][1].toString().trim();
-    if (pId === p.cleanId && pMonthStr === currentMonthStr) {
+    var pSch = pRows3[pIdx][1] ? pRows3[pIdx][1].toString().trim() : "";
+    var pId = pRows3[pIdx][2] ? pRows3[pIdx][2].toString().trim() : "";
+    if (pId === p.cleanId && (pSch === p.school || !pSch) && pMonthStr === currentMonthStr) {
       foundProfileRow = pIdx + 1;
       break;
     }
@@ -348,12 +367,13 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
 
   if (foundProfileRow > -1) {
     profileSheet.getRange(foundProfileRow, 1).setValue(todayStr);       // A: 일시
-    if (name) profileSheet.getRange(foundProfileRow, 3).setValue(name); // C: 이름
-    profileSheet.getRange(foundProfileRow, 7).setValue(monthlyPoints);   // G: 월총포인트
-    profileSheet.getRange(foundProfileRow, 8).setValue(cumulativePoints);// H: 누적총포인트
-    profileSheet.getRange(foundProfileRow, 9).setValue(level);           // I: 레벨
+    profileSheet.getRange(foundProfileRow, 2).setValue(p.school);        // B: 학교
+    if (name) profileSheet.getRange(foundProfileRow, 4).setValue(name); // D: 이름
+    profileSheet.getRange(foundProfileRow, 8).setValue(monthlyPoints);   // H: 월총포인트
+    profileSheet.getRange(foundProfileRow, 9).setValue(cumulativePoints);// I: 누적총포인트
+    profileSheet.getRange(foundProfileRow, 10).setValue(level);          // J: 레벨
   } else {
-    profileSheet.appendRow([todayStr, "'" + p.cleanId, name, 0, 0, 0, monthlyPoints, cumulativePoints, level]);
+    profileSheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, 0, 0, 0, monthlyPoints, cumulativePoints, level]);
   }
   
   SpreadsheetApp.flush();
@@ -369,10 +389,11 @@ function handleGetStudent(sheet, studentId) {
   var profileSheet = sheet.getSheetByName(p.profileSheet);
   var pRows = profileSheet.getDataRange().getValues();
   
-  // 가장 최근의 등록 기록 찾기 (최신 월 데이터)
   var latestRowIndex = -1;
   for (var i = pRows.length - 1; i >= 1; i--) {
-    if (pRows[i][1].toString().trim() === p.cleanId) {
+    var rSch = pRows[i][1] ? pRows[i][1].toString().trim() : "";
+    var rId = pRows[i][2] ? pRows[i][2].toString().trim() : "";
+    if (rId === p.cleanId && (rSch === p.school || !rSch)) {
       latestRowIndex = i;
       break;
     }
@@ -382,19 +403,21 @@ function handleGetStudent(sheet, studentId) {
     return createJsonResponse({ success: false, isRegistered: false, message: "등록되지 않은 개인번호입니다." });
   }
   
-  var name = pRows[latestRowIndex][2];
-  var height = parseFloat(pRows[latestRowIndex][3]) || 0;
-  var weight = parseFloat(pRows[latestRowIndex][4]) || 0;
+  var school = pRows[latestRowIndex][1] || p.school;
+  var name = pRows[latestRowIndex][3];
+  var height = parseFloat(pRows[latestRowIndex][4]) || 0;
+  var weight = parseFloat(pRows[latestRowIndex][5]) || 0;
   
-  // 총포인트는 모든 일별 포인트 합산, 월총포인트는 당월 합산으로 제공
   var totalPoints = 0;
   var monthlyPoints = 0;
   var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM");
   var dailySheet = sheet.getSheetByName(p.dailySheet);
   var dRows = dailySheet.getDataRange().getValues();
   for (var j = 1; j < dRows.length; j++) {
-    if (dRows[j][1].toString().trim() === p.cleanId) {
-      var pts = parseInt(dRows[j][3]) || 0;
+    var dSch = dRows[j][1] ? dRows[j][1].toString().trim() : "";
+    var dId = dRows[j][2] ? dRows[j][2].toString().trim() : "";
+    if (dId === p.cleanId && (dSch === school || !dSch)) {
+      var pts = parseInt(dRows[j][4]) || 0;
       totalPoints += pts;
       if (formatDateToYYYYMM(dRows[j][0]) === currentMonthStr) {
         monthlyPoints += pts;
@@ -407,17 +430,20 @@ function handleGetStudent(sheet, studentId) {
   var sRows = surveySheet.getDataRange().getValues();
   var preSurveyDone = false;
   for (var k = 1; k < sRows.length; k++) {
-    if (sRows[k][1].toString().trim() === p.cleanId) {
+    var sSch = sRows[k][1] ? sRows[k][1].toString().trim() : "";
+    var sId = sRows[k][2] ? sRows[k][2].toString().trim() : "";
+    if (sId === p.cleanId && (sSch === school || !sSch)) {
       preSurveyDone = true;
       break;
     }
   }
   
   // 닉네임 자동 빌드
-  var nickname = p.isTeacher ? (name + " 선생님") : getStudentNickname(p.cleanId, name);
+  var nickname = p.isTeacher ? ("[" + school + "] " + name + " 선생님") : getStudentNickname(p.cleanId, name, school);
   
   var studentData = {
     studentId: studentId,
+    school: school,
     name: name,
     nickname: nickname,
     height: height,
@@ -430,25 +456,28 @@ function handleGetStudent(sheet, studentId) {
   // 미션 수행 로그(일별 포인트) 변환
   var history = [];
   for (var m = 1; m < dRows.length; m++) {
-    if (dRows[m][1].toString().trim() === p.cleanId) {
+    var hdSch = dRows[m][1] ? dRows[m][1].toString().trim() : "";
+    var hdId = dRows[m][2] ? dRows[m][2].toString().trim() : "";
+    if (hdId === p.cleanId && (hdSch === school || !hdSch)) {
       history.push({
         date: formatDateToYYYYMMDDHHMMSS(dRows[m][0]),
         mission: "일일 미션 적립 완료 🐾",
         weight: null,
-        points: parseInt(dRows[m][3]) || 0
+        points: parseInt(dRows[m][4]) || 0
       });
     }
   }
   history.reverse();
   studentData.history = history;
   
-  // 신체 기록 월별 트래킹 목록 추출 (각 월별 행에서 추출)
   var weightHistory = [];
   for (var n = 1; n < pRows.length; n++) {
-    if (pRows[n][1].toString().trim() === p.cleanId && pRows[n][4] !== "") {
+    var hpSch = pRows[n][1] ? pRows[n][1].toString().trim() : "";
+    var hpId = pRows[n][2] ? pRows[n][2].toString().trim() : "";
+    if (hpId === p.cleanId && (hpSch === school || !hpSch) && pRows[n][5] !== "") {
       weightHistory.push({
-        date: formatDateToYYYYMM(pRows[n][0]), // YYYY-MM
-        weight: parseFloat(pRows[n][4])
+        date: formatDateToYYYYMM(pRows[n][0]),
+        weight: parseFloat(pRows[n][5])
       });
     }
   }
@@ -468,15 +497,16 @@ function handleGetLeaderboard(sheet) {
   var leaderboard = [];
   var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM");
   
-  // 일별 포인트 시트에서 실시간 월별 포인트를 집계합니다 (기록 시트는 30일에만 업데이트 되므로)
   var realMonthlyPoints = {};
   [dailyStudentSheet, dailyTeacherSheet].forEach(function(ds) {
     if (!ds) return;
     var dRows = ds.getDataRange().getValues();
     for (var i = 1; i < dRows.length; i++) {
       if (formatDateToYYYYMM(dRows[i][0]) === currentMonthStr) {
-         var id = dRows[i][1].toString().trim();
-         realMonthlyPoints[id] = (realMonthlyPoints[id] || 0) + (parseInt(dRows[i][3]) || 0);
+         var sch = dRows[i][1] ? dRows[i][1].toString().trim() : "A초";
+         var id = dRows[i][2] ? dRows[i][2].toString().trim() : "";
+         var key = sch + "_" + id;
+         realMonthlyPoints[key] = (realMonthlyPoints[key] || 0) + (parseInt(dRows[i][4]) || 0);
       }
     }
   });
@@ -486,35 +516,84 @@ function handleGetLeaderboard(sheet) {
     var sRows = studentSheet.getDataRange().getValues();
     var sPointsMap = {};
     var sNamesMap = {};
+    var sSchoolsMap = {};
     for (var i = 1; i < sRows.length; i++) {
       var cellValue = sRows[i][0];
       var rowMonthStr = formatDateToYYYYMM(cellValue);
-      var id = sRows[i][1].toString().trim();
-      var name = sRows[i][2].toString().trim();
+      var sch = sRows[i][1] ? sRows[i][1].toString().trim() : "A초";
+      var id = sRows[i][2] ? sRows[i][2].toString().trim() : "";
+      var name = sRows[i][3] ? sRows[i][3].toString().trim() : "";
+      var key = sch + "_" + id;
       
-      // 현재 월에 해당하는 행만 필터링하여 순위 반영
       if (id && rowMonthStr === currentMonthStr) {
-        sPointsMap[id] = realMonthlyPoints[id] || 0;
-        sNamesMap[id] = name;
+        sPointsMap[key] = realMonthlyPoints[key] || 0;
+        sNamesMap[key] = name;
+        sSchoolsMap[key] = sch;
       }
     }
-    Object.keys(sPointsMap).forEach(function(id) {
-      var name = sNamesMap[id];
-      var classGroup = "새싹반";
+    Object.keys(sPointsMap).forEach(function(key) {
+      var parts = key.split("_");
+      var sch = parts[0];
+      var id = parts[1];
+      var name = sNamesMap[key];
+      var classGroup = sch;
       var grade = id.charAt(0);
       var classNum = id.length === 5 ? parseInt(id.substring(1, 3)) : id.charAt(1);
       if (!isNaN(grade) && !isNaN(classNum)) {
-        classGroup = grade + "학년 " + classNum + "반";
+        classGroup = sch + " " + grade + "학년 " + classNum + "반";
       }
       leaderboard.push({
-        nickname: getStudentNickname(id, name),
+        nickname: getStudentNickname(id, name, sch),
         classGroup: classGroup,
-        points: sPointsMap[id]
+        points: sPointsMap[key]
       });
     });
   }
   
-  // 교사용 리더보드 빌드
+  leaderboard.sort(function(a, b) {
+    return b.points - a.points;
+  });
+  
+  return createJsonResponse({
+    success: true,
+    leaderboard: leaderboard.slice(0, 50)
+  });
+}
+
+// 5. 설문조사 제출 API
+function handleSubmitSurvey(sheet, data) {
+  var p = getParticipantDetails(data.studentId, data.school);
+  var surveySheet = sheet.getSheetByName(p.surveySheet);
+  
+  var name = (data.name ? data.name : "").toString().trim();
+  var answers = data.answers;
+  var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  
+  if (surveySheet.getLastRow() === 0) {
+    surveySheet.appendRow(["일시", "학교", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
+  } else {
+    var lastCol = surveySheet.getLastColumn();
+    if (lastCol < 16) {
+      for (var col = lastCol + 1; col <= 16; col++) {
+        surveySheet.getRange(1, col).setValue("문항" + (col - 4));
+      }
+    }
+  }
+  
+  var rowData = [todayStr, p.school, "'" + p.cleanId, name];
+  var totalQ = (answers && answers.length) ? answers.length : 12;
+  for (var i = 0; i < totalQ; i++) {
+    rowData.push(answers[i] !== undefined && answers[i] !== null ? answers[i] : "");
+  }
+  
+  surveySheet.appendRow(rowData);
+  SpreadsheetApp.flush();
+  
+  return createJsonResponse({
+    success: true,
+    message: "사전 설문조사가 성공적으로 제출되었습니다! 🌟"
+  });
+}더보드 빌드
   if (teacherSheet) {
     var tRows = teacherSheet.getDataRange().getValues();
     var tPointsMap = {};
@@ -742,4 +821,45 @@ function aggregateMonthlyPoints() {
       profileSheet.getRange(i + 1, 9).setValue(level);
     }
   });
+}
+
+// -------------------------------------------------------------
+// [플랜 B - 관리자 메뉴 및 비상 복구 기능]
+// -------------------------------------------------------------
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('🛠️ 튼튼탐험대 관리자')
+    .addItem('🔄 전체 포인트 재계산 및 복구', 'recalculateAllPoints')
+    .addItem('📁 즉시 시트 백업본 생성', 'createDailyBackup')
+    .addToUi();
+}
+
+/**
+ * 플랜 B 복구용: 일별 원본 기록(학생일별포인트/교사일별포인트)을 스캔하여
+ * 학생기록/교사기록의 월총포인트, 누적총포인트, 레벨을 100% 원상복구합니다.
+ */
+function recalculateAllPoints() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    aggregateMonthlyPoints();
+    ui.alert("✅ 포인트 복구 완료", "일별 원본 기록을 바탕으로 모든 학생/교사의 총포인트 및 레벨 재계산이 완료되었습니다!", ui.ButtonSet.OK);
+  } catch(e) {
+    ui.alert("❌ 복구 실패", "재계산 중 오류 발생: " + e.message, ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * 플랜 B 백업용: 현재 구글 시트 전체를 복사하여 구글 드라이브에 시각별 백업본 파일 생성
+ */
+function createDailyBackup() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var name = ss.getName() + "_백업_" + Utilities.formatDate(new Date(), "Asia/Seoul", "yyyyMMdd_HHmmss");
+    var file = DriveApp.getFileById(ss.getId());
+    var copy = file.makeCopy(name);
+    ui.alert("✅ 백업 완료", "구글 드라이브에 백업본이 안전하게 생성되었습니다:\n" + copy.getName(), ui.ButtonSet.OK);
+  } catch(e) {
+    ui.alert("❌ 백업 실패", "백업 생성 중 오류 발생: " + e.message, ui.ButtonSet.OK);
+  }
 }

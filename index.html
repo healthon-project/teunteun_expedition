@@ -279,6 +279,16 @@
           <span class="text-xl sm:text-2xl mb-2 sm:mb-3 block">🔑 1단계</span>
           
           <div class="space-y-4 sm:space-y-6">
+            <!-- School Selection Dropdown -->
+            <div class="flex justify-center items-center gap-2.5 max-w-[280px] mx-auto">
+              <span class="text-base sm:text-lg font-bold text-slate-700 whitespace-nowrap">🏫 학교</span>
+              <select id="input-school" class="w-full bg-white border-2 border-slate-200 rounded-[15px] sm:rounded-[20px] py-2 sm:py-3 px-3.5 sm:px-4 text-center text-sm sm:text-base font-bold focus:outline-none focus:border-pastelBlue cursor-pointer">
+                <option value="A초">A초등학교</option>
+                <option value="B초">B초등학교</option>
+                <option value="C초">C초등학교</option>
+              </select>
+            </div>
+
             <!-- 3 separate input fields for kids -->
             <div class="flex justify-center items-center gap-2">
               <input type="number" id="input-grade" placeholder="5" min="1" max="6" class="w-14 sm:w-16 bg-white border-2 border-slate-200 rounded-[15px] sm:rounded-[20px] py-2.5 sm:py-4 text-center text-base sm:text-lg font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
@@ -1347,6 +1357,11 @@
       // Load and Initialize Firebase config
       initFirebase();
       
+      const savedSchool = localStorage.getItem('teunteun_school') || 'A초';
+      state.school = savedSchool;
+      const inputSchool = document.getElementById('input-school');
+      if (inputSchool) inputSchool.value = savedSchool;
+      
       // Auto-load profile if saved, else use Guest template
       if (state.studentId) {
         const cached = localStorage.getItem('teunteun_student_cached');
@@ -1925,30 +1940,35 @@
 
     // Load profile manually using ID (from Registration Tab)
     function loadProfileFromIdReg() {
+      const schoolVal = document.getElementById('input-school') ? document.getElementById('input-school').value : 'A초';
       const gradeVal = document.getElementById('input-grade').value.trim();
       const classVal = document.getElementById('input-class').value.trim();
       const numVal = document.getElementById('input-number').value.trim();
       const nameVal = document.getElementById('input-name').value.trim();
       
       if (!gradeVal || !classVal || !numVal || !nameVal) {
-        alert("학년, 반, 번호, 이름을 모두 입력해주세요! 🐾");
+        alert("학교, 학년, 반, 번호, 이름을 모두 입력해주세요! 🐾");
         return;
       }
       
-      const id = String(gradeVal) + String(classVal) + String(numVal).padStart(2, '0');
+      const cleanId = String(gradeVal) + String(classVal) + String(numVal).padStart(2, '0');
+      const compoundId = `${schoolVal}_${cleanId}`;
       
       const loginBtn = document.querySelector('#tab-register #login-submit-btn-reg');
       loginBtn.disabled = true;
       loginBtn.innerText = "로그인중. ⏳";
 
-      state.studentId = id;
-      localStorage.setItem('teunteun_student_id', id);
+      state.school = schoolVal;
+      state.studentId = compoundId;
+      localStorage.setItem('teunteun_school', schoolVal);
+      localStorage.setItem('teunteun_student_id', compoundId);
       
-      executeLoginSync(id, loginBtn, nameVal);
+      executeLoginSync(compoundId, loginBtn, nameVal, schoolVal);
     }
 
     // Load teacher profile manually using phone last 4 digits (from Registration Tab)
     function loadTeacherProfile() {
+      const schoolVal = document.getElementById('input-school') ? document.getElementById('input-school').value : 'A초';
       const nameVal = document.getElementById('input-teacher-name').value.trim();
       const phoneVal = document.getElementById('input-teacher-phone').value.trim();
       
@@ -1962,108 +1982,114 @@
         return;
       }
       
-      const id = `T-${phoneVal}`;
+      const compoundId = `${schoolVal}_T-${phoneVal}`;
       
       const loginBtn = document.getElementById('login-teacher-btn');
       loginBtn.disabled = true;
       loginBtn.innerText = "로그인중. ⏳";
 
-      state.studentId = id;
-      localStorage.setItem('teunteun_student_id', id);
+      state.school = schoolVal;
+      state.studentId = compoundId;
+      localStorage.setItem('teunteun_school', schoolVal);
+      localStorage.setItem('teunteun_student_id', compoundId);
       
-      executeLoginSync(id, loginBtn, nameVal);
+      executeLoginSync(compoundId, loginBtn, nameVal, schoolVal);
     }
 
-    // Helper to generate nickname based on ID
-    function generateNickname(id, name) {
+    // Helper to generate nickname based on ID and school
+    function generateNickname(id, name, school = '') {
       const dispName = name || "";
-      if (id.startsWith('T-')) {
-        return `${dispName} 선생님`.trim();
+      let sch = school || state.school || 'A초';
+      let cleanId = (id || "").toString().trim();
+      
+      if (cleanId.includes('_')) {
+        const parts = cleanId.split('_');
+        sch = parts[0];
+        cleanId = parts[1];
       }
-      const cleanId = id.toString().trim();
+      
+      const prefix = sch ? `[${sch}] ` : "";
+      
+      if (cleanId.startsWith('T-')) {
+        return `${prefix}${dispName} 선생님`.trim();
+      }
+      
       if (cleanId.length === 4) {
         const grade = cleanId.charAt(0);
         const classNum = cleanId.charAt(1);
-        const num = parseInt(cleanId.substring(2));
-        return `${grade}학년 ${classNum}반 ${dispName}`.trim();
+        return `${prefix}${grade}학년 ${classNum}반 ${dispName}`.trim();
       } else if (cleanId.length === 5) {
         const grade = cleanId.charAt(0);
         const classNum = parseInt(cleanId.substring(1, 3));
-        const num = parseInt(cleanId.substring(3));
-        return `${grade}학년 ${classNum}반 ${dispName}`.trim();
+        return `${prefix}${grade}학년 ${classNum}반 ${dispName}`.trim();
       }
-      return dispName;
+      return `${prefix}${dispName}`.trim();
     }
 
 
     // Unified login sync logic
-    function executeLoginSync(id, loginBtn, enteredName = '') {
+    function executeLoginSync(id, loginBtn, enteredName = '', schoolVal = '') {
+      const activeSchool = schoolVal || state.school || 'A초';
       state.studentId = id;
+      state.school = activeSchool;
       localStorage.setItem('teunteun_student_id', id);
+      localStorage.setItem('teunteun_school', activeSchool);
       loadDailyState();
 
-      if (state.isOffline) {
-        setTimeout(() => {
-          let s = LocalDB.getStudent(id);
-          if (!s) {
-            // If new unregistered ID, auto-register them in local DB
-            const nickname = generateNickname(id, enteredName);
-            const curH = (state.student && state.student.height) ? state.student.height : 0;
-            const curW = (state.student && state.student.weight) ? state.student.weight : 0;
-            const res = LocalDB.saveStudent(id, enteredName, nickname, curH, curW);
-            s = res.student;
-          } else if (enteredName && s.name !== enteredName) {
-            // Update name and nickname if name was updated
-            s.name = enteredName;
-            s.nickname = generateNickname(id, enteredName);
-            
-            const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
-            if (students[id]) {
-              students[id].name = s.name;
-              students[id].nickname = s.nickname;
-              localStorage.setItem('mock_students', JSON.stringify(students));
-            }
-          }
-          state.student = s;
-          state.lastLevel = getLevelData(s.totalPoints || 0).level;
-          renderHome();
-          loginBtn.disabled = false;
-          loginBtn.innerText = "로그인 완료 🐾";
-          alert(`[${s.nickname}] 모험가님 로그인 성공! 🥳 바로 아래에 있는 '2단계 사전설문'을 완료하고 모험을 시작해봐요! 🌱`);
-          switchTab('register');
-        }, 600);
+      // 1. 즉시 로컬/캐시에서 프로필 구성 (0.05초 초고속 반응)
+      let s = LocalDB.getStudent(id) || JSON.parse(localStorage.getItem('teunteun_student_cached') || 'null');
+      const nickname = generateNickname(id, enteredName, activeSchool);
+
+      if (!s) {
+        s = {
+          studentId: id,
+          school: activeSchool,
+          name: enteredName,
+          nickname: nickname,
+          totalPoints: 0,
+          monthlyPoints: 0,
+          height: 0,
+          weight: 0,
+          preSurveyDone: false,
+          history: [{ date: getTodayDateString(true), mission: "모험 가입 환영! 🌱", weight: 0, points: 0 }],
+          weightHistory: []
+        };
       } else {
+        s.school = activeSchool;
+        if (enteredName && s.name !== enteredName) {
+          s.name = enteredName;
+          s.nickname = nickname;
+        }
+      }
+
+      // 즉시 화면에 반영 및 수용
+      state.student = s;
+      state.lastLevel = getLevelData(s.totalPoints || 0).level;
+      localStorage.setItem('teunteun_student_cached', JSON.stringify(s));
+
+      const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+      students[id] = s;
+      localStorage.setItem('mock_students', JSON.stringify(students));
+
+      renderHome();
+      updateSurveyButtonUI();
+
+      if (loginBtn) {
+        loginBtn.disabled = false;
+        loginBtn.innerText = "로그인 완료 🐾";
+      }
+
+      alert(`[${s.nickname}] 모험가님 로그인 성공! ⚡ 바로 아래의 '2단계 사전설문'을 눌러 설문을 시작해 주세요! 🚀`);
+      switchTab('register');
+
+      // 2. 서버와의 동기화는 백그라운드에서 비동기로 수초 내 처리 (사용자 대기 0초)
+      if (!state.isOffline && state.gasUrl) {
         syncWithGAS(id, (success) => {
           if (success) {
-            if (enteredName && state.student.name !== enteredName) {
-              state.student.name = enteredName;
-              state.student.nickname = generateNickname(id, enteredName);
-              
-              // Register/Update name on GAS
-              fetch(state.gasUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                  action: 'register',
-                  studentId: id,
-                  name: enteredName,
-                  nickname: state.student.nickname,
-                  height: state.student.height || 0,
-                  weight: state.student.weight || 0
-                })
-              });
-            }
             renderHome();
-            loginBtn.disabled = false;
-            loginBtn.innerText = "로그인 완료 🐾";
-            alert(`[${state.student.nickname}] 모험가님 로그인 성공! ⚡ 바로 아래에 있는 '2단계 사전설문'을 눌러 설문을 시작해 주세요! 🚀`);
-            switchTab('register');
+            updateSurveyButtonUI();
           } else {
-            // Auto register on GAS if student doesn't exist
-            const dispName = enteredName || "";
-            const nickname = generateNickname(id, dispName);
-            
+            // 서버 미등록 학생인 경우 백그라운드로 조용히 등록
             fetch(state.gasUrl, {
               method: 'POST',
               mode: 'no-cors',
@@ -2071,65 +2097,13 @@
               body: JSON.stringify({
                 action: 'register',
                 studentId: id,
-                name: dispName,
+                school: activeSchool,
+                name: enteredName,
                 nickname: nickname,
                 height: (state.student && state.student.height) ? state.student.height : 0,
                 weight: (state.student && state.student.weight) ? state.student.weight : 0
               })
-            })
-            .then(() => {
-              // Increased timeout to 2500ms to allow Google Sheets write operation to complete.
-              setTimeout(() => {
-                syncWithGAS(id, (successSec) => {
-                  if (successSec) {
-                    loginBtn.disabled = false;
-                    loginBtn.innerText = "로그인 완료 🐾";
-                    alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 끝났으니, 이제 아래의 '2단계 사전설문'을 작성해 볼까요? 🐾🌱`);
-                    renderHome();
-                    switchTab('register');
-                  } else {
-                    // Retry once more after 1500ms in case GAS was slow
-                    setTimeout(() => {
-                      syncWithGAS(id, (successThird) => {
-                        loginBtn.disabled = false;
-                        loginBtn.innerText = "로그인 완료 🐾";
-                        if (successThird) {
-                          alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 완료되었습니다. 이제 아래의 '2단계 사전설문'을 작성해 볼까요? 🐾🌱`);
-                          renderHome();
-                          switchTab('register');
-                        } else {
-                          // Smooth Fallback: If GAS is slow, log in with local student profile seamlessly
-                          const fallbackStudent = {
-                            studentId: id,
-                            name: dispName,
-                            nickname: nickname,
-                            totalPoints: 0,
-                            height: 0,
-                            weight: 0,
-                            history: [{ date: getTodayDateString(true), mission: "모험 가입 환영! 🌱", weight: 0, points: 0 }],
-                            weightHistory: []
-                          };
-                          state.student = fallbackStudent;
-                          localStorage.setItem('teunteun_student_cached', JSON.stringify(fallbackStudent));
-                          const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
-                          students[id] = fallbackStudent;
-                          localStorage.setItem('mock_students', JSON.stringify(students));
-                          
-                          alert(`신규 모험가 [${dispName}] 친구 반가워요! 🎉 가입이 완료되었습니다. 이제 아래의 '2단계 사전설문'을 작성해 볼까요? 🐾🌱`);
-                          renderHome();
-                          switchTab('register');
-                        }
-                      });
-                    }, 1200);
-                  }
-                });
-              }, 2000);
-            })
-            .catch(() => {
-              loginBtn.disabled = false;
-              loginBtn.innerText = "로그인 완료 🐾";
-              alert("인터넷 연결을 확인하고 다시 로그인 해주세요! 🐾");
-            });
+            }).catch(err => console.error("Background GAS register error", err));
           }
         });
       }
