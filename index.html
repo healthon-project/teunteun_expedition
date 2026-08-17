@@ -1303,7 +1303,9 @@
       switchTab('mission');
       alert(`🌙 [테스트] 자고 일어났습니다! (내일 날짜 시뮬레이션: ${getTodayDateString()})\n\n- 오늘의 미션: 0P로 리셋됨! (0%)\n- 상단 레벨바 누적 포인트: 리셋 없이 그대로 유지됨! ✨`);
     window.testShowLevelUpModal = function() {
-      const sampleLevel = getLevelData(3500); // Level 2 삐약이 sample
+      window.testLevelStep = ((window.testLevelStep || 0) % 3) + 1;
+      const ptsMap = { 1: 3500, 2: 6500, 3: 9500 };
+      const sampleLevel = getLevelData(ptsMap[window.testLevelStep]);
       triggerLevelUpCelebration(sampleLevel);
     };
 
