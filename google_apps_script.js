@@ -348,9 +348,9 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
   }
 
   var level = "알콩이";
-  if (cumulativePoints > 3000) level = "꼬꼬대장";
-  else if (cumulativePoints > 2000) level = "튼튼이";
-  else if (cumulativePoints > 1000) level = "삐약이";
+  if (cumulativePoints > 9000) level = "꼬꼬대장";
+  else if (cumulativePoints > 6000) level = "튼튼이";
+  else if (cumulativePoints > 3000) level = "삐약이";
 
   var pRows3 = profileSheet.getDataRange().getValues();
   var foundProfileRow = -1;
@@ -810,15 +810,13 @@ function aggregateMonthlyPoints() {
       }
       
       var level = "알콩이";
-      if (cumulativePoints > 3000) level = "꼬꼬대장";
-      else if (cumulativePoints > 2000) level = "튼튼이";
-      else if (cumulativePoints > 1000) level = "삐약이";
+      if (cumulativePoints > 9000) level = "꼬꼬대장";
+      else if (cumulativePoints > 6000) level = "튼튼이";
+      else if (cumulativePoints > 3000) level = "삐약이";
       
-      // 실제 시트에 고정된 값(Value)으로 쓰기 
-      // (G: 7=월총포인트, H: 8=누적총포인트, I: 9=레벨)
-      profileSheet.getRange(i + 1, 7).setValue(monthlyPoints);
-      profileSheet.getRange(i + 1, 8).setValue(cumulativePoints);
-      profileSheet.getRange(i + 1, 9).setValue(level);
+      profileSheet.getRange(i + 1, 8).setValue(monthlyPoints);
+      profileSheet.getRange(i + 1, 9).setValue(cumulativePoints);
+      profileSheet.getRange(i + 1, 10).setValue(level);
     }
   });
 }
