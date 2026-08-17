@@ -796,26 +796,63 @@
       <div class="space-y-2 text-left mb-6 bg-pastelPink-light p-4 rounded-2xl border border-pastelPink/30 text-sm">
         <div class="flex justify-between items-center py-1">
           <span class="font-bold">🥚 1단계 알콩이</span>
-          <span class="text-slate-500 font-semibold">0 ~ 1000p</span>
+          <span class="text-slate-500 font-semibold">0 ~ 3000p</span>
         </div>
         <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
           <span class="font-bold text-amber-600">🐣 2단계 삐약이</span>
-          <span class="text-slate-500 font-semibold">1001 ~ 2000p</span>
+          <span class="text-slate-500 font-semibold">3001 ~ 6000p</span>
         </div>
         <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
           <span class="font-bold text-emerald-600">🐔 3단계 튼튼이</span>
-          <span class="text-slate-500 font-semibold">2001 ~ 3000p</span>
+          <span class="text-slate-500 font-semibold">6001 ~ 9000p</span>
         </div>
         <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
           <span class="font-bold text-red-500">🐓 4단계 꼬꼬대장</span>
-          <span class="text-slate-500 font-semibold">3001p~</span>
+          <span class="text-slate-500 font-semibold">9001p~</span>
         </div>
       </div>
       
 
-
-      <button onclick="toggleModal('level-modal')" class="w-full bg-slate-800 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md hover:bg-slate-900 active:scale-95 transition-transform">
+      <button onclick="toggleModal('level-modal')" class="w-full bg-slate-800 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md hover:bg-slate-900 active:scale-95 transition-transform cursor-pointer">
         화이팅! 확인 완료 💖
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== DIALOG 1.2: LEVEL UP CELEBRATION BOX MODAL ==================== -->
+  <div id="levelup-celebration-modal" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-md flex justify-center items-center z-50 p-4">
+    <div class="bg-white rounded-[40px] border-4 border-amber-400 w-full max-w-[360px] p-6 text-center shadow-2xl scale-95 transition-all duration-500 relative overflow-hidden">
+      
+      <!-- Sparkle Background Glow -->
+      <div class="absolute -top-12 -left-12 w-40 h-40 bg-yellow-200 rounded-full blur-2xl opacity-60 pointer-events-none"></div>
+      <div class="absolute -bottom-12 -right-12 w-40 h-40 bg-pink-200 rounded-full blur-2xl opacity-60 pointer-events-none"></div>
+
+      <!-- Title Badge -->
+      <div class="inline-block bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 font-black text-xs px-4 py-1.5 rounded-full shadow-md mb-3 animate-pulse">
+        🎉 LEVEL UP! 🎉
+      </div>
+
+      <h3 id="levelup-modal-title" class="text-2xl font-black text-slate-800 mb-1">
+        축하합니다! 레벨업!
+      </h3>
+      <p id="levelup-modal-subtitle" class="text-xs font-bold text-slate-500 mb-3">
+        새로운 대표 캐릭터 진화 완료!
+      </p>
+      
+      <!-- Representative Character Image Display Container -->
+      <div class="relative w-44 h-44 mx-auto mb-4 flex justify-center items-center">
+        <div id="levelup-backdrop" class="absolute w-36 h-36 rounded-full bg-pastelYellow opacity-60 blur-md"></div>
+        <img id="levelup-character-img" src="assets/level2.png" alt="새로운 레벨 캐릭터" class="w-36 h-36 object-contain z-10 char-float" style="filter: drop-shadow(0 10px 15px rgba(0,0,0,0.18));">
+      </div>
+
+      <!-- Character Greeting / Dialog -->
+      <div id="levelup-modal-dialog" class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3.5 text-xs font-black text-amber-900 mb-5 leading-relaxed shadow-inner">
+        "삐약삐약! 새로운 캐릭터 단계에 도착했어요!"
+      </div>
+
+      <!-- Confirm / Gift Button -->
+      <button onclick="closeLevelUpCelebrationModal()" class="w-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-black py-4 px-6 rounded-2xl shadow-lg active:scale-95 transition-all text-base border-2 border-white cursor-pointer">
+        🥳 축하 박스 확인 완료! 🎁
       </button>
     </div>
   </div>
@@ -2250,9 +2287,20 @@
 
       // Check for level up celebration in real time
       if (state.lastLevel && levelInfo.level > state.lastLevel) {
-        triggerLevelUpCelebration(levelInfo.name);
+        triggerLevelUpCelebration(levelInfo);
       }
       state.lastLevel = levelInfo.level;
+
+      // Check first-time / first-day level up celebration popup for this level
+      if (levelInfo.level > 1 && state.studentId) {
+        const celebratedKey = `teunteun_celebrated_${state.studentId}_lvl_${levelInfo.level}`;
+        if (!localStorage.getItem(celebratedKey)) {
+          localStorage.setItem(celebratedKey, 'true');
+          setTimeout(() => {
+            triggerLevelUpCelebration(levelInfo);
+          }, 400);
+        }
+      }
       
       // Update background scenery by level dynamically
       const screenWrapper = document.getElementById('app-screen-wrapper');
@@ -3300,10 +3348,34 @@
       toggleModal('level-modal');
     }
 
-    function triggerLevelUpCelebration(newLevelName) {
+    function triggerLevelUpCelebration(levelInfo) {
+      if (!levelInfo) return;
+      if (typeof levelInfo === 'string') {
+        const p = (state.student && state.student.totalPoints) || 0;
+        levelInfo = getLevelData(p);
+      }
+      
       triggerConfetti();
       playAudio('clear');
-      alert(`🎉 대박! 레벨업 성공! 🎉\n새로운 캐릭터 [${newLevelName}] 단계에 도달했습니다! 꾸준히 몸을 관리한 결과물이에요! 축하합니다! 🥳`);
+
+      const titleEl = document.getElementById('levelup-modal-title');
+      const subtitleEl = document.getElementById('levelup-modal-subtitle');
+      const imgEl = document.getElementById('levelup-character-img');
+      const dialogEl = document.getElementById('levelup-modal-dialog');
+      const backdropEl = document.getElementById('levelup-backdrop');
+
+      if (titleEl) titleEl.innerHTML = `🎉 [${levelInfo.name}] 달성! 🎉`;
+      if (subtitleEl) subtitleEl.innerText = `${levelInfo.badge}`;
+      if (imgEl) imgEl.src = levelInfo.img;
+      if (dialogEl) dialogEl.innerHTML = `"${levelInfo.dialog}"`;
+      if (backdropEl) backdropEl.style.backgroundColor = levelInfo.bgClass || '#fde2e4';
+
+      toggleModal('levelup-celebration-modal');
+    }
+
+    function closeLevelUpCelebrationModal() {
+      toggleModal('levelup-celebration-modal');
+      triggerConfetti();
     }
 
     // ==================== CONFETTI PARTICLES SIMULATION ====================
