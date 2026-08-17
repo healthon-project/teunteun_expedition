@@ -847,7 +847,7 @@
 
       <!-- Character Greeting / Dialog -->
       <div id="levelup-modal-dialog" class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3.5 text-xs font-black text-amber-900 mb-5 leading-relaxed shadow-inner">
-        "삐약삐약! 새로운 캐릭터 단계에 도착했어요!"
+        "🎉 새로운 단계로 레벨업 된 것을 축하드려요! 우리 같이 계속 힘내보자! 🐾✨"
       </div>
 
       <!-- Confirm / Gift Button -->
@@ -1051,10 +1051,10 @@
 
     // Level settings based on points (Chicken series with custom thresholds)
     const LEVEL_CONFIG = [
-      { max: 3000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~3000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야.<br>매일 건강 미션을 달성해서 나를 무럭무럭 키워줘!", bgClass: '#fde2e4' },
-      { max: 6000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~6000p)", img: "assets/level2.png?v=2", dialog: "삐약삐약! 껍질을 깨고 나온 삐약이야!<br>운동장 세 바퀴 뛰고 올까? 🏃", bgClass: '#fffdf0' },
-      { max: 9000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~9000p)", img: "assets/level3.png?v=3", dialog: "날개를 힘껏 퍼덕퍼덕! 이제 튼튼해졌어!<br>채소도 잘 먹어야 대장이 될 수 있어! 🥦", bgClass: '#d8f3dc' },
-      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(9001p~)", img: "assets/level4.png?v=2", dialog: "와아! 멋진 왕관과 망토를 쓴 꼬꼬대장 완성!<br>건강대장이 된 소감이 어때? 👑✨", bgClass: '#cddafd' }
+      { max: 3000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~3000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야! 🌱<br>새로운 모험이 시작되었어. 매일매일 열심히 힘내보자! 💪", bgClass: '#fde2e4' },
+      { max: 6000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~6000p)", img: "assets/level2.png?v=2", dialog: "🎉 새로운 2단계 삐약이로 레벨업 된 것을 축하드려요!<br>앞으로도 힘차게 힘내보자! 🏃✨", bgClass: '#fffdf0' },
+      { max: 9000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~9000p)", img: "assets/level3.png?v=3", dialog: "🎉 새로운 3단계 튼튼이로 레벨업 된 것을 축하드려요!<br>멋진 건강 대장을 향해 계속 힘내보자! 🥦🔥", bgClass: '#d8f3dc' },
+      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(9001p~)", img: "assets/level4.png?v=2", dialog: "🎉 최종 4단계 꼬꼬대장으로 레벨업 된 것을 축하드려요!<br>최고의 건강 탐험가 달성! 항상 화이팅! 👑✨", bgClass: '#cddafd' }
     ];
 
     function getLevelData(points) {
@@ -3365,7 +3365,7 @@
       const backdropEl = document.getElementById('levelup-backdrop');
 
       if (titleEl) titleEl.innerHTML = `🎉 [${levelInfo.name}] 달성! 🎉`;
-      if (subtitleEl) subtitleEl.innerText = `${levelInfo.badge}`;
+      if (subtitleEl) subtitleEl.innerText = `새로운 단계로 레벨업 된 것을 축하드려요!`;
       if (imgEl) imgEl.src = levelInfo.img;
       if (dialogEl) dialogEl.innerHTML = `"${levelInfo.dialog}"`;
       if (backdropEl) backdropEl.style.backgroundColor = levelInfo.bgClass || '#fde2e4';
