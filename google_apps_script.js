@@ -69,7 +69,16 @@ function doPost(e) {
     } else if (action === 'log_mission') {
       return handleLogMission(sheet, postData);
     } else if (action === 'submit_survey') {
-      return handleSubmitSurvey(sheet// 헬퍼: ID 구조 파싱 및 매핑 정보 반환 (한국어 시트 매핑 + 학교 정보 파싱)
+      return handleSubmitSurvey(sheet, postData);
+    }
+    
+    return createJsonResponse({ success: false, message: "알 수 없는 요청: " + action });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 헬퍼: ID 구조 파싱 및 매핑 정보 반환 (한국어 시트 매핑 + 학교 정보 파싱)
 function getParticipantDetails(studentId, schoolFromData) {
   var rawId = studentId ? studentId.toString().trim() : "";
   var school = schoolFromData || "";
@@ -593,75 +602,6 @@ function handleSubmitSurvey(sheet, data) {
     success: true,
     message: "사전 설문조사가 성공적으로 제출되었습니다! 🌟"
   });
-}더보드 빌드
-  if (teacherSheet) {
-    var tRows = teacherSheet.getDataRange().getValues();
-    var tPointsMap = {};
-    var tNamesMap = {};
-    for (var j = 1; j < tRows.length; j++) {
-      var cellValue = tRows[j][0];
-      var rowMonthStr = formatDateToYYYYMM(cellValue);
-      var id = tRows[j][1].toString().trim();
-      var name = tRows[j][2].toString().trim();
-      
-      if (id && rowMonthStr === currentMonthStr) {
-        tPointsMap[id] = realMonthlyPoints[id] || 0;
-        tNamesMap[id] = name;
-      }
-    }
-    Object.keys(tPointsMap).forEach(function(id) {
-      leaderboard.push({
-        nickname: tNamesMap[id] + " 선생님",
-        classGroup: "교사",
-        points: tPointsMap[id]
-      });
-    });
-  }
-  
-  leaderboard.sort(function(a, b) {
-    return b.points - a.points;
-  });
-  
-  return createJsonResponse({
-    success: true,
-    leaderboard: leaderboard.slice(0, 50)
-  });
-}
-
-// 5. 설문조사 제출 API
-function handleSubmitSurvey(sheet, data) {
-  var p = getParticipantDetails(data.studentId);
-  var surveySheet = sheet.getSheetByName(p.surveySheet);
-  
-  var name = (data.name ? data.name : "").toString().trim();
-  var answers = data.answers;
-  var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
-  
-  // 구글 시트 헤더(1행) 자동 확장 검증 (문항12까지 O열 헤더 자동 생성)
-  if (surveySheet.getLastRow() === 0) {
-    surveySheet.appendRow(["일시", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
-  } else {
-    var lastCol = surveySheet.getLastColumn();
-    if (lastCol < 15) {
-      for (var col = lastCol + 1; col <= 15; col++) {
-        surveySheet.getRange(1, col).setValue("문항" + (col - 3));
-      }
-    }
-  }
-  
-  var rowData = [todayStr, "'" + p.cleanId, name];
-  var totalQ = (answers && answers.length) ? answers.length : 12;
-  for (var i = 0; i < totalQ; i++) {
-    rowData.push(answers[i] !== undefined && answers[i] !== null ? answers[i] : "");
-  }
-  
-  surveySheet.appendRow(rowData);
-  SpreadsheetApp.flush();
-  
-  return createJsonResponse({
-    success: true,
-    message: "사전 설문조사(12문항)가 성공적으로 제출되었습니다! 🌟"
-  });
 }
 
 // 헬퍼: JSON 응답 생성
@@ -852,11 +792,22 @@ function recalculateAllPoints() {
 function createDailyBackup() {
   var ui = SpreadsheetApp.getUi();
   try {
+    aggregateMonthlyPoints(); // 백업 전 최신 포인트 & 레벨 자동 최종 재계산!
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var name = ss.getName() + "_백업_" + Utilities.formatDate(new Date(), "Asia/Seoul", "yyyyMMdd_HHmmss");
-    var file = DriveApp.getFileById(ss.getId());
-    var copy = file.makeCopy(name);
-    ui.alert("✅ 백업 완료", "구글 드라이브에 백업본이 안전하게 생성되었습니다:\n" + copy.getName(), ui.ButtonSet.OK);
+    var folderName = "📂 튼튼탐험대_백업모음";
+    
+    try {
+      var folders = DriveApp.getFoldersByName(folderName);
+      var targetFolder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+      var file = DriveApp.getFileById(ss.getId());
+      file.makeCopy(name, targetFolder);
+    } catch(errDrive) {
+      // 권한 동의 미완료 시 내 드라이브에 기본 복사
+      ss.copy(name);
+    }
+    
+    ui.alert("✅ 백업 완료", "최신 데이터 재계산 후 구글 드라이브 ['" + folderName + "'] 전용 폴더에 백업본이 저장되었습니다!", ui.ButtonSet.OK);
   } catch(e) {
     ui.alert("❌ 백업 실패", "백업 생성 중 오류 발생: " + e.message, ui.ButtonSet.OK);
   }
