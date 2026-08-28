@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 숫자로 된 학번(6606 등) B초 100% 정상 라우팅 완결판 (Code.gs)
-// (data.school 우선 반영하여 숫자로만 이루어진 ID도 [B초_설문응답] 탭에 100% 정확히 전달)
-// (최종 갱신 시각: 2026-08-28 14:00:00)
+// 꼬꼬챌린지 - Option A: 설문 응답 문항1~문항12 열 개별 분리 완결판 (Code.gs)
+// (설문응답 탭에 문항1, 문항2 ... 문항12까지 12개 컬럼을 낱개로 넓게 분리하여 통계 분석 용이)
+// (최종 갱신 시각: 2026-08-28 14:05:00)
 // ========================================================
 
 function doPost(e) {
@@ -12,10 +12,9 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    // 1. 전달받은 school 값("B초" 등)을 최우선으로 사용!
+    // 전달받은 school 값("B초" 등)을 최우선으로 사용!
     let school = String(data.school || "").trim();
     if (!school || school === "undefined" || school === "A초") {
-      // school 값이 없거나 기본값일 경우 studentId에서 정교하게 추출
       const extracted = getSchoolFromId(data.studentId);
       if (extracted && extracted !== "A초") school = extracted;
     }
@@ -24,7 +23,7 @@ function doPost(e) {
     if (!school.endsWith("초")) school += "초";
     
     if (!["A초", "B초", "C초", "D초"].includes(school)) {
-      school = "B초"; // B초 테스트 지원
+      school = "B초";
     }
 
     const action = data.action;
@@ -63,23 +62,35 @@ function doPost(e) {
       return responseJSON({ success: true, message: `${school}_월별성장 신체기록 완료` });
     }
     
-    // 3. 사전 / 사후 설문조사 ➡️ [A초_설문응답, B초_설문응답 등] 탭
+    // 3. 사전 / 사후 설문조사 ➡️ [A초_설문응답, B초_설문응답 등] 탭 (문항1~문항12 열 개별 분리!)
     else if (action === 'save_survey' || action === 'submit_survey') {
       const surveySheet = getOrCreateSurveySheet(ss, `${school}_설문응답`);
       const cleanId = cleanStudentId(data.studentId);
       const name = String(data.name || cleanId).trim();
       
-      surveySheet.appendRow([
+      let answersArr = [];
+      if (Array.isArray(data.answers)) {
+        answersArr = data.answers;
+      } else if (typeof data.answers === 'string') {
+        try { answersArr = JSON.parse(data.answers); } catch(e) { answersArr = [data.answers]; }
+      }
+
+      const rowData = [
         timestamp,
         school,
         cleanId,
         name,
-        data.surveyType || "사전설문",
-        JSON.stringify(data.answers || {})
-      ]);
+        data.surveyType || "사전설문"
+      ];
 
-      sortSheetStudentsFirst(surveySheet, 6);
-      return responseJSON({ success: true, message: `${school}_설문응답 저장 완료` });
+      // 문항 1번부터 12번까지 각 셀에 1개씩 나누어 입력!
+      for (let i = 0; i < 12; i++) {
+        rowData.push(answersArr[i] !== undefined ? String(answersArr[i]) : "");
+      }
+
+      surveySheet.appendRow(rowData);
+      sortSheetStudentsFirst(surveySheet, 17);
+      return responseJSON({ success: true, message: `${school}_설문응답 문항별 12열 개별 저장 완료` });
     }
 
     return responseJSON({ success: true, message: "수신 완료" });
@@ -104,8 +115,6 @@ function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   const name = String(data.name || cleanId).trim();
   
   const pts = Number(data.totalPoints || 0);
-  
-  // 총포인트가 100점 이상일 때만 일일 스티커 1개, 그 미만(0P~99P)은 무조건 0개!
   const dailyStickerVal = pts >= 100 ? 1 : 0;
 
   const today = new Date();
@@ -185,10 +194,18 @@ function getOrCreateMonthlySheet(ss, sheetName) {
 
 function getOrCreateSurveySheet(ss, sheetName) {
   let sheet = ss.getSheetByName(sheetName);
+  const headers = [
+    "응답일시", "학교", "개인번호", "이름", "설문구분",
+    "문항1", "문항2", "문항3", "문항4", "문항5", "문항6",
+    "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"
+  ];
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
-    sheet.appendRow(["응답일시", "학교", "개인번호", "이름", "설문구분", "응답내용"]);
-    sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#FDE2E4");
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#FDE2E4");
+  } else {
+    // 헤더를 문항1~문항12 17열로 자동 확장 갱신
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#FDE2E4");
   }
   return sheet;
 }
