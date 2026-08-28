@@ -1797,38 +1797,31 @@
       if (state.isOffline) {
         refreshStudentData();
       } else {
-        // GAS sync (Send ONCE per student per day to prevent duplicate 6-row entries!)
-        const todayStr = getTodayDateString();
-        const sentKey = `gas_sent_${state.studentId}_${todayStr}`;
+        // Realtime GAS sync (Overwrites today's 1 row reliably in Google Sheets)
+        const totalPts = Number(state.student.totalPoints) || 0;
+        const totalSticker = Math.floor(totalPts / 100);
+        const dailyStk = todayTotal >= 100 ? 1 : 0;
 
-        if (!localStorage.getItem(sentKey)) {
-          localStorage.setItem(sentKey, 'true');
-
-          const totalPts = Number(state.student.totalPoints) || 0;
-          const totalSticker = Math.floor(totalPts / 100);
-          const dailyStk = todayTotal >= 100 ? 1 : 0;
-
-          fetch(state.gasUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'log_mission',
-              school: state.school || 'A초',
-              studentId: state.studentId,
-              name: state.student.name || '',
-              missionType: "일별스티커",
-              points: todayTotal,
-              totalPoints: totalPts,
-              stickerCount: totalSticker,
-              dailySticker: dailyStk,
-              isSetAbsolute: true,
-              weight: ""
-            })
-          }).catch(err => {
-            console.error("GAS sync error", err);
-          });
-        }
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            school: state.school || 'A초',
+            studentId: state.studentId,
+            name: state.student.name || '',
+            missionType: "일별스티커",
+            points: todayTotal,
+            totalPoints: totalPts,
+            stickerCount: totalSticker,
+            dailySticker: dailyStk,
+            isSetAbsolute: true,
+            weight: ""
+          })
+        }).catch(err => {
+          console.error("GAS sync error", err);
+        });
 
         // Sync local storage cache instantly
         localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
