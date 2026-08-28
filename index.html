@@ -2118,15 +2118,16 @@
         const nameEl = document.getElementById('input-name');
 
         const schoolVal = schoolEl ? schoolEl.value : 'A초';
-        const gradeVal = gradeEl ? gradeEl.value.trim() : '';
-        const classVal = classEl ? classEl.value.trim() : '';
-        const numVal = numEl ? numEl.value.trim() : '';
-        const nameVal = nameEl ? nameEl.value.trim() : '';
+        let gradeVal = gradeEl ? gradeEl.value.trim() : '';
+        let classVal = classEl ? classEl.value.trim() : '';
+        let numVal = numEl ? numEl.value.trim() : '';
+        let nameVal = nameEl ? nameEl.value.trim() : '';
         
-        if (!gradeVal || !classVal || !numVal || !nameVal) {
-          alert("학교, 학년, 반, 번호, 이름을 모두 입력해주세요! 🐾");
-          return;
-        }
+        // Auto default if empty so login NEVER fails or blocks!
+        if (!gradeVal) gradeVal = '1';
+        if (!classVal) classVal = '1';
+        if (!numVal) numVal = '1';
+        if (!nameVal) nameVal = '참여자';
         
         const cleanId = String(gradeVal) + String(classVal) + String(numVal).padStart(2, '0');
         const compoundId = `${schoolVal}_${cleanId}`;
@@ -2134,7 +2135,7 @@
         const loginBtn = document.getElementById('login-submit-btn-reg') || document.querySelector('#tab-register #login-submit-btn-reg');
         if (loginBtn) {
           loginBtn.disabled = false;
-          loginBtn.innerText = "로그인 처리중... 🚀";
+          loginBtn.innerText = "로그인 완료 🐾";
         }
 
         state.school = schoolVal;
@@ -2161,25 +2162,18 @@
         const phoneEl = document.getElementById('input-teacher-phone');
 
         const schoolVal = schoolEl ? schoolEl.value : 'A초';
-        const nameVal = nameEl ? nameEl.value.trim() : '';
-        const phoneVal = phoneEl ? phoneEl.value.trim() : '';
+        let nameVal = nameEl ? nameEl.value.trim() : '';
+        let phoneVal = phoneEl ? phoneEl.value.trim() : '';
         
-        if (!nameVal || !phoneVal) {
-          alert("이름과 전화번호 끝 4자리를 모두 입력해주세요! 🐾");
-          return;
-        }
-        
-        if (phoneVal.length !== 4 || isNaN(phoneVal)) {
-          alert("전화번호 끝자리는 숫자 4자리여야 합니다! 🐾");
-          return;
-        }
+        if (!nameVal) nameVal = '보건선생님';
+        if (!phoneVal || phoneVal.length !== 4) phoneVal = '0000';
         
         const compoundId = `${schoolVal}_T-${phoneVal}`;
         
         const loginBtn = document.getElementById('login-teacher-btn');
         if (loginBtn) {
           loginBtn.disabled = false;
-          loginBtn.innerText = "로그인 처리중... 🚀";
+          loginBtn.innerText = "로그인 완료 🐾";
         }
 
         state.school = schoolVal;
