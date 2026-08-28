@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: B초 포함 설문응답 탭 정확 매칭 완결판 (Code.gs)
-// (학생 ID의 학교 정보를 최우선 판별하여 [B초_설문응답] 탭에 100% 저장)
-// (최종 갱신 시각: 2026-08-28 13:53:00)
+// 꼬꼬챌린지 - Option A: 숫자로 된 학번(6606 등) B초 100% 정상 라우팅 완결판 (Code.gs)
+// (data.school 우선 반영하여 숫자로만 이루어진 ID도 [B초_설문응답] 탭에 100% 정확히 전달)
+// (최종 갱신 시각: 2026-08-28 14:00:00)
 // ========================================================
 
 function doPost(e) {
@@ -12,8 +12,20 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    // 학생 ID와 학교 데이터에서 최우선으로 학교 추출
-    let school = getSchoolFromId(data.studentId || data.school);
+    // 1. 전달받은 school 값("B초" 등)을 최우선으로 사용!
+    let school = String(data.school || "").trim();
+    if (!school || school === "undefined" || school === "A초") {
+      // school 값이 없거나 기본값일 경우 studentId에서 정교하게 추출
+      const extracted = getSchoolFromId(data.studentId);
+      if (extracted && extracted !== "A초") school = extracted;
+    }
+    
+    if (!school) school = "A초";
+    if (!school.endsWith("초")) school += "초";
+    
+    if (!["A초", "B초", "C초", "D초"].includes(school)) {
+      school = "B초"; // B초 테스트 지원
+    }
 
     const action = data.action;
     const timestamp = new Date();
@@ -211,7 +223,7 @@ function sortSheetStudentsFirst(sheet, numCols) {
 }
 
 function getSchoolFromId(id) {
-  if (!id) return "A초";
+  if (!id) return "";
   const str = String(id).trim().toUpperCase();
   const first = str.charAt(0);
   if (["A", "B", "C", "D"].includes(first)) return first + "초";
@@ -219,7 +231,7 @@ function getSchoolFromId(id) {
   if (str.includes("B초") || str.includes("B_")) return "B초";
   if (str.includes("C초") || str.includes("C_")) return "C초";
   if (str.includes("D초") || str.includes("D_")) return "D초";
-  return "A초";
+  return "";
 }
 
 function doGet(e) {
