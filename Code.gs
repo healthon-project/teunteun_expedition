@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 총포인트 100점 미만 100% 무조건 스티커 0개 고정 (Code.gs)
-// (하드코딩된 1개 부여 오차 완전 제거, totalPoints >= 100 일 때만 1개 부여)
-// (최종 갱신 시각: 2026-08-28 13:42:00)
+// 꼬꼬챌린지 - Option A: 설문 연동 완결판 (Code.gs)
+// (save_survey 및 submit_survey 액션 둘 다 100% 수신하여 [학교_설문응답] 탭 저장)
+// (최종 갱신 시각: 2026-08-28 13:50:00)
 // ========================================================
 
 function doPost(e) {
@@ -57,8 +57,8 @@ function doPost(e) {
       return responseJSON({ success: true, message: `${school}_월별성장 신체기록 완료` });
     }
     
-    // 3. 사전 / 사후 설문조사 ➡️ [A초_설문응답] 탭
-    else if (action === 'save_survey') {
+    // 3. 사전 / 사후 설문조사 ➡️ [A초_설문응답, B초_설문응답 등] 탭
+    else if (action === 'save_survey' || action === 'submit_survey') {
       const surveySheet = getOrCreateSurveySheet(ss, `${school}_설문응답`);
       const cleanId = cleanStudentId(data.studentId);
       const name = String(data.name || cleanId).trim();

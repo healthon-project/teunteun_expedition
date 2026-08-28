@@ -3776,9 +3776,11 @@
           mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
-            action: 'submit_survey',
+            action: 'save_survey',
+            school: state.school || 'A초',
             studentId: state.studentId,
-            name: state.student.name,
+            name: state.student ? state.student.name : '',
+            surveyType: "사전설문",
             answers: answersText
           })
         })
