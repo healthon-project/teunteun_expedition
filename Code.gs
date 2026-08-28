@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 스티커 0개 정확 표기 완결판 (Code.gs)
-// (스티커 0개일 때 1개로 잘못 표기되던 data.dailySticker || 1 버그 100% 수정)
-// (최종 갱신 시각: 2026-08-28 13:14:00)
+// 꼬꼬챌린지 - Option A: 스티커 0개 및 일일전송 완결판 (Code.gs)
+// (B초 포함 4개 학교 매일 출석부 1일 1행 / 월별성장 10열 이격 세팅)
+// (최종 갱신 시각: 2026-08-28 13:17:00)
 // ========================================================
 
 function doPost(e) {
@@ -24,7 +24,7 @@ function doPost(e) {
     const action = data.action;
     const timestamp = new Date();
 
-    // 1. 일일 출석 및 미션 스티커 ➡️ [A초] 매일 출석부 탭 (5열 1일 1행 고정!)
+    // 1. 일일 출석 및 미션 스티커 ➡️ [A초, B초, C초, D초] 매일 출석부 탭 (5열 1일 1행 고정!)
     if (action === 'log_mission') {
       const dailySheet = getOrCreateDailySheet(ss, school);
       upsertDailySticker5Col(dailySheet, school, data, timestamp);

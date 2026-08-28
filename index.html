@@ -2290,30 +2290,34 @@
       alert(`[${s.nickname}] 모험가님 로그인 성공! ⚡ 바로 아래의 '2단계 사전설문'을 눌러 설문을 시작해 주세요! 🚀`);
       switchTab('register');
 
-      // 2. Background GAS sync without blocking login
+      // 2. Immediate Daily Attendance Sync on Login (Guarantees row in B초 immediately upon login!)
       if (!state.isOffline && state.gasUrl) {
-        syncWithGAS(id, (success) => {
-          if (success) {
-            renderHome();
-            updateSurveyButtonUI();
-          } else {
-            // Background register if server doesn't have student yet
-            fetch(state.gasUrl, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({
-                action: 'register',
-                studentId: id,
-                school: activeSchool,
-                name: enteredName,
-                nickname: nickname,
-                height: (state.student && state.student.height) ? state.student.height : 0,
-                weight: (state.student && state.student.weight) ? state.student.weight : 0
-              })
-            }).catch(err => console.error("Background GAS register error", err));
-          }
-        });
+        let todayPts = 0;
+        const ptsCfg = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+        for (const [mId, isDone] of Object.entries(state.todayMissions)) {
+          if (isDone === true) todayPts += ptsCfg[mId];
+        }
+        const dailyStk = todayPts >= 100 ? 1 : 0;
+        const totalPts = Number(state.student.totalPoints) || 0;
+        const totalSticker = Math.floor(totalPts / 100);
+
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            school: activeSchool,
+            studentId: id,
+            name: enteredName || s.name || '',
+            missionType: "일별스티커",
+            points: todayPts,
+            totalPoints: totalPts,
+            stickerCount: totalSticker,
+            dailySticker: dailyStk,
+            isSetAbsolute: true
+          })
+        }).catch(err => console.error("Login attendance GAS sync error", err));
       }
     }
 
