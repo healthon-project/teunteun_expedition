@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+<!-- 꼬꼬챌린지 - 스스로 체중관리 챌린지 (최종 갱신: 2026-08-28 11:47:51) -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -183,13 +184,11 @@
         </div>
       </button>
 
-      <!-- 상시 고정 레벨 단계 뱃지 -->
-      <div id="header-level-badge" class="bg-slate-800/85 text-white text-[11px] px-4 py-1.5 rounded-full font-bold shadow-sm z-20">
-        🥚 1단계 알콩이(0~3000p)
-      </div>
+      <!-- Hidden placeholder for JS compatibility -->
+      <div id="header-level-badge" class="hidden"></div>
       
-      <!-- Settings Icon for Teacher Link -->
-      <button onclick="toggleModal('settings-modal')" class="absolute right-4 top-10 p-2 rounded-full hover:bg-pastelPink/30 active:scale-95 transition-transform" title="보건교사 설정">
+      <!-- Settings Icon for Teacher Link (Password Protected) -->
+      <button onclick="openTeacherSettings()" class="absolute right-4 top-10 p-2 rounded-full hover:bg-pastelPink/30 active:scale-95 transition-transform" title="보건교사 관리자 전용 설정">
         <svg class="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -197,38 +196,39 @@
       </button>
     </div>
 
-    <!-- Global Milestone Header (Shown on Mission, Playground, My Body, and Stickers tabs) -->
-    <div id="global-milestone-header" class="hidden pt-10 pb-2 px-6 bg-gradient-to-r from-pastelPink-light via-pastelYellow-light to-pastelMint-light border-b border-pastelPink/30 flex flex-col justify-center items-center gap-1 z-10 relative">
-      <!-- Level Milestone Cards -->
-      <div class="grid grid-cols-4 gap-2 mb-1.5 w-full">
-        <div id="g-lvl-1" class="rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-          <span class="text-xl">🥚</span>
-          <span class="text-[10.5px] font-bold mt-0.5">알콩이</span>
-          <span class="text-[8.5px] text-slate-400 mt-0">0~3000P</span>
-        </div>
-        <div id="g-lvl-2" class="rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-          <span class="text-xl">🐣</span>
-          <span class="text-[10.5px] font-bold mt-0.5">삐약이</span>
-          <span class="text-[8.5px] text-slate-400 mt-0">~6000P</span>
-        </div>
-        <div id="g-lvl-3" class="rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-          <span class="text-xl">🐥</span>
-          <span class="text-[10.5px] font-bold mt-0.5">튼튼이</span>
-          <span class="text-[8.5px] text-slate-400 mt-0">~9000P</span>
-        </div>
-        <div id="g-lvl-4" class="rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
-          <span class="text-xl">🐔</span>
-          <span class="text-[10.5px] font-bold mt-0.5">꼬꼬대장</span>
-          <span class="text-[8.5px] text-slate-400 mt-0">9001P~</span>
-        </div>
+    <!-- Global Milestone Header (4 Step-by-Step Character Cards, NO Progress Bar) -->
+    <div id="global-milestone-header" class="hidden pt-10 pb-2 px-4 bg-gradient-to-r from-pastelPink-light via-pastelYellow-light to-pastelMint-light border-b border-pastelPink/30 flex flex-col justify-center items-center gap-1 z-10 relative">
+      <!-- Guide Banner Above 4 Level Cards -->
+      <div class="text-[11px] sm:text-xs font-black text-slate-700 bg-white/95 px-3.5 py-1 rounded-full shadow-sm border border-pink-200/80 flex items-center justify-center gap-1.5 tracking-tight my-0.5">
+        <span>✨ 미션 성공</span>
+        <span class="text-pink-500 font-black text-xs">=</span>
+        <span>⭐ 스티커 획득</span>
+        <span class="text-pink-500 font-black text-xs">=</span>
+        <span>🚀 쑥쑥 레벨업!</span>
       </div>
 
-      <!-- Progress Bar -->
-      <div class="w-full flex items-center gap-3 px-1">
-        <div class="flex-1 bg-slate-100 border border-slate-200 rounded-full h-3 relative overflow-hidden">
-          <div id="g-prog-bar" class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+      <!-- 4 Step-by-Step Character Cards -->
+      <div class="grid grid-cols-4 gap-2 my-1 w-full max-w-[420px]">
+        <div id="g-lvl-1" class="rounded-2xl py-1.5 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+          <span class="lvl-emoji text-2xl">🥚</span>
+          <span class="lvl-name text-[11px] font-bold mt-0.5">알콩이</span>
+          <span class="lvl-count text-[9px] text-slate-400 mt-0">0~7개</span>
         </div>
-        <span id="g-prog-text" class="text-sm font-black text-slate-600 min-w-[50px] text-right">0 P</span>
+        <div id="g-lvl-2" class="rounded-2xl py-1.5 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+          <span class="lvl-emoji text-2xl">🐣</span>
+          <span class="lvl-name text-[11px] font-bold mt-0.5">삐약이</span>
+          <span class="lvl-count text-[9px] text-slate-400 mt-0">8~23개</span>
+        </div>
+        <div id="g-lvl-3" class="rounded-2xl py-1.5 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+          <span class="lvl-emoji text-2xl">🐥</span>
+          <span class="lvl-name text-[11px] font-bold mt-0.5">튼튼이</span>
+          <span class="lvl-count text-[9px] text-slate-400 mt-0">24~44개</span>
+        </div>
+        <div id="g-lvl-4" class="rounded-2xl py-1.5 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm opacity-60 text-slate-500">
+          <span class="lvl-emoji text-2xl">🐔</span>
+          <span class="lvl-name text-[11px] font-bold mt-0.5">꼬꼬대장</span>
+          <span class="lvl-count text-[9px] text-slate-400 mt-0">45개+</span>
+        </div>
       </div>
     </div>
 
@@ -236,37 +236,66 @@
     <div id="app-content-scroll" class="flex-1 overflow-y-auto custom-scrollbar bg-transparent relative" style="padding-top: 3.5rem; padding-bottom: 6rem;">
 
       <!-- ==================== PAGE 1: HOME ==================== -->
-      <!-- ==================== PAGE 1: HOME ==================== -->
-      <section id="tab-home" class="tab-content flex flex-col items-center justify-start min-h-[500px] sm:min-h-[580px] w-full pb-4">
+      <section id="tab-home" class="tab-content flex flex-col items-center justify-between min-h-[520px] sm:min-h-[600px] w-full pb-4 px-4 bg-transparent relative">
         
-        <!-- Main Card Wrapper (Contains character drawing, speech, and gift btn) -->
-        <div class="w-full pt-2 pb-6 px-5 bg-transparent text-slate-800 flex flex-col items-center justify-start">
-          <p class="text-xs sm:text-sm font-black text-slate-500 text-center mb-4 sm:mb-6">알콩이에서 꼬꼬대장까지, 나는 건강왕</p>
+        <!-- Background Outdoor Cloud & Sun Elements -->
+        <div class="absolute top-4 left-5 text-white/80 text-3xl select-none pointer-events-none">☁️</div>
+        <div class="absolute top-5 right-6 text-amber-300/90 text-4xl select-none pointer-events-none">☀️</div>
 
-          <!-- Character display area (Enlarged to make the egg 3x larger) -->
-          <div id="character-card-container" class="w-full max-w-[360px] sm:max-w-[480px] aspect-square flex justify-center items-center relative mb-6 sm:mb-8 transition-all duration-500">
-            <!-- Soft glowing backdrop (Hidden to prevent extra background behind the egg) -->
-            <div id="character-backdrop" class="hidden absolute w-72 h-72 rounded-full bg-pastelYellow opacity-30 blur-xl"></div>
-            
-            <!-- Big Character Image (Enlarged to 3x size with a cute white sticker outline) -->
-            <img id="main-character-img" src="assets/level1.png" alt="알콩이" class="w-[115%] h-[115%] object-contain z-10 char-float transition-all duration-500 transform -translate-y-2" style="filter: drop-shadow(4px 4px 0px #ffffff) drop-shadow(-4px -4px 0px #ffffff) drop-shadow(4px -4px 0px #ffffff) drop-shadow(-4px 4px 0px #ffffff) drop-shadow(0 16px 28px rgba(0,0,0,0.18)) saturate(1.2) contrast(1.08);" onerror="handleImageError(this)">
-            
-            <!-- Fallback Big Emoji (shown if image fails to load) -->
-            <div id="main-character-emoji" class="text-[8rem] sm:text-[11rem] z-10 char-float transition-all duration-500 transform -translate-y-4 hidden select-none">🥚</div>
-            
-            <!-- Badge overlay (Bottom - Moved from top and styled) -->
-            <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm text-xs sm:text-sm px-5 py-2.5 rounded-2xl font-black z-20 shadow-md border-2 border-pastelPink/40 whitespace-nowrap transition-all duration-300" id="character-level-badge">
-              🥚 1단계: 알콩이(0~3000p)
+        <!-- 1. Top Goal Banner Tag + Main Card Box -->
+        <div class="w-full max-w-[340px] sm:max-w-[400px] flex flex-col items-center relative mt-3 mb-2 z-10">
+          <!-- Goal Banner Pill Tag -->
+          <div class="z-10 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] sm:text-xs font-black px-4 py-1 rounded-full shadow-md border-2 border-amber-200 tracking-wider mb-[-12px]">
+            건강 목표
+          </div>
+          <!-- Main Goal Banner Box -->
+          <div class="w-full bg-gradient-to-b from-amber-400 via-amber-500 to-orange-500 text-white font-black pt-4 pb-3.5 px-4 sm:px-6 rounded-[28px] sm:rounded-[36px] shadow-xl text-center border-4 border-amber-200/90 relative">
+            <div class="text-lg sm:text-2xl tracking-wide drop-shadow-md text-center leading-snug">
+              알콩이에서 꼬꼬대장까지,<br>나는 건강왕!
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Main Character Image (Sitting DIRECTLY on full-screen nature background) -->
+        <div id="character-card-container" class="w-full aspect-square max-w-[270px] sm:max-w-[320px] flex justify-center items-center relative transition-all duration-500 my-2 z-10 bg-transparent border-none shadow-none">
+          <!-- Main Character Image -->
+          <img id="main-character-img" src="level1_nest.png" alt="알콩이" class="w-[100%] h-[100%] object-contain z-10 char-float transition-all duration-500 drop-shadow-xl" onerror="handleImageError(this)">
+          <div id="main-character-emoji" class="text-[6.5rem] sm:text-[8.5rem] z-10 char-float transition-all duration-500 transform translate-y-1 hidden select-none">🥚</div>
+          <div id="character-level-badge" class="hidden"></div>
+        </div>
+
+        <!-- 3. Bottom 4-Step Level Progress Bar Card (In a Clean White Box Card) -->
+        <div class="w-full max-w-[340px] sm:max-w-[400px] bg-white/95 backdrop-blur-md border-2 border-emerald-300/80 rounded-[28px] p-4 shadow-xl z-10 mb-2">
+          
+          <!-- Progress Bar Fill -->
+          <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-3 p-0.5 border border-slate-200/80 relative">
+            <div id="h-prog-bar" class="h-full bg-gradient-to-r from-amber-400 via-emerald-400 to-rose-500 rounded-full transition-all duration-500" style="width: 15%;"></div>
+          </div>
+
+          <!-- 4 Step-by-Step Character Cards (알콩이, 삐약이, 튼튼이, 꼬꼬대장) -->
+          <div class="grid grid-cols-4 gap-1 w-full">
+            <div id="h-lvl-1" class="rounded-xl py-1 px-0.5 flex flex-col items-center justify-center transition-all duration-300">
+              <span class="lvl-emoji text-lg sm:text-xl">🥚</span>
+              <span class="lvl-name text-[11px] font-black text-slate-800 mt-0.5">알콩이</span>
+              <span class="lvl-count text-[9px] font-bold text-slate-500">1단계</span>
+            </div>
+            <div id="h-lvl-2" class="rounded-xl py-1 px-0.5 flex flex-col items-center justify-center transition-all duration-300">
+              <span class="lvl-emoji text-lg sm:text-xl">🐣</span>
+              <span class="lvl-name text-[11px] font-black text-slate-800 mt-0.5">삐약이</span>
+              <span class="lvl-count text-[9px] font-bold text-slate-500">2단계</span>
+            </div>
+            <div id="h-lvl-3" class="rounded-xl py-1 px-0.5 flex flex-col items-center justify-center transition-all duration-300">
+              <span class="lvl-emoji text-lg sm:text-xl">🐥</span>
+              <span class="lvl-name text-[11px] font-black text-slate-800 mt-0.5">튼튼이</span>
+              <span class="lvl-count text-[9px] font-bold text-slate-500">3단계</span>
+            </div>
+            <div id="h-lvl-4" class="rounded-xl py-1 px-0.5 flex flex-col items-center justify-center transition-all duration-300">
+              <span class="lvl-emoji text-lg sm:text-xl">🐔</span>
+              <span class="lvl-name text-[11px] font-black text-slate-800 mt-0.5">꼬꼬대장</span>
+              <span class="lvl-count text-[9px] font-bold text-slate-500">4단계</span>
             </div>
           </div>
 
-          <!-- Level-up Gift Pangs Button -->
-          <button onclick="triggerGiftPangs()" class="group relative w-full max-w-[280px] sm:max-w-[360px] bg-gradient-to-r from-red-400 via-pink-400 to-yellow-400 hover:from-red-500 hover:to-yellow-500 text-white font-black py-4 px-6 sm:py-6 sm:px-8 rounded-[24px] sm:rounded-[36px] shadow-lg transform transition active:scale-95 duration-200 hover:-translate-y-0.5 flex items-center justify-center">
-            <span class="text-lg sm:text-2xl tracking-wider drop-shadow-md text-center">레벨업! 선물팡팡</span>
-            <div class="absolute right-4 sm:right-6 top-1/2 transform -translate-y-1/2 flex items-center justify-center leading-none">
-              <span class="text-3xl sm:text-5xl inline-block animate-bounce" style="animation-duration: 1.5s;">🎁</span>
-            </div>
-          </button>
         </div>
 
       </section>
@@ -286,6 +315,7 @@
                 <option value="A초">A초등학교</option>
                 <option value="B초">B초등학교</option>
                 <option value="C초">C초등학교</option>
+                <option value="D초">D초등학교</option>
               </select>
             </div>
 
@@ -318,15 +348,15 @@
             <!-- Divider and Teacher Participant Login inside 1st Step Card -->
             <hr class="border-t border-dashed border-pastelBlue my-2 opacity-35">
 
-            <div class="pt-1">
-              <span class="text-[10px] sm:text-xs font-bold text-slate-400 block mb-1.5 cursor-pointer select-none animate-pulse" ondblclick="toggleModal('settings-modal')" title="더블클릭 시 보건교사 설정창이 열립니다.">👩‍🏫 교사 참여자 로그인</span>
-              <div class="flex justify-center items-center gap-1.5 max-w-[360px] mx-auto">
-                <input type="text" id="input-teacher-name" placeholder="이름" class="w-16 sm:w-20 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
-                <input type="text" id="input-teacher-phone" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="전화번호 끝4자리" class="w-24 sm:w-28 bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] py-1 sm:py-1.5 px-2 text-center text-[10px] sm:text-xs font-bold focus:outline-none focus:border-pastelBlue placeholder-slate-300">
-                <button onclick="loadTeacherProfile()" id="login-teacher-btn" class="bg-slate-500 hover:bg-slate-600 text-white text-[10px] sm:text-xs font-bold py-1 sm:py-1.5 px-2 sm:px-3 rounded-[10px] sm:rounded-[12px] active:scale-95 transition-all cursor-pointer">
+            <div class="pt-2">
+              <span class="text-sm sm:text-base font-extrabold text-slate-600 block mb-2.5 cursor-pointer select-none animate-pulse" ondblclick="openTeacherSettings()" title="더블클릭 시 보건교사 설정창이 열립니다.">👩‍🏫 교사 참여자 로그인</span>
+              <div class="flex flex-nowrap justify-center items-center gap-1.5 w-full max-w-[360px] mx-auto">
+                <input type="text" id="input-teacher-name" placeholder="이름" class="w-16 sm:w-20 bg-white border-2 border-slate-300 rounded-xl py-1.5 px-2 text-center text-xs font-bold text-slate-800 focus:outline-none focus:border-pastelBlue placeholder-slate-400">
+                <input type="text" id="input-teacher-phone" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="전화번호 끝4자리" class="w-28 sm:w-32 bg-white border-2 border-slate-300 rounded-xl py-1.5 px-2 text-center text-xs font-bold text-slate-800 focus:outline-none focus:border-pastelBlue placeholder-slate-400">
+                <button onclick="loadTeacherProfile()" id="login-teacher-btn" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1.5 px-2.5 rounded-xl shadow-sm active:scale-95 transition-all cursor-pointer whitespace-nowrap">
                   로그인
                 </button>
-                <button onclick="logoutUser()" id="logout-teacher-btn" class="bg-rose-500 hover:bg-rose-600 text-white text-[10px] sm:text-xs font-bold py-1 sm:py-1.5 px-2 sm:px-3 rounded-[10px] sm:rounded-[12px] active:scale-95 transition-all cursor-pointer whitespace-nowrap">
+                <button onclick="logoutUser()" id="logout-teacher-btn" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold py-1.5 px-2.5 rounded-xl shadow-sm active:scale-95 transition-all cursor-pointer whitespace-nowrap">
                   로그아웃
                 </button>
               </div>
@@ -348,33 +378,13 @@
       <section id="tab-mission" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800">
 
         <!-- Title -->
-        <h4 class="text-2xl font-black text-center text-slate-800 tracking-widest mb-4 flex items-center justify-center gap-2">🏃 오늘의 미션 🏃</h4>
-
-        <!-- Today Points Circular Progress (100% goal) -->
-        <div class="flex flex-col items-center justify-center mb-6">
-          <div class="relative w-32 h-32 flex items-center justify-center">
-            <!-- SVG Circular Ring -->
-            <svg class="absolute w-full h-full transform -rotate-90">
-              <!-- Outer track (pastel pink) -->
-              <circle cx="64" cy="64" r="54" stroke="#FDE2E4" stroke-width="8" fill="transparent" />
-              <!-- Progress fill (colored pastel orange/pink) -->
-              <circle id="today-progress-circle" cx="64" cy="64" r="54" stroke="#ffb5a7" stroke-width="8" fill="transparent"
-                      stroke-dasharray="339.3" stroke-dashoffset="339.3" stroke-linecap="round" class="transition-all duration-500" />
-            </svg>
-            <!-- Inner Text Content -->
-            <div class="z-10 flex flex-col items-center justify-center gap-0.5">
-              <span class="text-[10px] font-black text-slate-400 tracking-wider">오늘 달성도</span>
-              <span id="today-progress-percent" class="text-2xl font-black text-slate-800">0%</span>
-              <span id="today-total-earn-points" class="text-xs font-bold text-amber-500">0 P</span>
-            </div>
-          </div>
-        </div>
+        <h3 class="text-3xl font-black text-center text-slate-800 mb-6 flex items-center justify-center gap-2">✨ 오늘의 미션</h3>
 
         <!-- Mission 1: 운동 미션 (인증샷 업로드 통합) -->
         <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
           <div class="flex justify-between items-start">
             <div class="flex items-center gap-4">
-              <span class="text-3xl">🏃‍♂️</span>
+              <span class="text-3xl">⚽</span>
               <div>
                 <span class="font-bold text-slate-800 text-base block">
                   숨이 찰 정도의 운동
@@ -420,7 +430,7 @@
               <div class="flex items-center gap-4">
                 <span class="text-3xl">🥗</span>
                 <div>
-                  <span class="font-bold text-slate-800 text-base block">하루 한번 이상 과일, 야채 먹기</span>
+                  <span class="font-bold text-slate-800 text-base block">과일 · 야채 먹기</span>
                 </div>
               </div>
               <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
@@ -471,7 +481,7 @@
               <div class="flex items-center gap-4">
                 <span class="text-3xl">💧</span>
                 <div>
-                  <span class="font-bold text-slate-800 text-base block">1일 5컵 이상 물 마시기</span>
+                  <span class="font-bold text-slate-800 text-base block">물마시기(5컵 이상)</span>
                 </div>
               </div>
               <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
@@ -488,7 +498,7 @@
               <div class="flex items-center gap-4">
                 <span class="text-3xl">🪥</span>
                 <div>
-                  <span class="font-bold text-slate-800 text-base block">식후 3분 이내에 양치질 하기</span>
+                  <span class="font-bold text-slate-800 text-base block">양치질하기(3번 이상)</span>
                 </div>
               </div>
               <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+10p</span>
@@ -506,8 +516,8 @@
       <section id="tab-playground" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800 flex flex-col items-center select-none">
 
 
-        <h3 class="text-3xl font-black text-slate-800 mb-2 self-start flex items-center gap-1.5">🎮 신나는 튼튼 놀이터</h3>
-        <p class="text-sm text-slate-500 mb-6 self-start">떨어지는 음식 중 건강한 음식을 바구니로 받아보세요!</p>
+        <h3 class="text-3xl font-black text-slate-800 mb-1.5 text-center flex items-center justify-center gap-1.5">🎮 신나는 놀이터</h3>
+        <p class="text-xs sm:text-sm font-bold text-slate-500 mb-6 text-center w-full">떨어지는 음식 중 건강한 음식을 바구니로 받아보세요!</p>
 
         <!-- Catching Game Card Container -->
         <div class="w-full max-w-[440px] bg-white border-4 border-pastelPink rounded-[36px] p-5 shadow-md flex flex-col items-center relative overflow-hidden">
@@ -545,34 +555,31 @@
 
         <!-- Video Recommendation Card -->
         <div class="w-full max-w-[440px] mt-6 bg-white border-4 border-pastelBlue rounded-[32px] p-5 shadow-sm text-slate-800">
-          <h4 class="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">🎬 추천 비만예방 콘텐츠</h4>
+          <h4 class="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">🎬 오늘의 추천 콘텐츠</h4>
           
           <div class="space-y-3 text-left">
             
             <!-- Video Item 1 -->
-            <div onclick="window.open('https://www.youtube.com/results?search_query=초등학생+비만예방+애니메이션', '_blank')" class="flex items-center gap-4 p-3 bg-pastelBlue-light border-2 border-transparent hover:border-pastelBlue rounded-2xl cursor-pointer active:scale-98 transition duration-150">
-              <span class="text-3xl bg-white p-2 rounded-xl shadow-sm">📺</span>
+            <div onclick="window.open('https://www.youtube.com/results?search_query=초등학생+비만예방+애니메이션', '_blank')" class="flex items-center gap-3.5 py-2.5 px-3.5 bg-pastelBlue-light border-2 border-transparent hover:border-pastelBlue rounded-2xl cursor-pointer active:scale-98 transition duration-150">
+              <span class="text-2xl bg-white p-1.5 rounded-xl shadow-sm">📺</span>
               <div class="flex-1">
-                <span class="font-bold text-slate-800 text-sm block">비만 예방 쏙쏙! EBS 만화</span>
-                <span class="text-[11px] text-slate-400 font-medium">재미있는 애니메이션 교육 만화 시청하기</span>
+                <span class="font-black text-slate-800 text-sm sm:text-base block">재미 쏙쏙! 건강 만화</span>
               </div>
             </div>
 
             <!-- Video Item 2 -->
-            <div onclick="window.open('https://www.youtube.com/results?search_query=초등학생+다이어트+댄스+홈트', '_blank')" class="flex items-center gap-4 p-3 bg-pastelPink-light border-2 border-transparent hover:border-pastelPink rounded-2xl cursor-pointer active:scale-98 transition duration-150">
-              <span class="text-3xl bg-white p-2 rounded-xl shadow-sm">💃</span>
+            <div onclick="window.open('https://www.youtube.com/results?search_query=초등학생+다이어트+댄스+홈트', '_blank')" class="flex items-center gap-3.5 py-2.5 px-3.5 bg-pastelPink-light border-2 border-transparent hover:border-pastelPink rounded-2xl cursor-pointer active:scale-98 transition duration-150">
+              <span class="text-2xl bg-white p-1.5 rounded-xl shadow-sm">💃</span>
               <div class="flex-1">
-                <span class="font-bold text-slate-800 text-sm block">신나는 초등 다이어트 홈트 댄스</span>
-                <span class="text-[11px] text-slate-400 font-medium">따라하면 땀이 송골송골! 홈트레이닝 댄스</span>
+                <span class="font-black text-slate-800 text-sm sm:text-base block">에너지 뿜뿜! 신나는 댄스 타임</span>
               </div>
             </div>
 
             <!-- Video Item 3 -->
-            <div onclick="window.open('https://www.youtube.com/results?search_query=어린이+스트레칭+키크기', '_blank')" class="flex items-center gap-4 p-3 bg-pastelMint-light border-2 border-transparent hover:border-pastelMint rounded-2xl cursor-pointer active:scale-98 transition duration-150">
-              <span class="text-3xl bg-white p-2 rounded-xl shadow-sm">🤸</span>
+            <div onclick="window.open('https://www.youtube.com/results?search_query=어린이+스트레칭+키크기', '_blank')" class="flex items-center gap-3.5 py-2.5 px-3.5 bg-pastelMint-light border-2 border-transparent hover:border-pastelMint rounded-2xl cursor-pointer active:scale-98 transition duration-150">
+              <span class="text-2xl bg-white p-1.5 rounded-xl shadow-sm">🤸</span>
               <div class="flex-1">
-                <span class="font-bold text-slate-800 text-sm block">키가 쑥쑥 크는 어린이 스트레칭</span>
-                <span class="text-[11px] text-slate-400 font-medium">아침/저녁 5분 성장판 자극 스트레칭</span>
+                <span class="font-black text-slate-800 text-sm sm:text-base block">키가 쑥쑥! 어린이 스트레칭</span>
               </div>
             </div>
 
@@ -581,20 +588,16 @@
       </section>
 
       <!-- ==================== TABS 4: 내몸탐험 (MY BODY) ==================== -->
-      <section id="tab-mybody" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800">
+      <section id="tab-mybody" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800 flex flex-col items-center">
 
-
-        <h3 class="text-3xl font-black text-slate-800 mb-6 flex items-center gap-1.5">🔍 내몸탐험대 보고서</h3>
+        <h3 class="text-3xl font-black text-slate-800 mb-1 text-center flex items-center justify-center gap-1.5">🔍 내몸탐험 보고서</h3>
+        <p class="text-xs sm:text-sm font-bold text-slate-500 mb-3 text-center w-full">키와 몸무게를 기록하고 나의 성장과 BMI를 확인해 보세요!</p>
 
         <!-- Monthly BMI Input & Result Card -->
-        <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 shadow-sm mb-6 w-full max-w-[440px] mx-auto text-slate-800">
-          <h4 class="text-xl font-black text-center mb-1 text-slate-800 flex items-center justify-center gap-1">나의 신체 성장 기록</h4>
-          <p class="text-[11px] text-slate-500 text-center mb-4">측정 월을 선택하고 키와 몸무게를 입력해 보세요</p>
+        <div class="bg-white border-2 border-slate-100 rounded-[32px] pt-4 pb-5 px-4 sm:px-6 shadow-sm mb-6 w-full max-w-[440px] mx-auto text-slate-800">
 
-          <!-- Month Selector Pills (6월~12월) -->
+          <!-- Month Selector Pills (8월~12월) -->
           <div class="flex justify-between items-center gap-1 mb-5 bg-slate-50 p-1.5 rounded-2xl border border-slate-200/70 overflow-x-auto custom-scrollbar">
-            <button onclick="selectBmiMonth(6)" id="bmi-month-btn-6" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">6월</button>
-            <button onclick="selectBmiMonth(7)" id="bmi-month-btn-7" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">7월</button>
             <button onclick="selectBmiMonth(8)" id="bmi-month-btn-8" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">8월</button>
             <button onclick="selectBmiMonth(9)" id="bmi-month-btn-9" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">9월</button>
             <button onclick="selectBmiMonth(10)" id="bmi-month-btn-10" class="bmi-month-btn flex-1 py-1.5 px-2 text-xs font-bold rounded-xl transition text-slate-500 hover:text-slate-800 cursor-pointer">10월</button>
@@ -615,21 +618,43 @@
           </div>
 
           <!-- Calculate Button -->
-          <button onclick="saveMonthlyBmi()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black py-4 rounded-[20px] shadow-md active:scale-95 transition duration-150 text-base flex items-center justify-center gap-1.5 cursor-pointer mb-5">
+          <button onclick="saveMonthlyBmi()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black py-4 rounded-[20px] shadow-md active:scale-95 transition duration-150 text-base flex items-center justify-center gap-1.5 cursor-pointer">
             <span>📊 BMI 계산하고 저장하기</span>
           </button>
 
-          <!-- BMI Result Display Card -->
-          <div id="bmi-result-card" class="p-4 bg-gradient-to-br from-sky-50 to-indigo-50 border-2 border-sky-200/80 rounded-2xl text-center shadow-inner">
+          <!-- BMI Result Display Card (Hidden until calculation) -->
+          <div id="bmi-result-card" class="hidden mt-4 p-4 bg-gradient-to-br from-sky-50 to-indigo-50 border-2 border-sky-200/80 rounded-2xl text-center shadow-inner">
             <span class="text-xs font-bold text-slate-500 block mb-1">나의 체질량지수 (BMI) 계산 결과</span>
             <div class="text-3xl sm:text-4xl font-black text-slate-800 my-1" id="bmi-value-text">-</div>
             <div class="inline-block px-4 py-1.5 rounded-2xl text-xs font-bold text-slate-600 bg-white border border-slate-200 shadow-sm mt-1 mb-2" id="bmi-status-badge">
-              📏 측정 수치를 입력하고 계산을 눌러주세요
+              📏 계산 버튼을 눌러주세요
             </div>
             <div class="flex justify-center gap-4 text-xs font-bold text-slate-500 mt-2 pt-2 border-t border-sky-100/80">
               <span id="bmi-display-height">키: - cm</span>
               <span id="bmi-display-weight">몸무게: - kg</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Monthly History Table Card -->
+        <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 shadow-sm mb-6 w-full max-w-[440px] mx-auto text-slate-800">
+          <h4 class="text-base font-bold text-slate-700 mb-4 flex items-center gap-1.5">📊 월별 누적 기록</h4>
+          <div class="overflow-hidden rounded-2xl border border-slate-100">
+            <table class="w-full text-center text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-50 text-slate-600 font-bold border-b border-slate-100">
+                  <th class="py-3 px-2">월</th>
+                  <th class="py-3 px-2">키 (cm)</th>
+                  <th class="py-3 px-2">몸무게 (kg)</th>
+                  <th class="py-3 px-2">BMI</th>
+                </tr>
+              </thead>
+              <tbody id="bmi-history-table-body" class="divide-y divide-slate-100 font-bold">
+                <tr>
+                  <td colspan="4" class="py-6 text-slate-400 font-normal">아직 등록된 기록이 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -677,70 +702,77 @@
           <div class="text-[10px] text-right text-slate-400 font-bold mt-3">※ 대한비만학회 기준</div>
         </div>
 
-        <!-- Monthly History Table Card -->
-        <div class="bg-white border-2 border-slate-100 rounded-[32px] p-6 shadow-sm mb-6 w-full max-w-[440px] mx-auto text-slate-800">
-          <h4 class="text-base font-bold text-slate-700 mb-4 flex items-center gap-1.5">📊 월별 누적 기록</h4>
-          <div class="overflow-hidden rounded-2xl border border-slate-100">
-            <table class="w-full text-center text-xs border-collapse">
-              <thead>
-                <tr class="bg-slate-50 text-slate-600 font-bold border-b border-slate-100">
-                  <th class="py-3 px-2">월</th>
-                  <th class="py-3 px-2">키 (cm)</th>
-                  <th class="py-3 px-2">몸무게 (kg)</th>
-                  <th class="py-3 px-2">BMI</th>
-                </tr>
-              </thead>
-              <tbody id="bmi-history-table-body" class="divide-y divide-slate-100 font-bold">
-                <tr>
-                  <td colspan="4" class="py-6 text-slate-400 font-normal">아직 등록된 기록이 없습니다.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </section>
 
       <!-- ==================== TABS 5: 스티커판 (STICKERS) ==================== -->
       <section id="tab-stickers" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800 flex flex-col items-center">
 
-        <h3 class="text-3xl font-black text-slate-800 mb-2 self-start flex items-center gap-1.5">🥦 과일 야채 스티커판</h3>
-        <p class="text-sm text-slate-500 mb-8 self-start">오늘의 미션 100P 달성 시 스티커 1개 획득! <span class="text-xs text-pastelPink font-bold">(매월 1일 리셋)</span></p>
+        <h3 class="text-3xl font-black text-slate-800 mb-1.5 text-center flex items-center justify-center gap-1.5">🥦 과일 · 야채 스티커판</h3>
+        <p class="text-xs sm:text-sm font-bold text-slate-500 mb-6 text-center w-full">오늘의 미션 완료 시 스티커 1개 획득!</p>
 
-        <!-- Sticker Grid -->
-        <div class="grid grid-cols-4 gap-3 sm:gap-5 p-4 sm:p-6 bg-white border-4 border-pastelPink-light rounded-[36px] shadow-inner w-full max-w-[420px]">
-          <!-- Stickers 1 to 31 -->
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="100" title="100p">1</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="200" title="200p">2</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="300" title="300p">3</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="400" title="400p">4</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="500" title="500p">5</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="600" title="600p">6</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="700" title="700p">7</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="800" title="800p">8</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="900" title="900p">9</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1000" title="1000p">10</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1100" title="1100p">11</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1200" title="1200p">12</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1300" title="1300p">13</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1400" title="1400p">14</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1500" title="1500p">15</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1600" title="1600p">16</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1700" title="1700p">17</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1800" title="1800p">18</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="1900" title="1900p">19</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2000" title="2000p">20</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2100" title="2100p">21</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2200" title="2200p">22</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2300" title="2300p">23</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2400" title="2400p">24</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2500" title="2500p">25</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2600" title="2600p">26</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2700" title="2700p">27</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2800" title="2800p">28</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="2900" title="2900p">29</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="3000" title="3000p">30</div>
-          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-[24px] flex justify-center items-center relative text-3xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" data-points="3100" title="3100p">31</div>
+        <!-- Sticker Grid (60 Slots for 8-Week Challenge) -->
+        <div class="grid grid-cols-5 gap-2 sm:gap-3 p-3 sm:p-5 bg-white border-4 border-pastelPink-light rounded-[32px] shadow-inner w-full max-w-[420px] max-h-[420px] overflow-y-auto custom-scrollbar">
+          <!-- Stickers 1 to 60 -->
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 1개">1</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 2개">2</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 3개">3</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 4개">4</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 5개">5</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 6개">6</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 7개">7</div>
+          <div class="sticker-cell aspect-square bg-amber-100/60 border-2 border-amber-300 rounded-xl flex justify-center items-center relative text-xl font-black opacity-40 filter grayscale transition-all duration-300 shadow-sm text-amber-700" title="🐣 스티커 8개 (병아리 부화!)">8</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 9개">9</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 10개">10</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 11개">11</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 12개">12</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 13개">13</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 14개">14</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 15개">15</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 16개">16</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 17개">17</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 18개">18</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 19개">19</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 20개">20</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 21개">21</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 22개">22</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 23개">23</div>
+          <div class="sticker-cell aspect-square bg-emerald-100/60 border-2 border-emerald-400 rounded-xl flex justify-center items-center relative text-xl font-black opacity-40 filter grayscale transition-all duration-300 shadow-sm text-emerald-800" title="🐓 스티커 24개 (대장닭 완주!)">24</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 25개">25</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 26개">26</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 27개">27</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 28개">28</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 29개">29</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 30개">30</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 31개">31</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 32개">32</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 33개">33</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 34개">34</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 35개">35</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 36개">36</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 37개">37</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 38개">38</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 39개">39</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 40개">40</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 41개">41</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 42개">42</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 43개">43</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 44개">44</div>
+          <div class="sticker-cell aspect-square bg-indigo-100/60 border-2 border-indigo-400 rounded-xl flex justify-center items-center relative text-xl font-black opacity-40 filter grayscale transition-all duration-300 shadow-sm text-indigo-800" title="👑 스티커 45개 (황금 왕관)">45</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 46개">46</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 47개">47</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 48개">48</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 49개">49</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 50개">50</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 51개">51</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 52개">52</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 53개">53</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 54개">54</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 55개">55</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 56개">56</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 57개">57</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 58개">58</div>
+          <div class="sticker-cell aspect-square bg-slate-50 border border-slate-100 rounded-xl flex justify-center items-center relative text-xl font-black opacity-20 filter grayscale transition-all duration-300 shadow-sm text-slate-400" title="스티커 59개">59</div>
+          <div class="sticker-cell aspect-square bg-yellow-100 border-2 border-yellow-400 rounded-xl flex justify-center items-center relative text-xl font-black opacity-40 filter grayscale transition-all duration-300 shadow-sm text-amber-900" title="🏆 스티커 60개 (만점 왕!)">60</div>
         </div>
       </section>
 
@@ -795,20 +827,20 @@
       
       <div class="space-y-2 text-left mb-6 bg-pastelPink-light p-4 rounded-2xl border border-pastelPink/30 text-sm">
         <div class="flex justify-between items-center py-1">
-          <span class="font-bold">🥚 1단계 알콩이</span>
-          <span class="text-slate-500 font-semibold">0 ~ 3000p</span>
+          <span class="font-bold text-slate-700">🥚 1단계 알콩이</span>
+          <span class="text-slate-600 font-bold">스티커 0 ~ 7개</span>
         </div>
         <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
           <span class="font-bold text-amber-600">🐣 2단계 삐약이</span>
-          <span class="text-slate-500 font-semibold">3001 ~ 6000p</span>
+          <span class="text-slate-600 font-bold">스티커 8 ~ 23개</span>
         </div>
         <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
-          <span class="font-bold text-emerald-600">🐔 3단계 튼튼이</span>
-          <span class="text-slate-500 font-semibold">6001 ~ 9000p</span>
+          <span class="font-bold text-emerald-600">🐥 3단계 튼튼이</span>
+          <span class="text-slate-600 font-bold">스티커 24 ~ 44개</span>
         </div>
         <div class="flex justify-between items-center py-1 border-t border-slate-200/50">
-          <span class="font-bold text-red-500">🐓 4단계 꼬꼬대장</span>
-          <span class="text-slate-500 font-semibold">9001p~</span>
+          <span class="font-bold text-indigo-600">👑 4단계 꼬꼬대장</span>
+          <span class="text-slate-600 font-bold">스티커 45개+</span>
         </div>
       </div>
       
@@ -921,6 +953,11 @@
       
       <div class="space-y-4">
         <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">🔑 관리자 비밀번호 변경 (접근 차단용)</label>
+          <input type="password" id="settings-admin-pw" placeholder="새 비밀번호 입력" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-pastelBlue font-bold">
+        </div>
+
+        <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">구글 웹앱 URL (GAS API Link)</label>
           <textarea id="settings-gas-url" rows="3" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-pastelBlue custom-scrollbar"></textarea>
         </div>
@@ -931,19 +968,24 @@
         </div>
 
         <!-- 교사용 테스트 시뮬레이터 -->
-        <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs space-y-2">
-          <p class="font-black text-amber-900 text-center">🧪 리셋 & 누적 테스트 도구</p>
+        <div class="p-3.5 bg-amber-50 rounded-2xl border-2 border-amber-200 text-xs space-y-2.5 mb-4">
+          <p class="font-black text-amber-900 text-center text-sm">🧪 테스트 시뮬레이터</p>
+          <button onclick="testComplete100P()" class="w-full bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-black py-3 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-sm">
+            ⚡ 오늘 미션 완료 (스티커 +1개 획득!)
+          </button>
+          <button onclick="testSimulateTomorrow()" class="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-black py-3 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-sm">
+            🌙 자고 일어나기 (+1일 다음 날로 이동)
+          </button>
           <button onclick="testShowLevelUpModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
             🎉 레벨업 축하 팝업 미리보기 (테스트)
           </button>
-          <button onclick="testComplete100P()" class="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
-            ⚡ 오늘 100P 달성
-          </button>
-          <button onclick="testSimulateTomorrow()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
-            🌙 자고 일어나기 (+1일 시뮬레이션)
-          </button>
-          <button onclick="testSimulateNextMonth()" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
-            📅 다음 달 1일로 이동 (+1달 시뮬레이션)
+        </div>
+
+        <!-- Data Reset Section -->
+        <div class="bg-rose-50 border border-rose-200/80 rounded-2xl p-3 text-center mb-4">
+          <span class="text-xs font-bold text-rose-700 block mb-1.5">🚨 데이터 초기화 (리셋)</span>
+          <button onclick="resetAllDataAndStickers()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl active:scale-95 transition-transform shadow-sm cursor-pointer">
+            🧹 모든 스티커 & 로그인 데이터 0개로 초기화
           </button>
         </div>
       </div>
@@ -1043,8 +1085,8 @@
     // Default Guest Student Template
     const DEFAULT_GUEST = {
       studentId: '',
-      name: '게스트',
-      nickname: '게스트 모험가',
+      name: '',
+      nickname: '탐험대원',
       totalPoints: 0,
       height: 0,
       weight: 0,
@@ -1052,12 +1094,12 @@
       weightHistory: []
     };
 
-    // Level settings based on points (Chicken series with custom thresholds)
+    // Level settings based on sticker count thresholds (0~7: 알, 8~23: 병아리, 24~44: 대장닭완주, 45+: 황금왕관)
     const LEVEL_CONFIG = [
-      { max: 3000, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이(0~3000p)", img: "assets/level1.png?v=2", dialog: "안녕! 나는 알콩이야! 🌱<br>새로운 모험이 시작되었어. 열심히 힘내보자! 💪", bgClass: '#fde2e4' },
-      { max: 6000, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이(~6000p)", img: "assets/level2.png?v=2", dialog: "새로운 단계로 레벨업 된 것을 축하드려요!<br>앞으로도 힘차게 힘내보자! 🏃✨", bgClass: '#fffdf0' },
-      { max: 9000, level: 3, name: "튼튼이", badge: "🐔 3단계: 튼튼이(~9000p)", img: "assets/level3.png?v=3", dialog: "새로운 단계로 레벨업 된 것을 축하드려요!<br>멋진 건강 대장을 향해 힘내보자! 🥦🔥", bgClass: '#d8f3dc' },
-      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "🐓 4단계: 꼬꼬대장(9001p~)", img: "assets/level4.png?v=2", dialog: "새로운 단계로 레벨업 된 것을 축하드려요!<br>최고의 건강 탐험가 달성! 화이팅! 👑✨", bgClass: '#cddafd' }
+      { max: 799, level: 1, name: "알콩이", badge: "🥚 1단계: 알콩이 (스티커 0~7개)", img: "level1_nest.png", dialog: "안녕! 나는 황금 알 <strong>알콩이</strong>야! 🌱<br>우리 같이 매일매일 건강해지자! 🐣", bgClass: '#fde2e4' },
+      { max: 2399, level: 2, name: "삐약이", badge: "🐣 2단계: 삐약이 (스티커 8~23개)", img: "level2_nest.png", dialog: "레벨업!~ 축하드려요! 🐣<br>귀여운 <strong>병아리 삐약이</strong>가 되었어요! ✨", bgClass: '#fffdf0' },
+      { max: 4499, level: 3, name: "튼튼이", badge: "🐥 3단계: 튼튼이 (스티커 24~44개)", img: "level3_nest.png", dialog: "레벨업!~ 축하드려요! 🐓<br>멋진 <strong>대장 닭 튼튼이</strong>로 성장했어요! 🥦🔥", bgClass: '#d8f3dc' },
+      { max: Infinity, level: 4, name: "꼬꼬대장", badge: "👑 4단계: 꼬꼬대장 (스티커 45개+)", img: "level4_nest.png", dialog: "레벨업!~ 축하드려요! 👑<br>최고 영예 <strong>황금 왕관 꼬꼬대장</strong> 달성! 🎉🏆", bgClass: '#cddafd' }
     ];
 
     function getLevelData(points) {
@@ -1068,10 +1110,29 @@
       return LEVEL_CONFIG[LEVEL_CONFIG.length - 1];
     }
 
+    // Password-protected Teacher Settings Access
+    function openTeacherSettings() {
+      const savedPw = localStorage.getItem('teacher_admin_password') || '1234';
+      const input = prompt("🔒 [보건교사 관리자 전용]\n비밀번호를 입력하세요:");
+      if (input === null) return;
+      if (input.trim() === savedPw) {
+        const modal = document.getElementById('settings-modal');
+        if (modal) modal.classList.remove('hidden');
+        const pwInput = document.getElementById('settings-admin-pw');
+        if (pwInput) pwInput.value = savedPw;
+      } else {
+        alert("⛔ 비밀번호가 일치하지 않습니다!\n관리자 외 다른 사람의 접근이 차단되었습니다.");
+      }
+    }
+
     // Modal Control
     function toggleModal(modalId) {
+      if (modalId === 'settings-modal' && document.getElementById('settings-modal').classList.contains('hidden')) {
+        openTeacherSettings();
+        return;
+      }
       const modal = document.getElementById(modalId);
-      modal.classList.toggle('hidden');
+      if (modal) modal.classList.toggle('hidden');
     }
 
     let lastLoadedDate = getTodayDateString();
@@ -1103,7 +1164,7 @@
         }
       }
 
-      // Switch global milestone header visibility (shown on mission, playground, mybody, stickers)
+      // Switch 4 character cards header visibility (shown on mission, playground, mybody, stickers)
       const globalMilestoneHeader = document.getElementById('global-milestone-header');
       const appContentScroll = document.getElementById('app-content-scroll');
       if (globalMilestoneHeader) {
@@ -1118,20 +1179,6 @@
             } else {
               appContentScroll.style.paddingTop = '3.5rem';
             }
-          }
-        }
-      }
-
-      // Hide header level badge on Home (page 1) and Register (page 2) tabs
-      const headerLvlBadge = document.getElementById('header-level-badge');
-      if (headerLvlBadge) {
-        if (tabId === 'home' || tabId === 'register') {
-          headerLvlBadge.style.display = 'none';
-        } else {
-          headerLvlBadge.style.display = 'inline-block';
-          if (state.student) {
-            const levelInfo = getLevelData(state.student.totalPoints || 0);
-            headerLvlBadge.innerText = levelInfo.badge;
           }
         }
       }
@@ -1309,7 +1356,7 @@
       if (settingsModal) settingsModal.classList.add('hidden');
 
       window.testLevelStep = ((window.testLevelStep || 0) % 3) + 1;
-      const ptsMap = { 1: 3500, 2: 6500, 3: 9500 };
+      const ptsMap = { 1: 800, 2: 2400, 3: 4500 };
       const sampleLevel = getLevelData(ptsMap[window.testLevelStep]);
       triggerLevelUpCelebration(sampleLevel);
     };
@@ -1324,7 +1371,7 @@
       checkDailyReset();
       renderHome();
       switchTab('stickers');
-      alert(`📅 [테스트] 다음 달 1일로 이동했습니다! (날짜 시뮬레이션: ${getTodayDateString()})\n\n- 오늘의 미션: 0P 리셋됨\n- 스티커판: 매월 1일 리셋 완료 (0개)\n- 상단 레벨바 누적 포인트: 리셋 없이 그대로 유지됨! ✨`);
+      alert(`📅 [테스트] 다음 달 1일로 이동했습니다! (날짜 시뮬레이션: ${getTodayDateString()})\n\n- 오늘의 미션: 0P (새로운 날 미션 리셋)\n- 스티커판 & 레벨: 리셋 없이 영구적으로 계속 누적 유지됨! ✨`);
     };
 
     window.testComplete100P = function() {
@@ -1357,6 +1404,17 @@
       renderHome();
       switchTab('mission');
       alert("⚡ [테스트] 오늘 100P 만점을 완료했습니다!\n- 오늘의 미션 100P (100% 달성)\n- 이달의 스티커 1개 획득 완료! 🥳");
+    };
+
+    window.resetAllDataAndStickers = function() {
+      if (confirm("정말로 기기에 남아있는 테스트 스티커와 모든 데이터를 0개로 깨끗이 초기화(리셋)하시겠습니까?")) {
+        localStorage.clear();
+        state.studentId = '';
+        state.student = { ...DEFAULT_GUEST };
+        state.lastLevel = 1;
+        alert("모든 스티커 및 등록 기록이 0개로 깨끗하게 초기화되었습니다! 🧹✨");
+        location.reload();
+      }
     };
 
     // Helper: Initialize Firebase Storage
@@ -1417,8 +1475,11 @@
         const cached = localStorage.getItem('teunteun_student_cached');
         if (cached) {
           try {
-            state.student = JSON.parse(cached);
-            state.lastLevel = getLevelData(state.student.totalPoints || 0).level;
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.studentId === state.studentId) {
+              state.student = parsed;
+              state.lastLevel = getLevelData(state.student.totalPoints || 0).level;
+            }
           } catch(e){}
         }
         if (!state.student) {
@@ -1430,54 +1491,15 @@
         }
         renderHome();
         refreshStudentData();
-        if (state.studentId.startsWith('T-')) {
-          // Auto-fill teacher registration inputs from stored ID
-          const phoneLast4 = state.studentId.substring(2);
-          const inputTeacherPhone = document.getElementById('input-teacher-phone');
-          if (inputTeacherPhone) inputTeacherPhone.value = phoneLast4;
-          
-          const s = LocalDB.getStudent(state.studentId);
-          if (s && s.name) {
-            const inputTeacherName = document.getElementById('input-teacher-name');
-            if (inputTeacherName) inputTeacherName.value = s.name;
-          }
-        } else {
-          // Auto-fill student registration inputs from stored ID (4 or 5 digit concatenated ID)
-          const cleanId = state.studentId;
-          let gradeVal = "";
-          let classVal = "";
-          let numVal = "";
-          
-          if (cleanId.length === 4) {
-            gradeVal = cleanId.charAt(0);
-            classVal = cleanId.charAt(1);
-            numVal = parseInt(cleanId.substring(2));
-          } else if (cleanId.length === 5) {
-            gradeVal = cleanId.charAt(0);
-            classVal = parseInt(cleanId.substring(1, 3));
-            numVal = parseInt(cleanId.substring(3));
-          }
-          
-          if (gradeVal && classVal && numVal) {
-            const inputGrade = document.getElementById('input-grade');
-            const inputClass = document.getElementById('input-class');
-            const inputNumber = document.getElementById('input-number');
-            if (inputGrade) inputGrade.value = gradeVal;
-            if (inputClass) inputClass.value = classVal;
-            if (inputNumber) inputNumber.value = numVal;
-          }
-          // Auto-fill name field (skip if default name '탐험대원' is used)
-          const s = LocalDB.getStudent(state.studentId);
-          if (s && s.name && s.name !== "탐험대원") {
-            const inputName = document.getElementById('input-name');
-            if (inputName) inputName.value = s.name;
-          }
-        }
       } else {
         state.student = { ...DEFAULT_GUEST };
         state.lastLevel = getLevelData(0).level;
         renderHome();
       }
+
+      // Auto-fill and retain login input fields from previous session
+      autoFillLoginInputs();
+      attachAutoSaveInputListeners();
 
       // Show home tab by default on startup
       switchTab('home');
@@ -1496,8 +1518,98 @@
       setInterval(checkDailyReset, 15000);
     };
 
+    // Helper to auto-fill all login input fields
+    function autoFillLoginInputs() {
+      const savedSchool = localStorage.getItem('teunteun_school') || 'A초';
+      const inputSchool = document.getElementById('input-school');
+      if (inputSchool) inputSchool.value = savedSchool;
+
+      let id = state.studentId || localStorage.getItem('teunteun_student_id') || '';
+      let cleanId = id;
+      if (cleanId.includes('_')) {
+        cleanId = cleanId.split('_')[1];
+      }
+
+      if (id.includes('_T-') || id.startsWith('T-')) {
+        let phoneLast4 = cleanId.replace('T-', '');
+        const inputTeacherPhone = document.getElementById('input-teacher-phone');
+        if (inputTeacherPhone && phoneLast4) inputTeacherPhone.value = phoneLast4;
+        
+        const s = state.student || (id ? LocalDB.getStudent(id) : null);
+        const tName = (s && s.name) || localStorage.getItem('teunteun_teacher_name') || '';
+        const inputTeacherName = document.getElementById('input-teacher-name');
+        if (inputTeacherName && tName) inputTeacherName.value = tName;
+      } else {
+        let gradeVal = localStorage.getItem('teunteun_grade') || '';
+        let classVal = localStorage.getItem('teunteun_class') || '';
+        let numVal = localStorage.getItem('teunteun_number') || '';
+        let nameVal = localStorage.getItem('teunteun_student_name') || '';
+
+        if ((!gradeVal || !classVal || !numVal) && cleanId && !cleanId.startsWith('T-')) {
+          if (cleanId.length === 4) {
+            gradeVal = cleanId.charAt(0);
+            classVal = cleanId.charAt(1);
+            numVal = parseInt(cleanId.substring(2));
+          } else if (cleanId.length === 5) {
+            gradeVal = cleanId.charAt(0);
+            classVal = parseInt(cleanId.substring(1, 3));
+            numVal = parseInt(cleanId.substring(3));
+          }
+        }
+
+        const s = state.student || (id ? LocalDB.getStudent(id) : null);
+        if (!nameVal && s && s.name && s.name !== "탐험대원" && s.name !== "게스트") {
+          nameVal = s.name;
+        }
+        if (nameVal === "게스트" || nameVal === "탐험대원") {
+          nameVal = "";
+        }
+
+        const inputGrade = document.getElementById('input-grade');
+        const inputClass = document.getElementById('input-class');
+        const inputNumber = document.getElementById('input-number');
+        const inputName = document.getElementById('input-name');
+
+        if (inputGrade && gradeVal) inputGrade.value = gradeVal;
+        if (inputClass && classVal) inputClass.value = classVal;
+        if (inputNumber && numVal) inputNumber.value = numVal;
+        if (inputName) inputName.value = nameVal;
+      }
+    }
+
+    // Attach listeners so typed input fields are saved immediately on input
+    function attachAutoSaveInputListeners() {
+      const fields = [
+        { id: 'input-school', key: 'teunteun_school' },
+        { id: 'input-grade', key: 'teunteun_grade' },
+        { id: 'input-class', key: 'teunteun_class' },
+        { id: 'input-number', key: 'teunteun_number' },
+        { id: 'input-name', key: 'teunteun_student_name' },
+        { id: 'input-teacher-name', key: 'teunteun_teacher_name' },
+        { id: 'input-teacher-phone', key: 'teunteun_teacher_phone' },
+      ];
+      fields.forEach(f => {
+        const el = document.getElementById(f.id);
+        if (el) {
+          const handler = () => {
+            if (el.value.trim()) {
+              localStorage.setItem(f.key, el.value.trim());
+              if (f.id === 'input-school') state.school = el.value.trim();
+            }
+          };
+          el.addEventListener('input', handler);
+          el.addEventListener('change', handler);
+        }
+      });
+    }
+
     // Save Teacher Settings
     function saveSettings() {
+      const pwInput = document.getElementById('settings-admin-pw');
+      if (pwInput && pwInput.value.trim()) {
+        localStorage.setItem('teacher_admin_password', pwInput.value.trim());
+      }
+
       const url = document.getElementById('settings-gas-url').value.trim() || DEFAULT_GAS_URL;
       state.gasUrl = url;
       state.isOffline = !url;
@@ -1590,17 +1702,17 @@
        // Update Mission page Milestones progress
     function updateMissionLevelMilestones(points) {
       const h_lvls = [
-        { id: 1, min: 0, max: 3000, el: document.getElementById('h-lvl-1') },
-        { id: 2, min: 3001, max: 6000, el: document.getElementById('h-lvl-2') },
-        { id: 3, min: 6001, max: 9000, el: document.getElementById('h-lvl-3') },
-        { id: 4, min: 9001, max: Infinity, el: document.getElementById('h-lvl-4') }
+        { id: 1, min: 0, max: 799, el: document.getElementById('h-lvl-1') },
+        { id: 2, min: 800, max: 2399, el: document.getElementById('h-lvl-2') },
+        { id: 3, min: 2400, max: 4499, el: document.getElementById('h-lvl-3') },
+        { id: 4, min: 4500, max: Infinity, el: document.getElementById('h-lvl-4') }
       ];
 
       const g_lvls = [
-        { id: 1, min: 0, max: 3000, el: document.getElementById('g-lvl-1') },
-        { id: 2, min: 3001, max: 6000, el: document.getElementById('g-lvl-2') },
-        { id: 3, min: 6001, max: 9000, el: document.getElementById('g-lvl-3') },
-        { id: 4, min: 9001, max: Infinity, el: document.getElementById('g-lvl-4') }
+        { id: 1, min: 0, max: 799, el: document.getElementById('g-lvl-1') },
+        { id: 2, min: 800, max: 2399, el: document.getElementById('g-lvl-2') },
+        { id: 3, min: 2400, max: 4499, el: document.getElementById('g-lvl-3') },
+        { id: 4, min: 4500, max: Infinity, el: document.getElementById('g-lvl-4') }
       ];
       
       let activeLevel = 1;
@@ -1612,15 +1724,8 @@
       
       const updateLvlElements = (lvls) => {
         lvls.forEach(l => {
-          if (!l.el) return;
-          
-          // Reset classes
-          l.el.className = "rounded-2xl py-1 px-1 flex flex-col items-center justify-center transition-all duration-300 shadow-sm";
-          
-          if (l.id === activeLevel) {
-            l.el.classList.add('opacity-100', 'border-2', 'border-pastelPink', 'bg-pastelPink-light/60', 'text-pastelPink-dark');
-          } else {
-            l.el.classList.add('opacity-60', 'border-2', 'border-transparent', 'bg-slate-50', 'text-slate-400');
+            if (nameSpan) nameSpan.className = "lvl-name text-[11px] font-bold text-slate-500 mt-0.5";
+            if (countSpan) countSpan.className = "lvl-count text-[9px] font-medium text-slate-400 mt-0";
           }
         });
       };
@@ -1628,21 +1733,22 @@
       updateLvlElements(h_lvls);
       updateLvlElements(g_lvls);
 
-      // Progress bar calculation (Max 9000 for 꼬꼬대장 milestone)
-      const maxRepresentPoints = 9000;
+      // Progress bar calculation (Max 2400P / 24 stickers for 8-week goal)
+      const maxRepresentPoints = 2400;
       const percentage = Math.min(100, Math.max(0, (points / maxRepresentPoints) * 100));
+      const stickerCnt = Math.floor(points / 100);
       
       // Update Home Progress Bar
       const hProgBar = document.getElementById('h-prog-bar');
       const hProgText = document.getElementById('h-prog-text');
       if (hProgBar) hProgBar.style.width = `${percentage}%`;
-      if (hProgText) hProgText.innerText = `${points.toLocaleString()} P`;
+      if (hProgText) hProgText.innerText = `🌟 스티커 ${stickerCnt}개 (${points.toLocaleString()} P)`;
 
       // Update Global Progress Bar
       const gProgBar = document.getElementById('g-prog-bar');
       const gProgText = document.getElementById('g-prog-text');
       if (gProgBar) gProgBar.style.width = `${percentage}%`;
-      if (gProgText) gProgText.innerText = `${points.toLocaleString()} P`;
+      if (gProgText) gProgText.innerText = `🌟 스티커 ${stickerCnt}개 (${points.toLocaleString()} P)`;
       
       const manualPointsInput = document.getElementById('input-manual-points');
       if (manualPointsInput) manualPointsInput.value = points;
@@ -1680,24 +1786,38 @@
       if (state.isOffline) {
         refreshStudentData();
       } else {
-        // GAS sync (Run asynchronously in the background with today's absolute points & student name)
-        fetch(state.gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'log_mission',
-            studentId: state.studentId,
-            name: state.student.name || '',
-            missionType: missionName,
-            points: todayTotal,
-            isSetAbsolute: true,
-            weight: ""
-          })
-        })
-        .catch(err => {
-          console.error("GAS sync error", err);
-        });
+        // GAS sync (Send ONCE per student per day to prevent duplicate 6-row entries!)
+        const todayStr = getTodayDateString();
+        const sentKey = `gas_sent_${state.studentId}_${todayStr}`;
+
+        if (!localStorage.getItem(sentKey)) {
+          localStorage.setItem(sentKey, 'true');
+
+          const totalPts = Number(state.student.totalPoints) || 0;
+          const totalSticker = Math.floor(totalPts / 100);
+          const dailyStk = todayTotal >= 100 ? 1 : (todayTotal > 0 ? 1 : 0);
+
+          fetch(state.gasUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'log_mission',
+              school: state.school || 'A초',
+              studentId: state.studentId,
+              name: state.student.name || '',
+              missionType: "일별스티커",
+              points: todayTotal,
+              totalPoints: totalPts,
+              stickerCount: totalSticker,
+              dailySticker: dailyStk || 1,
+              isSetAbsolute: true,
+              weight: ""
+            })
+          }).catch(err => {
+            console.error("GAS sync error", err);
+          });
+        }
 
         // Sync local storage cache instantly
         localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
@@ -2012,6 +2132,10 @@
       state.studentId = compoundId;
       localStorage.setItem('teunteun_school', schoolVal);
       localStorage.setItem('teunteun_student_id', compoundId);
+      localStorage.setItem('teunteun_grade', gradeVal);
+      localStorage.setItem('teunteun_class', classVal);
+      localStorage.setItem('teunteun_number', numVal);
+      localStorage.setItem('teunteun_student_name', nameVal);
       
       executeLoginSync(compoundId, loginBtn, nameVal, schoolVal);
     }
@@ -2042,6 +2166,8 @@
       state.studentId = compoundId;
       localStorage.setItem('teunteun_school', schoolVal);
       localStorage.setItem('teunteun_student_id', compoundId);
+      localStorage.setItem('teunteun_teacher_name', nameVal);
+      localStorage.setItem('teunteun_teacher_phone', phoneVal);
       
       executeLoginSync(compoundId, loginBtn, nameVal, schoolVal);
     }
@@ -2087,7 +2213,18 @@
       loadDailyState();
 
       // 1. 즉시 로컬/캐시에서 프로필 구성 (0.05초 초고속 반응)
-      let s = LocalDB.getStudent(id) || JSON.parse(localStorage.getItem('teunteun_student_cached') || 'null');
+      let cachedStudent = null;
+      try {
+        const cachedStr = localStorage.getItem('teunteun_student_cached');
+        if (cachedStr) {
+          const parsed = JSON.parse(cachedStr);
+          if (parsed && parsed.studentId === id) {
+            cachedStudent = parsed;
+          }
+        }
+      } catch(e) {}
+
+      let s = LocalDB.getStudent(id) || cachedStudent;
       const nickname = generateNickname(id, enteredName, activeSchool);
 
       if (!s) {
@@ -2261,23 +2398,51 @@
       });
     }
 
-    // Image Error Handler (Fallback to Cute Emoji)
+    // Image Error Handler (Smart Fallback to Root Path & Emoji)
     function handleImageError(img) {
+      if (!img.dataset.retryCount) img.dataset.retryCount = '0';
+      const count = parseInt(img.dataset.retryCount);
+      
+      if (count === 0) {
+        img.dataset.retryCount = '1';
+        const currentSrc = img.getAttribute('src') || '';
+        if (currentSrc.includes('assets/')) {
+          img.src = currentSrc.replace('assets/', '');
+          return;
+        }
+      } else if (count === 1) {
+        img.dataset.retryCount = '2';
+        img.src = 'assets/level1.png';
+        return;
+      }
+
       img.classList.add('hidden');
       const emojiEl = document.getElementById('main-character-emoji');
-      emojiEl.classList.remove('hidden');
-      
-      const p = (state.student && state.student.totalPoints) || 0;
-      const level = getLevelData(p).level;
-      
-      if (level === 1) emojiEl.innerText = '🥚';
-      else if (level === 2) emojiEl.innerText = '🐣';
-      else if (level === 3) emojiEl.innerText = '🐥';
-      else emojiEl.innerText = '🐔';
+      if (emojiEl) {
+        emojiEl.classList.remove('hidden');
+        const p = (state.student && state.student.totalPoints) || 0;
+        const level = getLevelData(p).level;
+        if (level === 1) emojiEl.innerText = '🥚';
+        else if (level === 2) emojiEl.innerText = '🐣';
+        else if (level === 3) emojiEl.innerText = '🐥';
+        else emojiEl.innerText = '🐔';
+      }
     }
 
     // Header Image Error Handler
     function handleHeaderImageError(img) {
+      if (!img.dataset.retryCount) img.dataset.retryCount = '0';
+      const count = parseInt(img.dataset.retryCount);
+      
+      if (count === 0) {
+        img.dataset.retryCount = '1';
+        const currentSrc = img.getAttribute('src') || '';
+        if (currentSrc.includes('assets/')) {
+          img.src = currentSrc.replace('assets/', '');
+          return;
+        }
+      }
+
       img.classList.add('hidden');
       const emojiEl = document.getElementById('header-character-emoji');
       if (emojiEl) {
@@ -2361,31 +2526,15 @@
         else emojiEl.innerText = '🐔';
       }
 
-      // Update badge with custom range points in both header and home overlay
+      // Keep level badges hidden per user request
       const headerLvlBadge = document.getElementById('header-level-badge');
       if (headerLvlBadge) {
-        headerLvlBadge.innerText = levelInfo.badge;
+        headerLvlBadge.style.display = 'none';
       }
       
       const charLvlBadge = document.getElementById('character-level-badge');
       if (charLvlBadge) {
-        charLvlBadge.innerText = levelInfo.badge;
-        charLvlBadge.style.display = 'block';
-        
-        // Dynamic badge color styling matching the level theme
-        if (levelInfo.level === 1) {
-          charLvlBadge.style.borderColor = '#ffcad4'; // pastelPink
-          charLvlBadge.style.color = '#db2777'; // text-pink-600
-        } else if (levelInfo.level === 2) {
-          charLvlBadge.style.borderColor = '#ffe5d9'; // pastelPeach/Yellow
-          charLvlBadge.style.color = '#d97706'; // text-amber-600
-        } else if (levelInfo.level === 3) {
-          charLvlBadge.style.borderColor = '#b7e4c7'; // pastelMint-dark
-          charLvlBadge.style.color = '#059669'; // text-emerald-600
-        } else {
-          charLvlBadge.style.borderColor = '#a3bdfd'; // pastelBlue-dark
-          charLvlBadge.style.color = '#4f46e5'; // text-indigo-600
-        }
+        charLvlBadge.style.display = 'none';
       }
 
       // Update character speech bubble dialog dynamically
@@ -2483,24 +2632,6 @@
 
       // Save daily submit stamp
       localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
-
-      // Sync submission log to Google Apps Script Sheet
-      if (!state.isOffline && state.gasUrl) {
-        fetch(state.gasUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'log_mission',
-            studentId: state.studentId,
-            name: state.student ? state.student.name : '',
-            missionType: logMessage,
-            points: pointsEarned,
-            isSetAbsolute: true,
-            weight: ""
-          })
-        }).catch(e => console.error("GAS submit sync error", e));
-      }
 
       // Current total points (already synced in real time by toggleMissionButton)
       const currentPoints = state.student ? (state.student.totalPoints || 0) : 0;
@@ -2957,9 +3088,12 @@
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
               action: 'log_mission',
+              school: state.school || 'A초',
               studentId: state.studentId,
-              missionType: missionName,
+              name: state.student ? state.student.name : '',
+              missionType: "일별스티커",
               points: pointsEarned,
+              dailySticker: 1,
               weight: ""
             })
           })
@@ -2979,7 +3113,7 @@
       if (!state.studentId) return;
       if (!state.activeBmiMonth) {
         const curMonth = new Date().getMonth() + 1;
-        state.activeBmiMonth = (curMonth >= 6 && curMonth <= 12) ? curMonth : 6;
+        state.activeBmiMonth = (curMonth >= 8 && curMonth <= 12) ? curMonth : 8;
       }
       
       // Load saved monthly metrics to state.student.weightHistory
@@ -2996,7 +3130,7 @@
       let monthlyHistory = [];
       const currentYear = new Date().getFullYear();
       
-      for (let m = 6; m <= 12; m++) {
+      for (let m = 8; m <= 12; m++) {
         if (stored[m]) {
           const monthStr = String(m).padStart(2, '0');
           const dateStr = `${currentYear}-${monthStr}-01`;
@@ -3031,7 +3165,7 @@
         
         // Determine latest month measurement to set main height and weight
         let latestMonth = 0;
-        for (let m = 12; m >= 6; m--) {
+        for (let m = 12; m >= 8; m--) {
           if (stored[m]) {
             latestMonth = m;
             break;
@@ -3045,8 +3179,11 @@
     }
     
     function selectBmiMonth(month) {
-      if (!state.studentId) return;
       state.activeBmiMonth = month;
+      const heightInput = document.getElementById('input-bmi-height');
+      const weightInput = document.getElementById('input-bmi-weight');
+      if (heightInput) heightInput.value = '';
+      if (weightInput) weightInput.value = '';
       renderMyBody();
     }
     
@@ -3070,7 +3207,7 @@
       
       if (!state.activeBmiMonth) {
         const curM = new Date().getMonth() + 1;
-        state.activeBmiMonth = (curM >= 6 && curM <= 12) ? curM : 8;
+        state.activeBmiMonth = (curM >= 8 && curM <= 12) ? curM : 8;
       }
       
       const month = state.activeBmiMonth;
@@ -3118,19 +3255,20 @@
           })
         }).catch(err => console.error("GAS BMI sync error", err));
 
-        // Send log_mission API to append/update daily mission log
+        // Send update_bmi API to record height & weight in MyBody report log
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
-            action: 'log_mission',
+            action: 'update_bmi',
+            school: state.school || 'A초',
             studentId: state.studentId,
             name: state.student ? state.student.name : '',
-            missionType: `[내몸탐험] ${month}월 신체 측정 📏`,
-            points: 0,
             height: hVal,
-            weight: wVal
+            weight: wVal,
+            bmi: bmiVal,
+            month: month
           })
         }).catch(err => console.error("GAS BMI mission log error", err));
       }
@@ -3138,34 +3276,30 @@
 
     // Render MyBody Report (BMI Calculation & Results)
     function renderMyBody() {
-      if (!state.studentId) return;
-
-      const key = `teunteun_monthly_bmi_${state.studentId}`;
+      const id = state.studentId || 'guest';
+      const key = `teunteun_monthly_bmi_${id}`;
       const stored = JSON.parse(localStorage.getItem(key) || '{}');
       
       // Determine active month
       if (!state.activeBmiMonth) {
         const curM = new Date().getMonth() + 1;
-        state.activeBmiMonth = (curM >= 6 && curM <= 12) ? curM : 8;
+        state.activeBmiMonth = (curM >= 8 && curM <= 12) ? curM : 8;
       }
       
       const mData = stored[state.activeBmiMonth];
-      let validH = mData ? mData.height : (state.student ? state.student.height : null);
-      let validW = mData ? mData.weight : (state.student ? state.student.weight : null);
-      
-      if (!validH || validH <= 0) validH = null;
-      if (!validW || validW <= 0) validW = null;
+      let validH = (mData && mData.height > 0) ? parseFloat(mData.height) : null;
+      let validW = (mData && mData.weight > 0) ? parseFloat(mData.weight) : null;
 
-      // Populate input values if available
+      // Force clear or populate input values explicitly
       const heightInput = document.getElementById('input-bmi-height');
       const weightInput = document.getElementById('input-bmi-weight');
       if (heightInput && weightInput) {
-        if (mData) {
+        if (mData && validH && validW) {
           heightInput.value = mData.height;
           weightInput.value = mData.weight;
-        } else if (validH && validW) {
-          heightInput.value = validH;
-          weightInput.value = validW;
+        } else {
+          heightInput.value = '';
+          weightInput.value = '';
         }
       }
 
@@ -3176,14 +3310,13 @@
 
       const valueText = document.getElementById('bmi-value-text');
       const badge = document.getElementById('bmi-status-badge');
+      const bmiResultCard = document.getElementById('bmi-result-card');
 
       if (!validH || !validW) {
+        if (bmiResultCard) bmiResultCard.classList.add('hidden');
         if (valueText) valueText.innerText = "-";
-        if (badge) {
-          badge.innerText = "📏 측정 수치를 입력하고 계산을 눌러주세요";
-          badge.className = "px-4 py-2 rounded-2xl text-xs font-bold text-slate-500 bg-slate-100";
-        }
       } else {
+        if (bmiResultCard) bmiResultCard.classList.remove('hidden');
         // Calculate BMI
         const bmi = parseFloat((validW / ((validH / 100) ** 2)).toFixed(1));
         if (valueText) valueText.innerText = bmi;
@@ -3213,7 +3346,7 @@
       }
 
       // Update Month Selector Buttons UI
-      for (let m = 6; m <= 12; m++) {
+      for (let m = 8; m <= 12; m++) {
         const btn = document.getElementById(`bmi-month-btn-${m}`);
         if (btn) {
           if (m === state.activeBmiMonth) {
@@ -3230,7 +3363,7 @@
         let html = '';
         let hasRecords = false;
         
-        for (let m = 6; m <= 12; m++) {
+        for (let m = 8; m <= 12; m++) {
           if (stored[m]) {
             hasRecords = true;
             html += `
@@ -3287,12 +3420,10 @@
       }
     }
 
-    // Calculate how many stickers earned in current month (1 sticker per day when today's mission reached 100P)
+    // Calculate total stickers earned (1 sticker per 100P)
     function getStickerCount() {
-      if (!state.studentId) return 0;
-      const ymKey = `teunteun_stickers_${state.studentId}_${getYearMonthString()}`;
-      const daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
-      return daysList.length;
+      if (!state.student) return 0;
+      return Math.floor((state.student.totalPoints || 0) / 100);
     }
 
     // Render Stickers board
@@ -3685,22 +3816,36 @@
       }
     }
 
-    // Logout Functionality
+    // Logout Functionality (Cleanly clear inputs for both Student and Teacher)
     function logoutUser() {
       if (confirm("로그아웃 하시겠습니까?\n로그아웃 후 다른 계정으로 로그인할 수 있습니다.")) {
         state.studentId = '';
         state.student = null;
+        
+        // Remove session & typed input cache
         localStorage.removeItem('teunteun_student_id');
         localStorage.removeItem('teunteun_student_cached');
+        localStorage.removeItem('teunteun_grade');
+        localStorage.removeItem('teunteun_class');
+        localStorage.removeItem('teunteun_number');
+        localStorage.removeItem('teunteun_student_name');
+        localStorage.removeItem('teunteun_teacher_name');
+        localStorage.removeItem('teunteun_teacher_phone');
         
+        // Cleanly wipe input fields for both Student and Teacher
         const g = document.getElementById('input-grade');
         const c = document.getElementById('input-class');
         const n = document.getElementById('input-number');
         const nm = document.getElementById('input-name');
+        const tn = document.getElementById('input-teacher-name');
+        const tp = document.getElementById('input-teacher-phone');
+        
         if (g) g.value = '';
         if (c) c.value = '';
         if (n) n.value = '';
         if (nm) nm.value = '';
+        if (tn) tn.value = '';
+        if (tp) tp.value = '';
 
         const loginBtn = document.querySelector('#tab-register #login-submit-btn-reg');
         if (loginBtn) {
@@ -3716,7 +3861,7 @@
 
         updateSurveyButtonUI();
         renderHome();
-        alert("로그아웃 되었습니다. 🐾");
+        alert("로그아웃 되었습니다. 입력 칸이 깨끗하게 초기화되었습니다. 🐾");
       }
     }
   </script>

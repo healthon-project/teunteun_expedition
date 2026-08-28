@@ -100,7 +100,7 @@ function getParticipantDetails(studentId, schoolFromData) {
     isTeacher: isTeacher,
     cleanId: cleanId,
     profileSheet: isTeacher ? "교사기록" : "학생기록",
-    dailySheet: isTeacher ? "교사일별포인트" : "학생일별포인트",
+    dailySheet: isTeacher ? "교사일별스티커" : "학생일별스티커",
     surveySheet: isTeacher ? "교사설문응답" : "학생설문응답"
   };
 }
@@ -128,13 +128,14 @@ function setupSheets(sheet) {
     throw new Error("스프레드시트를 활성화할 수 없습니다.");
   }
 
-  // 1. 기존 사용하지 않는 삭제 대상 탭 삭제
+  // 1. 기존 사용하지 않는 구버전 삭제 대상 탭 자동 삭제
   var deleteTabs = [
     "시트1", "Sheet1", "MissionLogs", 
     "Students", "Teachers", 
     "StudentDailyPoints", "TeacherDailyPoints", 
     "StudentMonthlySummary", "TeacherMonthlySummary",
-    "StudentSurveyResponses", "TeacherSurveyResponses"
+    "StudentSurveyResponses", "TeacherSurveyResponses",
+    "학생일별포인트", "교사일별포인트"
   ];
   deleteTabs.forEach(function(name) {
     var target = sheet.getSheetByName(name);
@@ -147,10 +148,10 @@ function setupSheets(sheet) {
 
   // 2. 신규 6개 탭 구조 초기화 (학교 컬럼 B열 추가)
   var tabConfigs = [
-    { name: "학생기록", headers: ["일시", "학교", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총포인트", "누적총포인트", "레벨"], color: "#E2F0D9" },
-    { name: "교사기록", headers: ["일시", "학교", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총포인트", "누적총포인트", "레벨"], color: "#DDEBF7" },
-    { name: "학생일별포인트", headers: ["일시", "학교", "개인번호", "이름", "일총포인트"], color: "#F2F2F2" },
-    { name: "교사일별포인트", headers: ["일시", "학교", "개인번호", "이름", "일총포인트"], color: "#FFF2CC" },
+    { name: "학생기록", headers: ["일시", "학교", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총스티커", "누적총스티커", "레벨"], color: "#E2F0D9" },
+    { name: "교사기록", headers: ["일시", "학교", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총스티커", "누적총스티커", "레벨"], color: "#DDEBF7" },
+    { name: "학생일별스티커", headers: ["일시", "학교", "개인번호", "이름", "일별스티커"], color: "#F2F2F2" },
+    { name: "교사일별스티커", headers: ["일시", "학교", "개인번호", "이름", "일별스티커"], color: "#FFF2CC" },
     { name: "학생설문응답", headers: ["일시", "학교", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"], color: "#E2EFDA" },
     { name: "교사설문응답", headers: ["일시", "학교", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"], color: "#F8CBAD" }
   ];
@@ -188,19 +189,23 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
   if (matchingRowIndices.length > 0) {
     var primaryRowIndex = matchingRowIndices[0];
     var curPoints = parseInt(dailySheet.getRange(primaryRowIndex, 5).getValue()) || 0;
+    // If curPoints is stored as 1 sticker, convert to points for delta calculation
+    if (curPoints < 10) curPoints = curPoints * 100;
     targetPoints = isSetAbsolute ? Math.min(100, Math.max(0, pointsDelta)) : Math.min(100, Math.max(0, curPoints + pointsDelta));
+    var targetStickers = (targetPoints >= 100) ? 1 : 0;
     
     dailySheet.getRange(primaryRowIndex, 1).setValue(todayStr);
     dailySheet.getRange(primaryRowIndex, 2).setValue(p.school);
     if (name) dailySheet.getRange(primaryRowIndex, 4).setValue(name);
-    dailySheet.getRange(primaryRowIndex, 5).setValue(targetPoints);
+    dailySheet.getRange(primaryRowIndex, 5).setValue(targetStickers);
     
     for (var k = matchingRowIndices.length - 1; k > 0; k--) {
       dailySheet.deleteRow(matchingRowIndices[k]);
     }
   } else {
     targetPoints = Math.min(100, Math.max(0, pointsDelta));
-    dailySheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, targetPoints]);
+    var targetStickers = (targetPoints >= 100) ? 1 : 0;
+    dailySheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, targetStickers]);
   }
   
   SpreadsheetApp.flush();
@@ -341,25 +346,26 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
   
   SpreadsheetApp.flush();
   var updatedDRows = dailySheet.getDataRange().getValues();
-  var cumulativePoints = 0;
-  var monthlyPoints = 0;
+  var cumulativeStickers = 0;
+  var monthlyStickers = 0;
   
   for (var m = 1; m < updatedDRows.length; m++) {
     var dSch = updatedDRows[m][1] ? updatedDRows[m][1].toString().trim() : "";
     var dId = updatedDRows[m][2] ? updatedDRows[m][2].toString().trim() : "";
     if (dId === p.cleanId && (dSch === p.school || !dSch)) {
       var pts = parseInt(updatedDRows[m][4]) || 0;
-      cumulativePoints += pts;
+      var stk = (pts >= 100) ? Math.floor(pts / 100) : pts;
+      cumulativeStickers += stk;
       if (formatDateToYYYYMM(updatedDRows[m][0]) === currentMonthStr) {
-        monthlyPoints += pts;
+        monthlyStickers += stk;
       }
     }
   }
 
-  var level = "알콩이";
-  if (cumulativePoints > 9000) level = "꼬꼬대장";
-  else if (cumulativePoints > 6000) level = "튼튼이";
-  else if (cumulativePoints > 3000) level = "삐약이";
+  var level = "🥚 알콩이 (0~7개)";
+  if (cumulativeStickers >= 45) level = "👑 꼬꼬대장 (45개+)";
+  else if (cumulativeStickers >= 24) level = "🐥 튼튼이 (24~44개)";
+  else if (cumulativeStickers >= 8) level = "🐣 삐약이 (8~23개)";
 
   var pRows3 = profileSheet.getDataRange().getValues();
   var foundProfileRow = -1;
@@ -375,14 +381,14 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
   }
 
   if (foundProfileRow > -1) {
-    profileSheet.getRange(foundProfileRow, 1).setValue(todayStr);       // A: 일시
-    profileSheet.getRange(foundProfileRow, 2).setValue(p.school);        // B: 학교
-    if (name) profileSheet.getRange(foundProfileRow, 4).setValue(name); // D: 이름
-    profileSheet.getRange(foundProfileRow, 8).setValue(monthlyPoints);   // H: 월총포인트
-    profileSheet.getRange(foundProfileRow, 9).setValue(cumulativePoints);// I: 누적총포인트
-    profileSheet.getRange(foundProfileRow, 10).setValue(level);          // J: 레벨
+    profileSheet.getRange(foundProfileRow, 1).setValue(todayStr);            // A: 일시
+    profileSheet.getRange(foundProfileRow, 2).setValue(p.school);             // B: 학교
+    if (name) profileSheet.getRange(foundProfileRow, 4).setValue(name);      // D: 이름
+    profileSheet.getRange(foundProfileRow, 8).setValue(monthlyStickers);     // H: 월총스티커
+    profileSheet.getRange(foundProfileRow, 9).setValue(cumulativeStickers);  // I: 누적총스티커
+    profileSheet.getRange(foundProfileRow, 10).setValue(level);               // J: 레벨
   } else {
-    profileSheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, 0, 0, 0, monthlyPoints, cumulativePoints, level]);
+    profileSheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, 0, 0, 0, monthlyStickers, cumulativeStickers, level]);
   }
   
   SpreadsheetApp.flush();
@@ -417,8 +423,8 @@ function handleGetStudent(sheet, studentId) {
   var height = parseFloat(pRows[latestRowIndex][4]) || 0;
   var weight = parseFloat(pRows[latestRowIndex][5]) || 0;
   
-  var totalPoints = 0;
-  var monthlyPoints = 0;
+  var totalStickers = 0;
+  var monthlyStickers = 0;
   var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM");
   var dailySheet = sheet.getSheetByName(p.dailySheet);
   var dRows = dailySheet.getDataRange().getValues();
@@ -427,9 +433,10 @@ function handleGetStudent(sheet, studentId) {
     var dId = dRows[j][2] ? dRows[j][2].toString().trim() : "";
     if (dId === p.cleanId && (dSch === school || !dSch)) {
       var pts = parseInt(dRows[j][4]) || 0;
-      totalPoints += pts;
+      var stk = (pts >= 100) ? Math.floor(pts / 100) : pts;
+      totalStickers += stk;
       if (formatDateToYYYYMM(dRows[j][0]) === currentMonthStr) {
-        monthlyPoints += pts;
+        monthlyStickers += stk;
       }
     }
   }
@@ -457,8 +464,8 @@ function handleGetStudent(sheet, studentId) {
     nickname: nickname,
     height: height,
     weight: weight,
-    totalPoints: totalPoints,
-    monthlyPoints: monthlyPoints,
+    totalPoints: totalStickers * 100,
+    monthlyPoints: monthlyStickers * 100,
     preSurveyDone: preSurveyDone
   };
   
@@ -500,8 +507,8 @@ function handleGetStudent(sheet, studentId) {
 function handleGetLeaderboard(sheet) {
   var studentSheet = sheet.getSheetByName("학생기록");
   var teacherSheet = sheet.getSheetByName("교사기록");
-  var dailyStudentSheet = sheet.getSheetByName("학생일별포인트");
-  var dailyTeacherSheet = sheet.getSheetByName("교사일별포인트");
+  var dailyStudentSheet = sheet.getSheetByName("학생일별스티커") || sheet.getSheetByName("학생일별포인트");
+  var dailyTeacherSheet = sheet.getSheetByName("교사일별스티커") || sheet.getSheetByName("교사일별포인트");
   
   var leaderboard = [];
   var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM");
@@ -749,10 +756,11 @@ function aggregateMonthlyPoints() {
         }
       }
       
-      var level = "알콩이";
-      if (cumulativePoints > 9000) level = "꼬꼬대장";
-      else if (cumulativePoints > 6000) level = "튼튼이";
-      else if (cumulativePoints > 3000) level = "삐약이";
+      var totalStickers = Math.floor(cumulativePoints / 100);
+      var level = "🥚 알콩이 (0~7개)";
+      if (totalStickers >= 45) level = "👑 꼬꼬대장 (45개+)";
+      else if (totalStickers >= 24) level = "🐥 튼튼이 (24~44개)";
+      else if (totalStickers >= 8) level = "🐣 삐약이 (8~23개)";
       
       profileSheet.getRange(i + 1, 8).setValue(monthlyPoints);
       profileSheet.getRange(i + 1, 9).setValue(cumulativePoints);
@@ -769,7 +777,40 @@ function onOpen() {
   ui.createMenu('🛠️ 튼튼탐험대 관리자')
     .addItem('🔄 전체 포인트 재계산 및 복구', 'recalculateAllPoints')
     .addItem('📁 즉시 시트 백업본 생성', 'createDailyBackup')
+    .addItem('⏰ 매일 밤 10시 자동 백업 예약 활성화', 'setupDaily10PMBackupTrigger')
     .addToUi();
+}
+
+/**
+ * 매일 밤 10시(22:00)에 자동으로 백업본을 생성하는 구글 시간 트리거 설정
+ */
+function setupDaily10PMBackupTrigger() {
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch(e){}
+  
+  try {
+    var triggers = ScriptApp.getProjectTriggers();
+    for (var i = 0; i < triggers.length; i++) {
+      if (triggers[i].getHandlerFunction() === 'createDailyBackup') {
+        ScriptApp.deleteTrigger(triggers[i]);
+      }
+    }
+    
+    ScriptApp.newTrigger('createDailyBackup')
+      .timeBased()
+      .everyDays(1)
+      .atHour(22)
+      .nearMinute(0)
+      .create();
+      
+    if (ui) {
+      ui.alert("✅ 자동 백업 설정 완료", "매일 밤 10시에 자동으로 구글 드라이브 ['📂 튼튼탐험대_백업모음'] 폴더에 백업본이 저장되도록 예약되었습니다! 🌙", ui.ButtonSet.OK);
+    }
+  } catch(e) {
+    if (ui) {
+      ui.alert("❌ 설정 실패", "자동 백업 트리거 생성 중 오류: " + e.message, ui.ButtonSet.OK);
+    }
+  }
 }
 
 /**
@@ -777,12 +818,13 @@ function onOpen() {
  * 학생기록/교사기록의 월총포인트, 누적총포인트, 레벨을 100% 원상복구합니다.
  */
 function recalculateAllPoints() {
-  var ui = SpreadsheetApp.getUi();
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch(e){}
   try {
     aggregateMonthlyPoints();
-    ui.alert("✅ 포인트 복구 완료", "일별 원본 기록을 바탕으로 모든 학생/교사의 총포인트 및 레벨 재계산이 완료되었습니다!", ui.ButtonSet.OK);
+    if (ui) ui.alert("✅ 포인트 복구 완료", "일별 원본 기록을 바탕으로 모든 학생/교사의 총포인트 및 레벨 재계산이 완료되었습니다!", ui.ButtonSet.OK);
   } catch(e) {
-    ui.alert("❌ 복구 실패", "재계산 중 오류 발생: " + e.message, ui.ButtonSet.OK);
+    if (ui) ui.alert("❌ 복구 실패", "재계산 중 오류 발생: " + e.message, ui.ButtonSet.OK);
   }
 }
 
@@ -790,7 +832,9 @@ function recalculateAllPoints() {
  * 플랜 B 백업용: 현재 구글 시트 전체를 복사하여 구글 드라이브에 시각별 백업본 파일 생성
  */
 function createDailyBackup() {
-  var ui = SpreadsheetApp.getUi();
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch(e){}
+  
   try {
     aggregateMonthlyPoints(); // 백업 전 최신 포인트 & 레벨 자동 최종 재계산!
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -807,8 +851,13 @@ function createDailyBackup() {
       ss.copy(name);
     }
     
-    ui.alert("✅ 백업 완료", "최신 데이터 재계산 후 구글 드라이브 ['" + folderName + "'] 전용 폴더에 백업본이 저장되었습니다!", ui.ButtonSet.OK);
+    if (ui) {
+      ui.alert("✅ 백업 완료", "최신 데이터 재계산 후 구글 드라이브 ['" + folderName + "'] 전용 폴더에 백업본이 저장되었습니다!", ui.ButtonSet.OK);
+    }
   } catch(e) {
-    ui.alert("❌ 백업 실패", "백업 생성 중 오류 발생: " + e.message, ui.ButtonSet.OK);
+    if (ui) {
+      ui.alert("❌ 백업 실패", "백업 생성 중 오류 발생: " + e.message, ui.ButtonSet.OK);
+    }
+    console.error("Backup error: " + e.message);
   }
 }
