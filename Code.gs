@@ -1,14 +1,14 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 구글 시트 상단 [백업/관리] 커스텀 메뉴 복구판 (Code.gs)
-// (시트 열 때 상단 메뉴바에 '📁 꼬꼬챌린지 관리' -> 백업 및 시트정돈 메뉴 복구)
-// (최종 갱신 시각: 2026-08-28 14:12:00)
+// 꼬꼬챌린지 - Option A: 구글 드라이브 별도 파일 백업 완결판 (Code.gs)
+// (백업 시 메인 시트에 탭을 늘리지 않고, 구글 드라이브에 날짜별 독립 파일로 저장)
+// (최종 갱신 시각: 2026-08-28 14:17:00)
 // ========================================================
 
-// 구글 시트 오픈 시 상단 커스텀 메뉴 자동 생성 복구!
+// 구글 시트 오픈 시 상단 커스텀 메뉴
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('📁 꼬꼬챌린지 관리')
-    .addItem('💾 전체 데이터 즉시 백업', 'backupAllSheets')
+    .addItem('💾 내 구글 드라이브에 별도 백업파일 만들기', 'backupToDrive')
     .addItem('📊 4개 학교 시트/탭 자동 세팅', 'setupAllSchoolSheets')
     .addItem('🧹 전체 시트 학생-교사 명단 정렬', 'sortAllSheetsNow')
     .addToUi();
@@ -109,15 +109,22 @@ function doPost(e) {
   }
 }
 
-// 백업 기능 구현
-function backupAllSheets() {
+// 💾 내 구글 드라이브에 별도의 새 파일(복사본)로 백업 생성! (메인 시트에 탭이 늘어나지 않음)
+function backupToDrive() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const todayStr = Utilities.formatDate(new Date(), "GMT+9", "yyyyMMdd_HHmmss");
-  const backupSheet = ss.insertSheet(`백업_${todayStr}`);
-  backupSheet.appendRow(["백업 일시", new Date()]);
-  backupSheet.appendRow(["상태", "전체 데이터 안전 백업 완료"]);
-  backupSheet.getRange(1, 1, 2, 2).setFontWeight("bold").setBackground("#FFF3BF");
-  SpreadsheetApp.getUi().alert(`'백업_${todayStr}' 탭으로 백업이 성공적으로 완료되었습니다! 💾`);
+  const file = DriveApp.getFileById(ss.getId());
+  const todayStr = Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd_HHmmss");
+  const backupFileName = `[꼬꼬챌린지 백업] ${todayStr}`;
+  
+  // 구글 드라이브에 별도의 새 파일로 복사본 생성!
+  file.makeCopy(backupFileName);
+  
+  SpreadsheetApp.getUi().alert(
+    `🎉 구글 드라이브에 백업 파일이 새로 생성되었습니다!\n\n` +
+    `📁 파일명: ${backupFileName}\n` +
+    `📍 위치: 내 구글 드라이브 (https://drive.google.com)\n\n` +
+    `메인 시트에 탭이 늘어나지 않고 구글 드라이브에 별도 파일로 깔끔하게 보관됩니다!`
+  );
 }
 
 // 4개 학교 탭 자동 생성 세팅
@@ -239,7 +246,7 @@ function getOrCreateMonthlySheet(ss, sheetName) {
   return sheet;
 }
 
-function getOrCreateSurveySheet(ss, sheetName) {
+function getOrCreateSurveySheet(ss, schoolName) {
   let sheet = ss.getSheetByName(sheetName);
   const headers = [
     "응답일시", "학교", "개인번호", "이름", "설문구분",
