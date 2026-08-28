@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 설문 연동 완결판 (Code.gs)
-// (save_survey 및 submit_survey 액션 둘 다 100% 수신하여 [학교_설문응답] 탭 저장)
-// (최종 갱신 시각: 2026-08-28 13:50:00)
+// 꼬꼬챌린지 - Option A: B초 포함 설문응답 탭 정확 매칭 완결판 (Code.gs)
+// (학생 ID의 학교 정보를 최우선 판별하여 [B초_설문응답] 탭에 100% 저장)
+// (최종 갱신 시각: 2026-08-28 13:53:00)
 // ========================================================
 
 function doPost(e) {
@@ -12,14 +12,8 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    let school = String(data.school || "").trim();
-    if (!school) school = getSchoolFromId(data.studentId);
-    if (!school.endsWith("초")) school += "초";
-    
-    if (!["A초", "B초", "C초", "D초"].includes(school)) {
-      const first = String(data.studentId || "").trim().charAt(0).toUpperCase();
-      school = ["A", "B", "C", "D"].includes(first) ? first + "초" : "A초";
-    }
+    // 학생 ID와 학교 데이터에서 최우선으로 학교 추출
+    let school = getSchoolFromId(data.studentId || data.school);
 
     const action = data.action;
     const timestamp = new Date();
@@ -31,7 +25,7 @@ function doPost(e) {
       return responseJSON({ success: true, message: `${school} 매일출석부 연동 성공` });
     }
     
-    // 2. 키, 몸무게 (내몸탐험) ➡️ [A초_월별성장] 탭 (월 1회 측정 + 총스티커 + 레벨 포함 10열!)
+    // 2. 키, 몸무게 (내몸탐험) ➡️ [A초_월별성장, B초_월별성장 등] 탭
     else if (action === 'update_bmi') {
       const monthlySheet = getOrCreateMonthlySheet(ss, `${school}_월별성장`);
       const cleanId = cleanStudentId(data.studentId);
@@ -218,8 +212,13 @@ function sortSheetStudentsFirst(sheet, numCols) {
 
 function getSchoolFromId(id) {
   if (!id) return "A초";
-  const first = String(id).trim().charAt(0).toUpperCase();
+  const str = String(id).trim().toUpperCase();
+  const first = str.charAt(0);
   if (["A", "B", "C", "D"].includes(first)) return first + "초";
+  if (str.includes("A초") || str.includes("A_")) return "A초";
+  if (str.includes("B초") || str.includes("B_")) return "B초";
+  if (str.includes("C초") || str.includes("C_")) return "C초";
+  if (str.includes("D초") || str.includes("D_")) return "D초";
   return "A초";
 }
 
