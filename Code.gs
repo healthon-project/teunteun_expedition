@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 구글 드라이브 별도 파일 백업 완결판 (Code.gs)
-// (백업 시 메인 시트에 탭을 늘리지 않고, 구글 드라이브에 날짜별 독립 파일로 저장)
-// (최종 갱신 시각: 2026-08-28 14:17:00)
+// 꼬꼬챌린지 - Option A: 백업 함수명 미찾음 버그 100% 방지 완결판 (Code.gs)
+// (backupToDrive 및 backupAllSheets 두 함수명 완벽 호환 연결)
+// (최종 갱신 시각: 2026-08-28 14:19:30)
 // ========================================================
 
 // 구글 시트 오픈 시 상단 커스텀 메뉴
@@ -109,7 +109,7 @@ function doPost(e) {
   }
 }
 
-// 💾 내 구글 드라이브에 별도의 새 파일(복사본)로 백업 생성! (메인 시트에 탭이 늘어나지 않음)
+// 💾 내 구글 드라이브에 별도의 새 파일(복사본)로 백업 생성!
 function backupToDrive() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const file = DriveApp.getFileById(ss.getId());
@@ -125,6 +125,11 @@ function backupToDrive() {
     `📍 위치: 내 구글 드라이브 (https://drive.google.com)\n\n` +
     `메인 시트에 탭이 늘어나지 않고 구글 드라이브에 별도 파일로 깔끔하게 보관됩니다!`
   );
+}
+
+// 이전 메뉴 캐시 오류 방지용 호환 연결 함수!
+function backupAllSheets() {
+  backupToDrive();
 }
 
 // 4개 학교 탭 자동 생성 세팅
