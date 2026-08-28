@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 두 시트 스티커 0개/1개 100% 완전 통일판 (Code.gs)
-// (B초 일일출석 및 B초_월별성장 시트 간 스티커 개수 오차 100% 완벽 해결)
-// (최종 갱신 시각: 2026-08-28 13:30:00)
+// 꼬꼬챌린지 - Option A: 스티커 0개 강제 0표기 보장 백엔드 (Code.gs)
+// (dailyStickerVal 0 강제 고정 및 B초 시트 5열 1일 1행 덮어씌움 완성)
+// (최종 갱신 시각: 2026-08-28 13:33:00)
 // ========================================================
 
 function doPost(e) {
@@ -92,13 +92,20 @@ function getLevelNameFromPoints(points) {
   return "1단계 알콩이";
 }
 
-// 스티커 0개/1개 정확 반영 (B초 일일출석 및 월별성장 100% 동일 매칭)
+// 스티커 0개/1개 100% 무조건 정확 반영 (0개 전달 시 절대 1로 변환 금지!)
 function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   const rawId = String(data.studentId || "").trim();
   const cleanId = cleanStudentId(rawId);
   const name = String(data.name || cleanId).trim();
   
-  const dailyStickerVal = (data.dailySticker !== undefined && data.dailySticker !== null) ? Number(data.dailySticker) : 0;
+  // 스티커 수량 강제 검증 (0일 때 무조건 숫자 0!)
+  let dailyStickerVal = 0;
+  if (data.dailySticker !== undefined && data.dailySticker !== null) {
+    dailyStickerVal = Number(data.dailySticker);
+  }
+  if (isNaN(dailyStickerVal) || dailyStickerVal < 0) {
+    dailyStickerVal = 0;
+  }
 
   const today = new Date();
   const curY = today.getFullYear();
@@ -122,7 +129,7 @@ function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
                       rowDateVal.getDate() === curD);
       } else {
         const str = String(rowDateVal);
-        isSameDate = str.includes(`${curY}`) && str.includes(`${curM}`) && str.includes(`${curD}`);
+        isSameDate = str.includes(`${curY}`) && str.includes(`${curD}`);
       }
 
       let isSameId = (rowCleanId === cleanId) || (rowIdStr === rawId) || (cleanId.length > 0 && rowCleanId.includes(cleanId));
@@ -135,6 +142,7 @@ function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   }
 
   if (foundRow > 1) {
+    // 오늘 이미 있는 행 5열(일별스티커)을 무조건 덮어씌움!
     sheet.getRange(foundRow, 1).setValue(timestamp);
     sheet.getRange(foundRow, 3).setValue(cleanId);
     sheet.getRange(foundRow, 4).setValue(name);
