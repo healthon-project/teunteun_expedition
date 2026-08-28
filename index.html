@@ -3101,7 +3101,8 @@
             alert(`놀이터 게임 완료! 보너스 점수 50p가 적립되었습니다!`);
             refreshStudentData();
           }, 500);
-        } else {
+          const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
+          const dailyStk = totalPts >= 100 ? 1 : 0;
           fetch(state.gasUrl, {
             method: 'POST',
             mode: 'no-cors',
@@ -3113,7 +3114,8 @@
               name: state.student ? state.student.name : '',
               missionType: "일별스티커",
               points: pointsEarned,
-              dailySticker: 1,
+              totalPoints: totalPts,
+              dailySticker: dailyStk,
               weight: ""
             })
           })

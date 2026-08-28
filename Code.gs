@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 스티커 0개 강제 0표기 보장 백엔드 (Code.gs)
-// (dailyStickerVal 0 강제 고정 및 B초 시트 5열 1일 1행 덮어씌움 완성)
-// (최종 갱신 시각: 2026-08-28 13:33:00)
+// 꼬꼬챌린지 - Option A: 총포인트 100점 미만 100% 무조건 스티커 0개 고정 (Code.gs)
+// (하드코딩된 1개 부여 오차 완전 제거, totalPoints >= 100 일 때만 1개 부여)
+// (최종 갱신 시각: 2026-08-28 13:42:00)
 // ========================================================
 
 function doPost(e) {
@@ -84,7 +84,6 @@ function doPost(e) {
   }
 }
 
-// 총 포인트 기준 캐릭터 레벨 산출 함수
 function getLevelNameFromPoints(points) {
   if (points >= 4500) return "4단계 꼬꼬대장";
   if (points >= 2400) return "3단계 튼튼이";
@@ -92,20 +91,16 @@ function getLevelNameFromPoints(points) {
   return "1단계 알콩이";
 }
 
-// 스티커 0개/1개 100% 무조건 정확 반영 (0개 전달 시 절대 1로 변환 금지!)
+// 스티커 0개/1개 절대기준 적용 (totalPoints >= 100 일 때만 1개, 100점 미만은 무조건 0개!)
 function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   const rawId = String(data.studentId || "").trim();
   const cleanId = cleanStudentId(rawId);
   const name = String(data.name || cleanId).trim();
   
-  // 스티커 수량 강제 검증 (0일 때 무조건 숫자 0!)
-  let dailyStickerVal = 0;
-  if (data.dailySticker !== undefined && data.dailySticker !== null) {
-    dailyStickerVal = Number(data.dailySticker);
-  }
-  if (isNaN(dailyStickerVal) || dailyStickerVal < 0) {
-    dailyStickerVal = 0;
-  }
+  const pts = Number(data.totalPoints || 0);
+  
+  // 총포인트가 100점 이상일 때만 일일 스티커 1개, 그 미만(0P~99P)은 무조건 0개!
+  const dailyStickerVal = pts >= 100 ? 1 : 0;
 
   const today = new Date();
   const curY = today.getFullYear();
@@ -142,7 +137,6 @@ function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   }
 
   if (foundRow > 1) {
-    // 오늘 이미 있는 행 5열(일별스티커)을 무조건 덮어씌움!
     sheet.getRange(foundRow, 1).setValue(timestamp);
     sheet.getRange(foundRow, 3).setValue(cleanId);
     sheet.getRange(foundRow, 4).setValue(name);
