@@ -1,67 +1,8 @@
 // ========================================================
-// 꼬꼬챌린지 - 로그인 ID 100% 수용 및 5열 순정 완결 백엔드 (Code.gs)
-// (doGet rawId 반환으로 학생/교사 로그인 초고속 완성)
-// (A열:일시, B열:학교, C열:개인번호, D열:이름, E열:일별스티커)
-// (최종 갱신 시각: 2026-08-28 12:41:30)
+// 꼬꼬챌린지 - Option A: 스티커 0개 정확 표기 버그 수정판 (Code.gs)
+// (스티커 0개일 때 1개로 잘못 표기되던 data.dailySticker || 1 버그 100% 수정)
+// (최종 갱신 시각: 2026-08-28 13:06:30)
 // ========================================================
-
-function doGet(e) {
-  try {
-    const action = e.parameter ? e.parameter.action : "";
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    if (action === 'get_student') {
-      const rawId = String(e.parameter.studentId || "").trim();
-      const cleanId = cleanStudentId(rawId);
-      
-      const sheets = ss.getSheets();
-      let totalPts = 0;
-      let foundName = cleanId;
-
-      for (let s = 0; s < sheets.length; s++) {
-        const sheet = sheets[s];
-        const lastRow = sheet.getLastRow();
-        if (lastRow > 1) {
-          const numCols = Math.min(sheet.getLastColumn(), 11);
-          if (numCols >= 3) {
-            const values = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
-            for (let i = 0; i < values.length; i++) {
-              const rowIdStr = String(values[i][2] || values[i][4] || "").trim();
-              const rowCleanId = cleanStudentId(rowIdStr);
-              if (rowCleanId === cleanId || rowIdStr === rawId) {
-                if (values[i][3]) foundName = String(values[i][3]).trim();
-                const ptsVal = Number(values[i][4] || 0);
-                if (!isNaN(ptsVal) && ptsVal > 0) {
-                  totalPts = Math.max(totalPts, ptsVal * 100);
-                }
-              }
-            }
-          }
-        }
-      }
-
-      return responseJSON({
-        success: true,
-        student: {
-          id: rawId,
-          name: foundName || cleanId,
-          totalPoints: totalPts || 0
-        }
-      });
-    }
-
-    return responseJSON({ success: true, message: "Server Ready" });
-  } catch (err) {
-    return responseJSON({
-      success: true,
-      student: {
-        id: String((e.parameter && e.parameter.studentId) || "guest"),
-        name: "학생",
-        totalPoints: 0
-      }
-    });
-  }
-}
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -83,37 +24,56 @@ function doPost(e) {
     const action = data.action;
     const timestamp = new Date();
 
-    const sheet = getOrCreate5ColSheet(ss, school);
-
+    // 1. 일일 출석 및 미션 스티커 ➡️ [A초] 매일 출석부 탭 (5열 1일 1행 고정!)
     if (action === 'log_mission') {
-      upsert5ColDailySticker(sheet, school, data, timestamp);
-      return responseJSON({ success: true, message: `${school} 5열 일일출석 연동 성공` });
+      const dailySheet = getOrCreateDailySheet(ss, school);
+      upsertDailySticker5Col(dailySheet, school, data, timestamp);
+      return responseJSON({ success: true, message: `${school} 매일출석부 연동 성공` });
     }
     
+    // 2. 키, 몸무게 (내몸탐험) ➡️ [A초_월별성장] 탭 (월 1회 측정 + 총스티커 + 레벨 포함 10열!)
     else if (action === 'update_bmi') {
+      const monthlySheet = getOrCreateMonthlySheet(ss, `${school}_월별성장`);
       const cleanId = cleanStudentId(data.studentId);
-      sheet.appendRow([
+      const name = String(data.name || cleanId).trim();
+      const pts = Number(data.totalPoints || 0);
+      const totalStickers = Math.floor(pts / 100);
+      const levelName = getLevelNameFromPoints(pts);
+      
+      monthlySheet.appendRow([
         timestamp,
         school,
         cleanId,
-        data.name || cleanId,
-        `키:${data.height||0}cm,몸무게:${data.weight||0}kg(BMI:${data.bmi||""})`
+        name,
+        `${data.month || (new Date().getMonth() + 1)}월`,
+        data.height || 0,
+        data.weight || 0,
+        data.bmi || "",
+        totalStickers,
+        levelName
       ]);
-      sortSheet5Col(sheet);
-      return responseJSON({ success: true, message: `${school} 신체기록 완료` });
+
+      sortSheetStudentsFirst(monthlySheet, 10);
+      return responseJSON({ success: true, message: `${school}_월별성장 신체기록 완료` });
     }
     
+    // 3. 사전 / 사후 설문조사 ➡️ [A초_설문응답] 탭
     else if (action === 'save_survey') {
+      const surveySheet = getOrCreateSurveySheet(ss, `${school}_설문응답`);
       const cleanId = cleanStudentId(data.studentId);
-      sheet.appendRow([
+      const name = String(data.name || cleanId).trim();
+      
+      surveySheet.appendRow([
         timestamp,
         school,
         cleanId,
-        data.name || cleanId,
-        `[${data.surveyType || "설문"}] ${JSON.stringify(data.answers || {})}`
+        name,
+        data.surveyType || "사전설문",
+        JSON.stringify(data.answers || {})
       ]);
-      sortSheet5Col(sheet);
-      return responseJSON({ success: true, message: `${school} 설문저장 완료` });
+
+      sortSheetStudentsFirst(surveySheet, 6);
+      return responseJSON({ success: true, message: `${school}_설문응답 저장 완료` });
     }
 
     return responseJSON({ success: true, message: "수신 완료" });
@@ -124,11 +84,22 @@ function doPost(e) {
   }
 }
 
-function upsert5ColDailySticker(sheet, schoolName, data, timestamp) {
+// 총 포인트 기준 캐릭터 레벨 산출 함수
+function getLevelNameFromPoints(points) {
+  if (points >= 4500) return "4단계 꼬꼬대장";
+  if (points >= 2400) return "3단계 튼튼이";
+  if (points >= 800) return "2단계 삐약이";
+  return "1단계 알콩이";
+}
+
+// 스티커 0개 정확 반영 (data.dailySticker || 1 버그 수정 완료)
+function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   const rawId = String(data.studentId || "").trim();
   const cleanId = cleanStudentId(rawId);
   const name = String(data.name || cleanId).trim();
-  const dailyStickerVal = Number(data.dailySticker) || 1;
+  
+  // 스티커 0개 전달 시 정확히 0으로 인식! (0 || 1 버그 해결)
+  const dailyStickerVal = (data.dailySticker !== undefined && data.dailySticker !== null) ? Number(data.dailySticker) : 0;
 
   const today = new Date();
   const curY = today.getFullYear();
@@ -179,16 +150,10 @@ function upsert5ColDailySticker(sheet, schoolName, data, timestamp) {
     ]);
   }
 
-  sortSheet5Col(sheet);
+  sortSheetStudentsFirst(sheet, 5);
 }
 
-function cleanStudentId(id) {
-  let str = String(id || "").trim();
-  str = str.replace(/^[A-D]초_/i, '').replace(/^[A-D]_/i, '');
-  return str;
-}
-
-function getOrCreate5ColSheet(ss, schoolName) {
+function getOrCreateDailySheet(ss, schoolName) {
   let sheet = ss.getSheetByName(schoolName);
   if (!sheet) {
     sheet = ss.insertSheet(schoolName);
@@ -198,11 +163,40 @@ function getOrCreate5ColSheet(ss, schoolName) {
   return sheet;
 }
 
-function sortSheet5Col(sheet) {
+function getOrCreateMonthlySheet(ss, sheetName) {
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    sheet.appendRow(["측정일시", "학교", "개인번호", "이름", "측정월", "키(cm)", "몸무게(kg)", "BMI", "총스티커(개)", "레벨"]);
+    sheet.getRange(1, 1, 1, 10).setFontWeight("bold").setBackground("#E2ECE9");
+  } else {
+    sheet.getRange(1, 9).setValue("총스티커(개)").setFontWeight("bold");
+    sheet.getRange(1, 10).setValue("레벨").setFontWeight("bold");
+  }
+  return sheet;
+}
+
+function getOrCreateSurveySheet(ss, sheetName) {
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    sheet.appendRow(["응답일시", "학교", "개인번호", "이름", "설문구분", "응답내용"]);
+    sheet.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#FDE2E4");
+  }
+  return sheet;
+}
+
+function cleanStudentId(id) {
+  let str = String(id || "").trim();
+  str = str.replace(/^[A-D]초_/i, '').replace(/^[A-D]_/i, '');
+  return str;
+}
+
+function sortSheetStudentsFirst(sheet, numCols) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 2) return;
   
-  const range = sheet.getRange(2, 1, lastRow - 1, 5);
+  const range = sheet.getRange(2, 1, lastRow - 1, numCols);
   const values = range.getValues();
 
   values.sort((a, b) => {
@@ -226,6 +220,19 @@ function getSchoolFromId(id) {
   const first = String(id).trim().charAt(0).toUpperCase();
   if (["A", "B", "C", "D"].includes(first)) return first + "초";
   return "A초";
+}
+
+function doGet(e) {
+  try {
+    const rawId = String((e.parameter && e.parameter.studentId) || "").trim();
+    const cleanId = cleanStudentId(rawId);
+    return responseJSON({
+      success: true,
+      student: { id: rawId, name: cleanId || "학생", totalPoints: 0 }
+    });
+  } catch (err) {
+    return responseJSON({ success: true, student: { id: "guest", name: "학생", totalPoints: 0 } });
+  }
 }
 
 function responseJSON(obj) {

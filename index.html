@@ -1806,7 +1806,7 @@
 
           const totalPts = Number(state.student.totalPoints) || 0;
           const totalSticker = Math.floor(totalPts / 100);
-          const dailyStk = todayTotal >= 100 ? 1 : (todayTotal > 0 ? 1 : 0);
+          const dailyStk = todayTotal >= 100 ? 1 : 0;
 
           fetch(state.gasUrl, {
             method: 'POST',
@@ -1821,7 +1821,7 @@
               points: todayTotal,
               totalPoints: totalPts,
               stickerCount: totalSticker,
-              dailySticker: dailyStk || 1,
+              dailySticker: dailyStk,
               isSetAbsolute: true,
               weight: ""
             })
