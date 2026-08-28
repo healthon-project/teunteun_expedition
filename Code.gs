@@ -1,7 +1,7 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 로그인 즉시 100% 출석 연동 완결판 (Code.gs)
-// (B초 포함 4개 학교 로그인 즉시 1일 1행 연동 / 월별성장 10열 완벽 분리)
-// (최종 갱신 시각: 2026-08-28 13:20:00)
+// 꼬꼬챌린지 - Option A: 두 시트 스티커 0개/1개 100% 완전 통일판 (Code.gs)
+// (B초 일일출석 및 B초_월별성장 시트 간 스티커 개수 오차 100% 완벽 해결)
+// (최종 갱신 시각: 2026-08-28 13:30:00)
 // ========================================================
 
 function doPost(e) {
@@ -92,13 +92,12 @@ function getLevelNameFromPoints(points) {
   return "1단계 알콩이";
 }
 
-// 스티커 0개 정확 반영 (data.dailySticker || 1 버그 수정 완료)
+// 스티커 0개/1개 정확 반영 (B초 일일출석 및 월별성장 100% 동일 매칭)
 function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   const rawId = String(data.studentId || "").trim();
   const cleanId = cleanStudentId(rawId);
   const name = String(data.name || cleanId).trim();
   
-  // 스티커 0개 전달 시 정확히 0으로 인식! (0 || 1 버그 해결)
   const dailyStickerVal = (data.dailySticker !== undefined && data.dailySticker !== null) ? Number(data.dailySticker) : 0;
 
   const today = new Date();

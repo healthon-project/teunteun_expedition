@@ -3276,6 +3276,7 @@
         }).catch(err => console.error("GAS BMI sync error", err));
 
         // Send update_bmi API to record height & weight in MyBody report log
+        const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
@@ -3288,7 +3289,8 @@
             height: hVal,
             weight: wVal,
             bmi: bmiVal,
-            month: month
+            month: month,
+            totalPoints: totalPts
           })
         }).catch(err => console.error("GAS BMI mission log error", err));
       }
