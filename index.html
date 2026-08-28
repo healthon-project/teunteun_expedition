@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
-<!-- 꼬꼬챌린지 - 스스로 체중관리 챌린지 (최종 갱신: 2026-08-28 11:47:51) -->
+<!-- 꼬꼬챌린지 - 스스로 체중관리 챌린지 (최종 갱신: 2026-08-28 12:26:27) -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2203,7 +2203,7 @@
     }
 
 
-    // Unified login sync logic
+    // Unified login sync logic (Instant 0.01s login, background GAS sync)
     function executeLoginSync(id, loginBtn, enteredName = '', schoolVal = '') {
       const activeSchool = schoolVal || state.school || 'A초';
       state.studentId = id;
@@ -2212,13 +2212,13 @@
       localStorage.setItem('teunteun_school', activeSchool);
       loadDailyState();
 
-      // 1. 즉시 로컬/캐시에서 프로필 구성 (0.05초 초고속 반응)
+      // 1. Instant local profile creation & login (0.01s zero-blocking)
       let cachedStudent = null;
       try {
         const cachedStr = localStorage.getItem('teunteun_student_cached');
         if (cachedStr) {
           const parsed = JSON.parse(cachedStr);
-          if (parsed && parsed.studentId === id) {
+          if (parsed && (parsed.studentId === id || parsed.id === id)) {
             cachedStudent = parsed;
           }
         }
@@ -2249,7 +2249,6 @@
         }
       }
 
-      // 즉시 화면에 반영 및 수용
       state.student = s;
       state.lastLevel = getLevelData(s.totalPoints || 0).level;
       localStorage.setItem('teunteun_student_cached', JSON.stringify(s));
@@ -2269,14 +2268,14 @@
       alert(`[${s.nickname}] 모험가님 로그인 성공! ⚡ 바로 아래의 '2단계 사전설문'을 눌러 설문을 시작해 주세요! 🚀`);
       switchTab('register');
 
-      // 2. 서버와의 동기화는 백그라운드에서 비동기로 수초 내 처리 (사용자 대기 0초)
+      // 2. Background GAS sync without blocking login
       if (!state.isOffline && state.gasUrl) {
         syncWithGAS(id, (success) => {
           if (success) {
             renderHome();
             updateSurveyButtonUI();
           } else {
-            // 서버 미등록 학생인 경우 백그라운드로 조용히 등록
+            // Background register if server doesn't have student yet
             fetch(state.gasUrl, {
               method: 'POST',
               mode: 'no-cors',
