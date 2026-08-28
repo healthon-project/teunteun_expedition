@@ -1798,9 +1798,9 @@
         refreshStudentData();
       } else {
         // Realtime GAS sync (Overwrites today's 1 row reliably in Google Sheets)
-        const totalPts = Number(state.student.totalPoints) || 0;
+        const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
         const totalSticker = Math.floor(totalPts / 100);
-        const dailyStk = todayTotal >= 100 ? 1 : 0;
+        const dailyStk = totalPts >= 100 ? 1 : 0;
 
         fetch(state.gasUrl, {
           method: 'POST',
@@ -1810,7 +1810,7 @@
             action: 'log_mission',
             school: state.school || 'A초',
             studentId: state.studentId,
-            name: state.student.name || '',
+            name: state.student ? state.student.name : '',
             missionType: "일별스티커",
             points: todayTotal,
             totalPoints: totalPts,
@@ -2292,14 +2292,9 @@
 
       // 2. Immediate Daily Attendance Sync on Login (Guarantees row in B초 immediately upon login!)
       if (!state.isOffline && state.gasUrl) {
-        let todayPts = 0;
-        const ptsCfg = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
-        for (const [mId, isDone] of Object.entries(state.todayMissions)) {
-          if (isDone === true) todayPts += ptsCfg[mId];
-        }
-        const dailyStk = todayPts >= 100 ? 1 : 0;
-        const totalPts = Number(state.student.totalPoints) || 0;
+        const totalPts = Number(s.totalPoints || (state.student ? state.student.totalPoints : 0)) || 0;
         const totalSticker = Math.floor(totalPts / 100);
+        const dailyStk = totalPts >= 100 ? 1 : 0;
 
         fetch(state.gasUrl, {
           method: 'POST',
@@ -2311,7 +2306,7 @@
             studentId: id,
             name: enteredName || s.name || '',
             missionType: "일별스티커",
-            points: todayPts,
+            points: 0,
             totalPoints: totalPts,
             stickerCount: totalSticker,
             dailySticker: dailyStk,
