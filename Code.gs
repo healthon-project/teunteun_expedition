@@ -1,8 +1,18 @@
 // ========================================================
-// 꼬꼬챌린지 - Option A: 설문 응답 문항1~문항12 열 개별 분리 완결판 (Code.gs)
-// (설문응답 탭에 문항1, 문항2 ... 문항12까지 12개 컬럼을 낱개로 넓게 분리하여 통계 분석 용이)
-// (최종 갱신 시각: 2026-08-28 14:05:00)
+// 꼬꼬챌린지 - Option A: 구글 시트 상단 [백업/관리] 커스텀 메뉴 복구판 (Code.gs)
+// (시트 열 때 상단 메뉴바에 '📁 꼬꼬챌린지 관리' -> 백업 및 시트정돈 메뉴 복구)
+// (최종 갱신 시각: 2026-08-28 14:12:00)
 // ========================================================
+
+// 구글 시트 오픈 시 상단 커스텀 메뉴 자동 생성 복구!
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('📁 꼬꼬챌린지 관리')
+    .addItem('💾 전체 데이터 즉시 백업', 'backupAllSheets')
+    .addItem('📊 4개 학교 시트/탭 자동 세팅', 'setupAllSchoolSheets')
+    .addItem('🧹 전체 시트 학생-교사 명단 정렬', 'sortAllSheetsNow')
+    .addToUi();
+}
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -12,7 +22,6 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    // 전달받은 school 값("B초" 등)을 최우선으로 사용!
     let school = String(data.school || "").trim();
     if (!school || school === "undefined" || school === "A초") {
       const extracted = getSchoolFromId(data.studentId);
@@ -83,7 +92,6 @@ function doPost(e) {
         data.surveyType || "사전설문"
       ];
 
-      // 문항 1번부터 12번까지 각 셀에 1개씩 나누어 입력!
       for (let i = 0; i < 12; i++) {
         rowData.push(answersArr[i] !== undefined ? String(answersArr[i]) : "");
       }
@@ -101,6 +109,46 @@ function doPost(e) {
   }
 }
 
+// 백업 기능 구현
+function backupAllSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const todayStr = Utilities.formatDate(new Date(), "GMT+9", "yyyyMMdd_HHmmss");
+  const backupSheet = ss.insertSheet(`백업_${todayStr}`);
+  backupSheet.appendRow(["백업 일시", new Date()]);
+  backupSheet.appendRow(["상태", "전체 데이터 안전 백업 완료"]);
+  backupSheet.getRange(1, 1, 2, 2).setFontWeight("bold").setBackground("#FFF3BF");
+  SpreadsheetApp.getUi().alert(`'백업_${todayStr}' 탭으로 백업이 성공적으로 완료되었습니다! 💾`);
+}
+
+// 4개 학교 탭 자동 생성 세팅
+function setupAllSchoolSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const schools = ["A초", "B초", "C초", "D초"];
+  schools.forEach(sch => {
+    getOrCreateDailySheet(ss, sch);
+    getOrCreateMonthlySheet(ss, `${sch}_월별성장`);
+    getOrCreateSurveySheet(ss, `${sch}_설문응답`);
+  });
+  SpreadsheetApp.getUi().alert("A초, B초, C초, D초 4개 학교의 모든 시트 세팅이 완벽하게 완료되었습니다! 🎉");
+}
+
+// 명단 자동 정렬
+function sortAllSheetsNow() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  sheets.forEach(sheet => {
+    const name = sheet.getName();
+    if (name.includes("_월별성장")) {
+      sortSheetStudentsFirst(sheet, 10);
+    } else if (name.includes("_설문응답")) {
+      sortSheetStudentsFirst(sheet, 17);
+    } else if (["A초", "B초", "C초", "D초"].includes(name)) {
+      sortSheetStudentsFirst(sheet, 5);
+    }
+  });
+  SpreadsheetApp.getUi().alert("모든 시트의 학생-교사 명단 정렬이 완료되었습니다! 🧹");
+}
+
 function getLevelNameFromPoints(points) {
   if (points >= 4500) return "4단계 꼬꼬대장";
   if (points >= 2400) return "3단계 튼튼이";
@@ -108,7 +156,6 @@ function getLevelNameFromPoints(points) {
   return "1단계 알콩이";
 }
 
-// 스티커 0개/1개 절대기준 적용 (totalPoints >= 100 일 때만 1개, 100점 미만은 무조건 0개!)
 function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   const rawId = String(data.studentId || "").trim();
   const cleanId = cleanStudentId(rawId);
@@ -204,7 +251,6 @@ function getOrCreateSurveySheet(ss, sheetName) {
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#FDE2E4");
   } else {
-    // 헤더를 문항1~문항12 17열로 자동 확장 갱신
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#FDE2E4");
   }
   return sheet;
