@@ -1149,10 +1149,13 @@
     // Switch Tabs
     function switchTab(tabId) {
       checkDailyReset();
-      // Force sync all points and milestones when switching tabs
-      if (state.student) {
-        const p = state.student.totalPoints || 0;
-        updateMissionLevelMilestones(p);
+      try {
+        if (state.student) {
+          const p = state.student.totalPoints || 0;
+          updateMissionLevelMilestones(p);
+        }
+      } catch (e) {
+        console.error("updateMissionLevelMilestones error", e);
       }
       // Switch header container visibility (shown on Home and Register tabs)
       const appHeader = document.getElementById('app-header');
@@ -1724,8 +1727,16 @@
       
       const updateLvlElements = (lvls) => {
         lvls.forEach(l => {
-            if (nameSpan) nameSpan.className = "lvl-name text-[11px] font-bold text-slate-500 mt-0.5";
-            if (countSpan) countSpan.className = "lvl-count text-[9px] font-medium text-slate-400 mt-0";
+          if (l.el) {
+            const nameSpan = l.el.querySelector('.lvl-name');
+            const countSpan = l.el.querySelector('.lvl-count');
+            if (l.id === activeLevel) {
+              if (nameSpan) nameSpan.className = "lvl-name text-[11px] font-black text-emerald-600 mt-0.5";
+              if (countSpan) countSpan.className = "lvl-count text-[9px] font-bold text-emerald-500 mt-0";
+            } else {
+              if (nameSpan) nameSpan.className = "lvl-name text-[11px] font-bold text-slate-500 mt-0.5";
+              if (countSpan) countSpan.className = "lvl-count text-[9px] font-medium text-slate-400 mt-0";
+            }
           }
         });
       };
