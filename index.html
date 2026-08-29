@@ -948,8 +948,8 @@
   <!-- ==================== DIALOG 2: TEACHER SETTINGS MODAL ==================== -->
   <div id="settings-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
     <div class="bg-white rounded-[36px] w-full max-w-[340px] p-6 shadow-2xl border-4 border-pastelBlue">
-      <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-1.5">⚙️ 보건교사용 연동 설정</h3>
-      <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">구글 스프레드시트 웹앱 주소를 입력하여 실시간 연동을 제어합니다.</p>
+      <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-1.5">⚙️ 연동 및 운영 설정</h3>
+      <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">구글 시트 연동 URL 및 테스트 기능을 관리합니다.</p>
       
       <div class="space-y-4">
         <div>
@@ -962,13 +962,8 @@
           <textarea id="settings-gas-url" rows="3" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-pastelBlue custom-scrollbar"></textarea>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">파이어베이스 설정 (Firebase Config JSON)</label>
-          <textarea id="settings-firebase-config" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..." }' class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-[10px] focus:outline-none focus:border-pastelBlue custom-scrollbar font-mono"></textarea>
-        </div>
-
         <!-- 교사용 테스트 시뮬레이터 -->
-        <div class="p-3.5 bg-amber-50 rounded-2xl border-2 border-amber-200 text-xs space-y-2.5 mb-4">
+        <div class="p-3.5 bg-amber-50 rounded-2xl border-2 border-amber-200 text-xs space-y-2.5">
           <p class="font-black text-amber-900 text-center text-sm">🧪 테스트 시뮬레이터</p>
           <button onclick="testComplete100P()" class="w-full bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-black py-3 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-sm">
             ⚡ 오늘 미션 완료 (스티커 +1개 획득!)
@@ -980,22 +975,14 @@
             🎉 레벨업 축하 팝업 미리보기 (테스트)
           </button>
         </div>
-
-        <!-- Data Reset Section -->
-        <div class="bg-rose-50 border border-rose-200/80 rounded-2xl p-3 text-center mb-4">
-          <span class="text-xs font-bold text-rose-700 block mb-1.5">🚨 데이터 초기화 (리셋)</span>
-          <button onclick="resetAllDataAndStickers()" class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl active:scale-95 transition-transform shadow-sm cursor-pointer">
-            🧹 모든 스티커 & 로그인 데이터 0개로 초기화
-          </button>
-        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-2 mt-5">
-        <button onclick="toggleModal('settings-modal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3.5 px-4 rounded-2xl active:scale-95 transition-transform">
+        <button onclick="toggleModal('settings-modal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3.5 px-4 rounded-2xl active:scale-95 transition-transform cursor-pointer">
           취소
         </button>
-        <button onclick="saveSettings()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-3.5 px-4 rounded-2xl shadow-md active:scale-95 transition-transform">
-          저장하기 💾
+        <button onclick="saveSettings()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-3.5 px-4 rounded-2xl shadow-md active:scale-95 transition-transform cursor-pointer">
+          저장 💾
         </button>
       </div>
     </div>
@@ -1441,8 +1428,9 @@
       
       try {
         state.firebaseConfig = JSON.parse(fbConfigStr);
-        document.getElementById('settings-firebase-config').value = fbConfigStr;
-        if (!firebase.apps.length) {
+        const fbEl = document.getElementById('settings-firebase-config');
+        if (fbEl) fbEl.value = fbConfigStr;
+        if (typeof firebase !== 'undefined' && firebase.apps && !firebase.apps.length) {
           firebase.initializeApp(state.firebaseConfig);
           console.log("Firebase initialized successfully");
         }
@@ -1613,41 +1601,15 @@
         localStorage.setItem('teacher_admin_password', pwInput.value.trim());
       }
 
-      const url = document.getElementById('settings-gas-url').value.trim() || DEFAULT_GAS_URL;
-      state.gasUrl = url;
-      state.isOffline = !url;
-      localStorage.setItem('teunteun_gas_url', url);
-      
-      const fbConfigStr = document.getElementById('settings-firebase-config').value.trim();
-      if (fbConfigStr) {
-        try {
-          const parsed = JSON.parse(fbConfigStr);
-          localStorage.setItem('teunteun_firebase_config', fbConfigStr);
-          state.firebaseConfig = parsed;
-          if (firebase.apps.length) {
-            firebase.app().delete().then(() => {
-              firebase.initializeApp(parsed);
-            });
-          } else {
-            firebase.initializeApp(parsed);
-          }
-        } catch(e) {
-          alert("파이어베이스 JSON 형식이 잘못되었습니다! 올바른 JSON을 입력해 주세요. ⚠️");
-          return;
-        }
-      } else {
-        localStorage.removeItem('teunteun_firebase_config');
-        state.firebaseConfig = null;
+      const urlInput = document.getElementById('settings-gas-url');
+      if (urlInput) {
+        const url = urlInput.value.trim() || DEFAULT_GAS_URL;
+        state.gasUrl = url;
+        state.isOffline = !url;
+        localStorage.setItem('teunteun_gas_url', url);
       }
       
-      if (url) {
-        state.isOffline = false;
-        alert("설정이 저장 및 연동되었습니다! 💾");
-      } else {
-        state.isOffline = true;
-        alert("구글 시트 URL이 없어 데모(로컬) 모드로 실행됩니다.");
-      }
-      
+      alert("설정이 성공적으로 저장되었습니다! 💾");
       toggleModal('settings-modal');
       refreshStudentData();
     }
@@ -3422,7 +3384,9 @@
     function saveStickerProgress() {
       if (!state.studentId) return;
       const ymKey = `teunteun_stickers_${state.studentId}_${getYearMonthString()}`;
+      const allKey = `teunteun_stickers_all_${state.studentId}`;
       let daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
+      let allDaysList = JSON.parse(localStorage.getItem(allKey) || '[]');
       const todayStr = getTodayDateString();
       
       let todayTotal = 0;
@@ -3436,18 +3400,36 @@
           daysList.push(todayStr);
           localStorage.setItem(ymKey, JSON.stringify(daysList));
         }
+        if (!allDaysList.includes(todayStr)) {
+          allDaysList.push(todayStr);
+          localStorage.setItem(allKey, JSON.stringify(allDaysList));
+        }
       } else {
         if (daysList.includes(todayStr)) {
           daysList = daysList.filter(d => d !== todayStr);
           localStorage.setItem(ymKey, JSON.stringify(daysList));
         }
+        if (allDaysList.includes(todayStr)) {
+          allDaysList = allDaysList.filter(d => d !== todayStr);
+          localStorage.setItem(allKey, JSON.stringify(allDaysList));
+        }
       }
     }
 
-    // Calculate total stickers earned (1 sticker per 100P)
+    // Calculate total stickers earned (1 sticker per 100P or unique 100P days list)
     function getStickerCount() {
-      if (!state.student) return 0;
-      return Math.floor((state.student.totalPoints || 0) / 100);
+      if (!state.studentId && !state.student) return 0;
+      const id = state.studentId || (state.student && state.student.studentId);
+      let cumulativeDays = 0;
+      if (id) {
+        const ymKey = `teunteun_stickers_${id}_${getYearMonthString()}`;
+        const allKey = `teunteun_stickers_all_${id}`;
+        const daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
+        const allDaysList = JSON.parse(localStorage.getItem(allKey) || '[]');
+        cumulativeDays = Math.max(daysList.length, allDaysList.length);
+      }
+      const pointsStickers = Math.floor(((state.student && state.student.totalPoints) || 0) / 100);
+      return Math.max(cumulativeDays, pointsStickers);
     }
 
     // Render Stickers board
