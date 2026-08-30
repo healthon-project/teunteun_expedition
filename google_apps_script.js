@@ -192,7 +192,7 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
     // If curPoints is stored as 1 sticker, convert to points for delta calculation
     if (curPoints < 10) curPoints = curPoints * 100;
     targetPoints = isSetAbsolute ? Math.min(100, Math.max(0, pointsDelta)) : Math.min(100, Math.max(0, curPoints + pointsDelta));
-    var targetStickers = (targetPoints >= 100) ? 1 : 0;
+    var targetStickers = (data && data.dailySticker !== undefined && data.dailySticker !== null) ? Number(data.dailySticker) : 1;
     
     dailySheet.getRange(primaryRowIndex, 1).setValue(todayStr);
     dailySheet.getRange(primaryRowIndex, 2).setValue(p.school);
@@ -204,7 +204,7 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
     }
   } else {
     targetPoints = Math.min(100, Math.max(0, pointsDelta));
-    var targetStickers = (targetPoints >= 100) ? 1 : 0;
+    var targetStickers = (data && data.dailySticker !== undefined && data.dailySticker !== null) ? Number(data.dailySticker) : 1;
     dailySheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, targetStickers]);
   }
   

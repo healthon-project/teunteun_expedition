@@ -174,7 +174,7 @@ function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   const name = String(data.name || cleanId).trim();
   
   const pts = Number(data.totalPoints || 0);
-  const dailyStickerVal = pts >= 100 ? 1 : 0;
+  const dailyStickerVal = (data.dailySticker !== undefined && data.dailySticker !== null) ? Number(data.dailySticker) : 1;
 
   const today = new Date();
   const curY = today.getFullYear();
