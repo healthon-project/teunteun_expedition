@@ -898,11 +898,26 @@ function sortAllSheetsByDate() {
 function sortSheetByDateAndStudent(sheet, numCols) {
   if (!sheet) return;
   var lastRow = sheet.getLastRow();
-  if (lastRow <= 2) return;
+  if (lastRow <= 1) return;
   
   var cols = numCols || sheet.getLastColumn() || 5;
+  sheet.getRange(2, 1, Math.max(1, lastRow - 1), 1).setNumberFormat("@");
+
+  if (lastRow <= 2) {
+    if (lastRow === 2) {
+      var singleCellVal = sheet.getRange(2, 1).getValue();
+      var formatted = formatDateToStandardStringGAS(singleCellVal);
+      if (formatted) sheet.getRange(2, 1).setValue(formatted);
+    }
+    return;
+  }
+
   var range = sheet.getRange(2, 1, lastRow - 1, cols);
   var values = range.getValues();
+
+  values.forEach(function(row) {
+    row[0] = formatDateToStandardStringGAS(row[0]);
+  });
 
   values.sort(function(a, b) {
     // 1. Primary sort: Date/timestamp in Column A ascending (8월 1일 -> 8월 2일 -> 8월 3일...)
@@ -927,6 +942,43 @@ function sortSheetByDateAndStudent(sheet, numCols) {
   });
 
   range.setValues(values);
+}
+
+function formatDateToStandardStringGAS(val) {
+  if (!val) return "";
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  }
+  var str = String(val).trim();
+  if (!str) return "";
+  
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(str)) {
+    return str;
+  }
+  
+  var parsed = Date.parse(str);
+  if (!isNaN(parsed)) {
+    return Utilities.formatDate(new Date(parsed), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  }
+  
+  var match = str.match(/(\d{4})[-.\s]+(\d{1,2})[-.\s]+(\d{1,2})(?:\s+(오전|오후)?\s*(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (match) {
+    var y = parseInt(match[1], 10);
+    var m = parseInt(match[2], 10) - 1;
+    var d = parseInt(match[3], 10);
+    var ampm = match[4];
+    var hh = match[5] ? parseInt(match[5], 10) : 0;
+    var mm = match[6] ? parseInt(match[6], 10) : 0;
+    var ss = match[7] ? parseInt(match[7], 10) : 0;
+    
+    if (ampm === "오후" && hh < 12) hh += 12;
+    if (ampm === "오전" && hh === 12) hh = 0;
+    
+    var dt = new Date(y, m, d, hh, mm, ss);
+    return Utilities.formatDate(dt, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  }
+  
+  return str;
 }
 
 function parseDateValueGAS(val) {

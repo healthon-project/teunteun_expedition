@@ -291,11 +291,26 @@ function cleanStudentId(id) {
 function sortSheetByDateAndStudent(sheet, numCols) {
   if (!sheet) return;
   const lastRow = sheet.getLastRow();
-  if (lastRow <= 2) return;
+  if (lastRow <= 1) return;
   
   const cols = numCols || sheet.getLastColumn() || 5;
+  sheet.getRange(2, 1, Math.max(1, lastRow - 1), 1).setNumberFormat("@");
+
+  if (lastRow <= 2) {
+    if (lastRow === 2) {
+      const singleCellVal = sheet.getRange(2, 1).getValue();
+      const formatted = formatDateToStandardString(singleCellVal);
+      if (formatted) sheet.getRange(2, 1).setValue(formatted);
+    }
+    return;
+  }
+
   const range = sheet.getRange(2, 1, lastRow - 1, cols);
   const values = range.getValues();
+
+  values.forEach(row => {
+    row[0] = formatDateToStandardString(row[0]);
+  });
 
   values.sort((a, b) => {
     // 1. Primary sort: Date/timestamp in Column A ascending (달력 날짜순)
@@ -320,6 +335,43 @@ function sortSheetByDateAndStudent(sheet, numCols) {
   });
 
   range.setValues(values);
+}
+
+function formatDateToStandardString(val) {
+  if (!val) return "";
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  }
+  const str = String(val).trim();
+  if (!str) return "";
+  
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(str)) {
+    return str;
+  }
+  
+  const parsed = Date.parse(str);
+  if (!isNaN(parsed)) {
+    return Utilities.formatDate(new Date(parsed), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  }
+  
+  const match = str.match(/(\d{4})[-.\s]+(\d{1,2})[-.\s]+(\d{1,2})(?:\s+(오전|오후)?\s*(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (match) {
+    const y = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10) - 1;
+    const d = parseInt(match[3], 10);
+    const ampm = match[4];
+    let hh = match[5] ? parseInt(match[5], 10) : 0;
+    const mm = match[6] ? parseInt(match[6], 10) : 0;
+    const ss = match[7] ? parseInt(match[7], 10) : 0;
+    
+    if (ampm === "오후" && hh < 12) hh += 12;
+    if (ampm === "오전" && hh === 12) hh = 0;
+    
+    const dt = new Date(y, m, d, hh, mm, ss);
+    return Utilities.formatDate(dt, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  }
+  
+  return str;
 }
 
 function sortSheetStudentsFirst(sheet, numCols) {
