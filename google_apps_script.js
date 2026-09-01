@@ -188,11 +188,13 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
   var targetPoints = 0;
   if (matchingRowIndices.length > 0) {
     var primaryRowIndex = matchingRowIndices[0];
-    var curPoints = parseInt(dailySheet.getRange(primaryRowIndex, 5).getValue()) || 0;
-    // If curPoints is stored as 1 sticker, convert to points for delta calculation
-    if (curPoints < 10) curPoints = curPoints * 100;
+    var curVal = parseInt(dailySheet.getRange(primaryRowIndex, 5).getValue()) || 0;
+    var curStickers = (curVal >= 1 && curVal < 10) ? 1 : (curVal >= 50 ? 1 : 0);
+    
+    var curPoints = curVal < 10 ? curVal * 100 : curVal;
     targetPoints = isSetAbsolute ? Math.min(100, Math.max(0, pointsDelta)) : Math.min(100, Math.max(0, curPoints + pointsDelta));
-    var targetStickers = (targetPoints >= 50) ? 1 : 0;
+    var calcStickers = (targetPoints >= 50) ? 1 : 0;
+    var targetStickers = Math.max(curStickers, calcStickers);
     
     dailySheet.getRange(primaryRowIndex, 1).setValue(todayStr);
     dailySheet.getRange(primaryRowIndex, 2).setValue(p.school);

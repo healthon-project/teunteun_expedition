@@ -213,10 +213,14 @@ function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   }
 
   if (foundRow > 1) {
+    const existingVal = Number(sheet.getRange(foundRow, 5).getValue() || 0);
+    const existingStk = (existingVal >= 1 && existingVal < 10) ? 1 : (existingVal >= 50 ? 1 : 0);
+    const finalStickerVal = Math.max(existingStk, dailyStickerVal);
+
     sheet.getRange(foundRow, 1).setValue(timestamp);
     sheet.getRange(foundRow, 3).setValue(cleanId);
     sheet.getRange(foundRow, 4).setValue(name);
-    sheet.getRange(foundRow, 5).setValue(dailyStickerVal);
+    sheet.getRange(foundRow, 5).setValue(finalStickerVal);
   } else {
     sheet.appendRow([
       timestamp,

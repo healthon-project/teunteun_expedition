@@ -2620,6 +2620,32 @@
       // Save daily submit stamp
       localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
 
+      // Explicitly send final mission log to GAS to guarantee 100% sticker entry
+      if (!state.isOffline && state.gasUrl) {
+        const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
+        const totalSticker = Math.floor(totalPts / 100);
+        const dailyStk = pointsEarned >= 50 ? 1 : 0;
+
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            school: state.school || 'A초',
+            studentId: state.studentId,
+            name: state.student ? state.student.name : '',
+            missionType: "일별스티커",
+            points: pointsEarned,
+            totalPoints: totalPts,
+            stickerCount: totalSticker,
+            dailySticker: dailyStk,
+            isSetAbsolute: true,
+            weight: ""
+          })
+        }).catch(err => console.error("Submit missions GAS sync error", err));
+      }
+
       // Current total points (already synced in real time by toggleMissionButton)
       const currentPoints = state.student ? (state.student.totalPoints || 0) : 0;
       const currentLevelData = getLevelData(currentPoints);
