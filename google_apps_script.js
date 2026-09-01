@@ -207,7 +207,9 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
   } else {
     targetPoints = Math.min(100, Math.max(0, pointsDelta));
     var targetStickers = (targetPoints >= 50) ? 1 : 0;
-    dailySheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, targetStickers]);
+    if (targetStickers >= 1) {
+      dailySheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, 1]);
+    }
   }
   
   SpreadsheetApp.flush();

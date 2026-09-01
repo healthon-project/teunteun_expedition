@@ -212,23 +212,31 @@ function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
     }
   }
 
+  // 💡 50점 미만(0점)이고 기존 행이 없으면 0행을 시트에 생성하지 않고 즉시 종료!
+  if (foundRow <= 1 && dailyStickerVal === 0) {
+    return;
+  }
+
   if (foundRow > 1) {
     const existingVal = Number(sheet.getRange(foundRow, 5).getValue() || 0);
     const existingStk = (existingVal >= 1 && existingVal < 10) ? 1 : (existingVal >= 50 ? 1 : 0);
     const finalStickerVal = Math.max(existingStk, dailyStickerVal);
 
-    sheet.getRange(foundRow, 1).setValue(timestamp);
-    sheet.getRange(foundRow, 3).setValue(cleanId);
-    sheet.getRange(foundRow, 4).setValue(name);
-    sheet.getRange(foundRow, 5).setValue(finalStickerVal);
-  } else {
+    if (finalStickerVal >= 1) {
+      sheet.getRange(foundRow, 1).setValue(timestamp);
+      sheet.getRange(foundRow, 3).setValue(cleanId);
+      sheet.getRange(foundRow, 4).setValue(name);
+      sheet.getRange(foundRow, 5).setValue(finalStickerVal);
+    }
+  } else if (dailyStickerVal >= 1) {
     sheet.appendRow([
       timestamp,
       schoolName,
       cleanId,
       name,
-      dailyStickerVal
+      1
     ]);
+    sortSheetByDateAndStudent(sheet, 5);
   }
 
   sortSheetStudentsFirst(sheet, 5);
