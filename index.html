@@ -1762,7 +1762,7 @@
         // Realtime GAS sync (Overwrites today's 1 row reliably in Google Sheets)
         const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
         const totalSticker = Math.floor(totalPts / 100);
-        const dailyStk = totalPts >= 100 ? 1 : 0;
+        const dailyStk = todayTotal >= 50 ? 1 : 0;
 
         fetch(state.gasUrl, {
           method: 'POST',
@@ -2254,9 +2254,14 @@
 
       // 2. Immediate Daily Attendance Sync on Login (Guarantees row in B초 immediately upon login!)
       if (!state.isOffline && state.gasUrl) {
+        let todayTotal = 0;
+        const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+        for (const [mId, isDone] of Object.entries(state.todayMissions || {})) {
+          if (isDone === true) todayTotal += pointsConfig[mId];
+        }
         const totalPts = Number(s.totalPoints || (state.student ? state.student.totalPoints : 0)) || 0;
         const totalSticker = Math.floor(totalPts / 100);
-        const dailyStk = totalPts >= 100 ? 1 : 0;
+        const dailyStk = todayTotal >= 50 ? 1 : 0;
 
         fetch(state.gasUrl, {
           method: 'POST',
@@ -2268,7 +2273,7 @@
             studentId: id,
             name: enteredName || s.name || '',
             missionType: "일별스티커",
-            points: 0,
+            points: todayTotal,
             totalPoints: totalPts,
             stickerCount: totalSticker,
             dailySticker: dailyStk,
@@ -3063,8 +3068,13 @@
             alert(`놀이터 게임 완료! 보너스 점수 50p가 적립되었습니다!`);
             refreshStudentData();
           }, 500);
+          let todayTotal = 0;
+          const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+          for (const [mId, isDone] of Object.entries(state.todayMissions || {})) {
+            if (isDone === true) todayTotal += pointsConfig[mId];
+          }
           const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
-          const dailyStk = totalPts >= 100 ? 1 : 0;
+          const dailyStk = todayTotal >= 50 ? 1 : 0;
           fetch(state.gasUrl, {
             method: 'POST',
             mode: 'no-cors',
@@ -3395,7 +3405,7 @@
         if (isDone === true) todayTotal += pointsConfig[id];
       }
 
-      if (todayTotal === 100) {
+      if (todayTotal >= 50) {
         if (!daysList.includes(todayStr)) {
           daysList.push(todayStr);
           localStorage.setItem(ymKey, JSON.stringify(daysList));

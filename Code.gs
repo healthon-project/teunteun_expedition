@@ -36,7 +36,7 @@ function doPost(e) {
     }
 
     const action = data.action;
-    const timestamp = new Date();
+    const timestamp = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
 
     // 1. 일일 출석 및 미션 스티커 ➡️ [A초, B초, C초, D초] 매일 출석부 탭 (5열 1일 1행 고정!)
     if (action === 'log_mission') {
@@ -173,8 +173,9 @@ function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
   const cleanId = cleanStudentId(rawId);
   const name = String(data.name || cleanId).trim();
   
-  const pts = Number(data.totalPoints || 0);
-  const dailyStickerVal = (data.dailySticker !== undefined && data.dailySticker !== null) ? Number(data.dailySticker) : 1;
+  // 💡 오늘 적립 포인트가 50점 이상(최소 운동 인증 등)일 때 일일 스티커 1개, 50점 미만이면 0개
+  const pts = Number(data.points !== undefined ? data.points : 0);
+  const dailyStickerVal = (pts >= 50 || Number(data.dailySticker || 0) >= 1) ? 1 : 0;
 
   const today = new Date();
   const curY = today.getFullYear();
