@@ -209,6 +209,7 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
   }
   
   SpreadsheetApp.flush();
+  sortSheetByDateAndStudent(dailySheet, 5);
 }
 
 // 1. 참여자 가입/기록 저장 API
@@ -392,6 +393,7 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
   }
   
   SpreadsheetApp.flush();
+  sortSheetByDateAndStudent(profileSheet, 10);
 }
 
 // 3. 참여자 신상 정보 및 누적 기록 조회 API
@@ -604,6 +606,7 @@ function handleSubmitSurvey(sheet, data) {
   
   surveySheet.appendRow(rowData);
   SpreadsheetApp.flush();
+  sortSheetByDateAndStudent(surveySheet, rowData.length);
   
   return createJsonResponse({
     success: true,
@@ -776,6 +779,7 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('🛠️ 튼튼탐험대 관리자')
     .addItem('🔄 전체 포인트 재계산 및 복구', 'recalculateAllPoints')
+    .addItem('🧹 전체 시트 달력 날짜순 정렬', 'sortAllSheetsByDate')
     .addItem('📁 즉시 시트 백업본 생성', 'createDailyBackup')
     .addItem('⏰ 매일 밤 10시 자동 백업 예약 활성화', 'setupDaily10PMBackupTrigger')
     .addToUi();
@@ -860,4 +864,80 @@ function createDailyBackup() {
     }
     console.error("Backup error: " + e.message);
   }
+}
+
+/**
+ * 전체 시트를 달력 날짜순(과거 ➡️ 최신)으로 정렬
+ */
+function sortAllSheetsByDate() {
+  var ui = null;
+  try { ui = SpreadsheetApp.getUi(); } catch(e){}
+  
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
+  sheets.forEach(function(sheet) {
+    var name = sheet.getName();
+    if (["학생기록", "교사기록", "학생일별스티커", "교사일별스티커", "학생설문응답", "교사설문응답", "A초", "B초", "C초", "D초"].indexOf(name) > -1 || name.indexOf("_월별성장") > -1 || name.indexOf("_설문응답") > -1) {
+      var cols = sheet.getLastColumn() || 5;
+      sortSheetByDateAndStudent(sheet, cols);
+    }
+  });
+  
+  if (ui) {
+    ui.alert("✅ 정렬 완료", "모든 시트의 기록이 달력 날짜순(과거 ➡️ 최신)으로 깔끔하게 정렬되었습니다! 🧹📅", ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * 특정 시트를 1열(일시/날짜) 기준 오름차순(달력 날짜순), 3열(개인번호) 2차 정렬
+ */
+function sortSheetByDateAndStudent(sheet, numCols) {
+  if (!sheet) return;
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 2) return;
+  
+  var cols = numCols || sheet.getLastColumn() || 5;
+  var range = sheet.getRange(2, 1, lastRow - 1, cols);
+  var values = range.getValues();
+
+  values.sort(function(a, b) {
+    // 1. Primary sort: Date/timestamp in Column A ascending (8월 1일 -> 8월 2일 -> 8월 3일...)
+    var timeA = parseDateValueGAS(a[0]);
+    var timeB = parseDateValueGAS(b[0]);
+
+    if (timeA !== timeB) {
+      return timeA - timeB;
+    }
+
+    // 2. Secondary sort: Student ID / Teacher
+    var idA = String(a[2] || "").trim();
+    var idB = String(b[2] || "").trim();
+
+    var isTeacherA = /^t/i.test(idA);
+    var isTeacherB = /^t/i.test(idB);
+
+    if (isTeacherA !== isTeacherB) {
+      return isTeacherA ? 1 : -1;
+    }
+    return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  range.setValues(values);
+}
+
+function parseDateValueGAS(val) {
+  if (!val) return 0;
+  if (val instanceof Date) return val.getTime();
+  var str = String(val).trim();
+  if (!str) return 0;
+  var parsed = Date.parse(str);
+  if (!isNaN(parsed)) return parsed;
+  var match = str.match(/(\d{4})[-.\/s]+(\d{1,2})[-.\/s]+(\d{1,2})/);
+  if (match) {
+    var y = parseInt(match[1], 10);
+    var m = parseInt(match[2], 10) - 1;
+    var d = parseInt(match[3], 10);
+    return new Date(y, m, d).getTime();
+  }
+  return 0;
 }

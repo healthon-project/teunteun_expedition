@@ -10,7 +10,7 @@ function onOpen() {
   ui.createMenu('📁 꼬꼬챌린지 관리')
     .addItem('💾 내 구글 드라이브에 별도 백업파일 만들기', 'backupToDrive')
     .addItem('📊 4개 학교 시트/탭 자동 세팅', 'setupAllSchoolSheets')
-    .addItem('🧹 전체 시트 학생-교사 명단 정렬', 'sortAllSheetsNow')
+    .addItem('🧹 전체 시트 달력 날짜순 정렬', 'sortAllSheetsNow')
     .addToUi();
 }
 
@@ -144,21 +144,22 @@ function setupAllSchoolSheets() {
   SpreadsheetApp.getUi().alert("A초, B초, C초, D초 4개 학교의 모든 시트 세팅이 완벽하게 완료되었습니다! 🎉");
 }
 
-// 명단 자동 정렬
+// 전체 시트 달력 날짜순 정렬
 function sortAllSheetsNow() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets();
   sheets.forEach(sheet => {
     const name = sheet.getName();
     if (name.includes("_월별성장")) {
-      sortSheetStudentsFirst(sheet, 10);
+      sortSheetByDateAndStudent(sheet, 10);
     } else if (name.includes("_설문응답")) {
-      sortSheetStudentsFirst(sheet, 17);
-    } else if (["A초", "B초", "C초", "D초"].includes(name)) {
-      sortSheetStudentsFirst(sheet, 5);
+      sortSheetByDateAndStudent(sheet, 17);
+    } else if (["A초", "B초", "C초", "D초", "학생기록", "교사기록", "학생일별스티커", "교사일별스티커", "학생설문응답", "교사설문응답"].includes(name)) {
+      const cols = sheet.getLastColumn() || 5;
+      sortSheetByDateAndStudent(sheet, cols);
     }
   });
-  SpreadsheetApp.getUi().alert("모든 시트의 학생-교사 명단 정렬이 완료되었습니다! 🧹");
+  SpreadsheetApp.getUi().alert("모든 시트의 달력 날짜순 정렬이 완료되었습니다! 🧹📅");
 }
 
 function getLevelNameFromPoints(points) {
@@ -275,14 +276,25 @@ function cleanStudentId(id) {
   return str;
 }
 
-function sortSheetStudentsFirst(sheet, numCols) {
+function sortSheetByDateAndStudent(sheet, numCols) {
+  if (!sheet) return;
   const lastRow = sheet.getLastRow();
   if (lastRow <= 2) return;
   
-  const range = sheet.getRange(2, 1, lastRow - 1, numCols);
+  const cols = numCols || sheet.getLastColumn() || 5;
+  const range = sheet.getRange(2, 1, lastRow - 1, cols);
   const values = range.getValues();
 
   values.sort((a, b) => {
+    // 1. Primary sort: Date/timestamp in Column A ascending (달력 날짜순)
+    const timeA = parseDateValue(a[0]);
+    const timeB = parseDateValue(b[0]);
+
+    if (timeA !== timeB) {
+      return timeA - timeB;
+    }
+
+    // 2. Secondary sort: Student ID / Teacher
     const idA = String(a[2] || "").trim();
     const idB = String(b[2] || "").trim();
 
@@ -292,10 +304,31 @@ function sortSheetStudentsFirst(sheet, numCols) {
     if (isTeacherA !== isTeacherB) {
       return isTeacherA ? 1 : -1;
     }
-    return idA.localeCompare(idB);
+    return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
   });
 
   range.setValues(values);
+}
+
+function sortSheetStudentsFirst(sheet, numCols) {
+  sortSheetByDateAndStudent(sheet, numCols);
+}
+
+function parseDateValue(val) {
+  if (!val) return 0;
+  if (val instanceof Date) return val.getTime();
+  const str = String(val).trim();
+  if (!str) return 0;
+  const parsed = Date.parse(str);
+  if (!isNaN(parsed)) return parsed;
+  const match = str.match(/(\d{4})[-.\/s]+(\d{1,2})[-.\/s]+(\d{1,2})/);
+  if (match) {
+    const y = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10) - 1;
+    const d = parseInt(match[3], 10);
+    return new Date(y, m, d).getTime();
+  }
+  return 0;
 }
 
 function getSchoolFromId(id) {
