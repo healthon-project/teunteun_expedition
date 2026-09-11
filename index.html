@@ -1237,11 +1237,69 @@
 
 
 
+    // Helper to generate candidate keys for backward-compatible ID lookups (ID format variations)
+    function getPossibleIdKeys(rawId) {
+      if (!rawId) return [];
+      const keys = new Set();
+      const strId = String(rawId).trim();
+      if (!strId) return [];
+      
+      keys.add(strId);
+      
+      // 1. If contains school prefix (e.g. "A초_1101" -> "1101")
+      if (strId.includes('_')) {
+        const parts = strId.split('_');
+        const withoutSchool = parts.slice(1).join('_');
+        if (withoutSchool) keys.add(withoutSchool);
+      }
+      
+      // 2. Teacher ID variations (e.g. "t-1234", "1234", "teacher_1234")
+      if (strId.includes('t-') || strId.includes('T-')) {
+        const noT = strId.replace(/t-/gi, '');
+        keys.add(noT);
+        if (noT.includes('_')) {
+          keys.add(noT.split('_').slice(1).join('_'));
+        }
+        keys.add(strId.replace(/t-/gi, 'teacher_'));
+      }
+      
+      // 3. Add active school prefix if missing
+      const activeSchool = (typeof state !== 'undefined' && state.school) || localStorage.getItem('teunteun_school') || 'A초';
+      if (!strId.startsWith(activeSchool + '_')) {
+        keys.add(`${activeSchool}_${strId}`);
+      }
+      
+      return Array.from(keys);
+    }
+
     // Local Storage Mock DB for complete offline/free functionality
     const LocalDB = {
       getStudent: function(id) {
+        if (!id) return null;
         const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
-        return students[id] || null;
+        if (students[id]) return students[id];
+        
+        const candidateKeys = getPossibleIdKeys(id);
+        let bestStudent = null;
+        let maxPoints = -1;
+        
+        for (const k of candidateKeys) {
+          if (students[k]) {
+            const pts = Number(students[k].totalPoints) || 0;
+            if (pts > maxPoints) {
+              maxPoints = pts;
+              bestStudent = students[k];
+            }
+          }
+        }
+        
+        if (bestStudent) {
+          students[id] = Object.assign({}, bestStudent, { studentId: id });
+          localStorage.setItem('mock_students', JSON.stringify(students));
+          return students[id];
+        }
+        
+        return null;
       },
       saveStudent: function(id, name, nickname, height, weight) {
         const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
@@ -3518,10 +3576,8 @@
     // Update and save monthly 100P stickers progress
     function saveStickerProgress() {
       if (!state.studentId) return;
-      const ymKey = `teunteun_stickers_${state.studentId}_${getYearMonthString()}`;
-      const allKey = `teunteun_stickers_all_${state.studentId}`;
-      let daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
-      let allDaysList = JSON.parse(localStorage.getItem(allKey) || '[]');
+      const candidateIds = getPossibleIdKeys(state.studentId);
+      const ymStr = getYearMonthString();
       const todayStr = getTodayDateString();
       
       let todayTotal = 0;
@@ -3531,22 +3587,20 @@
       }
 
       if (todayTotal >= 50) {
-        if (!daysList.includes(todayStr)) {
-          daysList.push(todayStr);
-          localStorage.setItem(ymKey, JSON.stringify(daysList));
-        }
-        if (!allDaysList.includes(todayStr)) {
-          allDaysList.push(todayStr);
-          localStorage.setItem(allKey, JSON.stringify(allDaysList));
-        }
-      } else {
-        if (daysList.includes(todayStr)) {
-          daysList = daysList.filter(d => d !== todayStr);
-          localStorage.setItem(ymKey, JSON.stringify(daysList));
-        }
-        if (allDaysList.includes(todayStr)) {
-          allDaysList = allDaysList.filter(d => d !== todayStr);
-          localStorage.setItem(allKey, JSON.stringify(allDaysList));
+        for (const candId of candidateIds) {
+          const ymKey = `teunteun_stickers_${candId}_${ymStr}`;
+          const allKey = `teunteun_stickers_all_${candId}`;
+          let daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
+          let allDaysList = JSON.parse(localStorage.getItem(allKey) || '[]');
+          
+          if (!daysList.includes(todayStr)) {
+            daysList.push(todayStr);
+            localStorage.setItem(ymKey, JSON.stringify(daysList));
+          }
+          if (!allDaysList.includes(todayStr)) {
+            allDaysList.push(todayStr);
+            localStorage.setItem(allKey, JSON.stringify(allDaysList));
+          }
         }
       }
     }
@@ -3556,15 +3610,52 @@
       if (!state.studentId && !state.student) return 0;
       const id = state.studentId || (state.student && state.student.studentId);
       let cumulativeDays = 0;
+      let maxPointsStickers = Math.floor(((state.student && state.student.totalPoints) || 0) / 100);
+
       if (id) {
-        const ymKey = `teunteun_stickers_${id}_${getYearMonthString()}`;
-        const allKey = `teunteun_stickers_all_${id}`;
-        const daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
-        const allDaysList = JSON.parse(localStorage.getItem(allKey) || '[]');
-        cumulativeDays = Math.max(daysList.length, allDaysList.length);
+        const candidateIds = getPossibleIdKeys(id);
+        const ymStr = getYearMonthString();
+        
+        for (const candId of candidateIds) {
+          const ymKey = `teunteun_stickers_${candId}_${ymStr}`;
+          const allKey = `teunteun_stickers_all_${candId}`;
+          
+          const daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
+          const allDaysList = JSON.parse(localStorage.getItem(allKey) || '[]');
+          
+          cumulativeDays = Math.max(cumulativeDays, daysList.length, allDaysList.length);
+
+          const s = LocalDB.getStudent(candId);
+          if (s && s.totalPoints) {
+            const ptsStickers = Math.floor(Number(s.totalPoints) / 100);
+            maxPointsStickers = Math.max(maxPointsStickers, ptsStickers);
+          }
+        }
       }
-      const pointsStickers = Math.floor(((state.student && state.student.totalPoints) || 0) / 100);
-      return Math.max(cumulativeDays, pointsStickers);
+
+      const calculatedCount = Math.max(cumulativeDays, maxPointsStickers);
+
+      if (id) {
+        const highestKey = `teunteun_stickers_max_${id}`;
+        const prevMax = Number(localStorage.getItem(highestKey) || 0);
+        const newMax = Math.max(prevMax, calculatedCount);
+        if (newMax > prevMax) {
+          localStorage.setItem(highestKey, newMax);
+        }
+        
+        const candidateIds = getPossibleIdKeys(id);
+        let absoluteMax = newMax;
+        for (const candId of candidateIds) {
+          const candMax = Number(localStorage.getItem(`teunteun_stickers_max_${candId}`) || 0);
+          if (candMax > absoluteMax) absoluteMax = candMax;
+        }
+        if (absoluteMax > newMax) {
+          localStorage.setItem(highestKey, absoluteMax);
+        }
+        return absoluteMax;
+      }
+
+      return calculatedCount;
     }
 
     // Render Stickers board
