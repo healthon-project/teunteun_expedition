@@ -3,7 +3,7 @@
  * 학교별 전용 시트 구조:
  *  1) A초 (일일기록: 스티커 1개로 학생 위, 교사 t-전화번호4자리 아래 정렬)
  *  2) A초_내몸탐험 (월1회 신체기록)
- *  3) A초_설문응답 (학생 + 교사 통합 설문응답 / 교사 이름/ID 앞 't-' 부착)
+ *  3) A초_설문응답 (학생 + 교사 통합 설문응답 / 문항1 밀림 방지 / 교사 이름/ID 앞 't-' 부착)
  */
 
 const TZ = 'Asia/Seoul';
@@ -12,9 +12,7 @@ const SCHOOLS = ['A초', 'B초', 'C초'];
 const HEADERS = {
   '일별기록': ['중복키','일시','학교','학생키','개인번호','이름','구분','날짜','포인트','스티커'],
   '월별성장': ['중복키','측정일시','학교','학생키','개인번호','이름','구분','측정월','키(cm)','몸무게(kg)','BMI'],
-  '설문응답': ['응답일시','학교','개인번호','이름','구분','설문구분',
-               '문항1','문항2','문항3','문항4','문항5','문항6',
-               '문항7','문항8','문항9','문항10','문항11','문항12']
+  '설문응답': ['응답일시','학교','개인번호','이름','구분','문항1','문항2','문항3','문항4','문항5','문항6','문항7','문항8','문항9','문항10','문항11','문항12']
 };
 
 function getSS() {
@@ -27,7 +25,7 @@ function getSS() {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('📁 꼬꼬챌린지 관리')
-    .addItem('① 학교별 시트 준비 (통합 설문응답 탭 정리)', 'setup')
+    .addItem('① 학교별 시트 준비 (문항1 밀림 수정 탭 정리)', 'setup')
     .addSeparator()
     .addItem('💾 드라이브에 백업', 'backupToDrive')
     .addItem('🧹 일별기록 정렬 (학생 위 / 교사 아래)', 'sortDailyAll')
@@ -68,9 +66,9 @@ function setup() {
       .setFontWeight('bold').setBackground('#e2f0d9');
     sh2.setFrozenRows(1);
 
-    // 3. 통합 설문응답 ({학교}_설문응답: 학생 + 교사 한곳에 모음)
+    // 3. 통합 설문응답 ({학교}_설문응답: 문항1 밀림 방지 헤더)
     var sh3 = SS.getSheetByName(school + '_설문응답') || SS.insertSheet(school + '_설문응답');
-    sh3.getRange(1, 1, 1, 18).setValues([HEADERS['설문응답']])
+    sh3.getRange(1, 1, 1, 17).setValues([HEADERS['설문응답']])
       .setFontWeight('bold').setBackground('#fff2cc');
     sh3.setFrozenRows(1);
   });
@@ -369,7 +367,25 @@ function saveSurvey(d) {
     } catch (x) { ansList = [rawAnswers]; }
   }
   
-  var row = [stamp(new Date()), p.school, "'" + idToSave, name, p.type, d.surveyType || '사전설문'];
+  var headers = [];
+  if (sh.getLastRow() >= 1) {
+    headers = sh.getRange(1, 1, 1, Math.max(17, sh.getLastColumn())).getValues()[0];
+  }
+  
+  var hasSurveyTypeCol = false;
+  for (var h = 0; h < headers.length; h++) {
+    if (String(headers[h] || '').indexOf('설문구분') > -1) {
+      hasSurveyTypeCol = true;
+      break;
+    }
+  }
+
+  // 문항1 밀림 방지: '설문구분' 헤더 열이 있는 경우에만 '사전설문' 항목 추가
+  var row = [stamp(new Date()), p.school, "'" + idToSave, name, p.type];
+  if (hasSurveyTypeCol) {
+    row.push(d.surveyType || '사전설문');
+  }
+
   for (var i = 0; i < 12; i++) {
     var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : '';
     row.push(val);
