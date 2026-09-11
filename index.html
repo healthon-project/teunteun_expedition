@@ -1764,6 +1764,25 @@
         // Update UI instantly
         renderHome();
         renderStickers();
+
+        // Realtime GAS Sync to Daily Log (A초, B초, C초, D초)
+        const activeSch = state.school || getSchoolFromId(state.studentId) || 'A초';
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            school: activeSch,
+            studentId: state.studentId,
+            name: state.student ? state.student.name : '',
+            missionType: "일별스티커",
+            points: todayTotal,
+            totalPoints: state.student ? state.student.totalPoints : 0,
+            stickerCount: 1,
+            dailySticker: 1
+          })
+        }).catch(err => console.error("Realtime mission GAS sync error", err));
       }
     }
 
@@ -2235,7 +2254,7 @@
       alert(`[${s.nickname}] 모험가님 로그인 성공! ⚡ 바로 아래의 '2단계 사전설문'을 눌러 설문을 시작해 주세요! 🚀`);
       switchTab('register');
 
-      // 2. Daily Attendance Sync on Login (Only sync if today's points >= 50)
+      // 2. Daily Attendance Sync on Login (Always send daily record to A초/B초/C초/D초)
       if (!state.isOffline && state.gasUrl) {
         let todayTotal = 0;
         const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
@@ -2243,28 +2262,25 @@
           if (isDone === true) todayTotal += pointsConfig[mId];
         }
         
-        if (todayTotal >= 50) {
-          const totalPts = Number(s.totalPoints || (state.student ? state.student.totalPoints : 0)) || 0;
-          const totalSticker = Math.floor(totalPts / 100);
+        const totalPts = Number(s.totalPoints || (state.student ? state.student.totalPoints : 0)) || 0;
 
-          fetch(state.gasUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'log_mission',
-              school: activeSchool,
-              studentId: id,
-              name: enteredName || s.name || '',
-              missionType: "일별스티커",
-              points: todayTotal,
-              totalPoints: totalPts,
-              stickerCount: totalSticker,
-              dailySticker: 1,
-              isSetAbsolute: true
-            })
-          }).catch(err => console.error("Login attendance GAS sync error", err));
-        }
+        fetch(state.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'log_mission',
+            school: activeSchool,
+            studentId: id,
+            name: enteredName || s.name || '',
+            missionType: "일별스티커",
+            points: todayTotal,
+            totalPoints: totalPts,
+            stickerCount: 1,
+            dailySticker: 1,
+            isSetAbsolute: true
+          })
+        }).catch(err => console.error("Login attendance GAS sync error", err));
       }
     }
 
