@@ -195,15 +195,44 @@ function saveGrowth(d) {
   return { success: true, 이름: name, BMI: bmi, 총스티커: total, 레벨: levelOf(total) };
 }
 
+function appendOrInsertRow(sheet, rowData) {
+  if (!sheet) return;
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    sheet.appendRow(rowData);
+    return;
+  }
+  var values = sheet.getRange(1, 1, lastRow, 1).getValues();
+  var targetRow = -1;
+  for (var i = 1; i < values.length; i++) {
+    var val = String(values[i][0] || '').trim();
+    if (!val) {
+      targetRow = i + 1;
+      break;
+    }
+  }
+  if (targetRow > 1) {
+    sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+}
+
 function saveSurvey(d) {
   var SS = getSS();
   var p = parseId(d.studentId, d.school);
   var schoolName = p.school || "A초";
-  var targetName = schoolName + "_설문응답";
-  var sh = SS.getSheetByName(targetName) || SS.getSheetByName(p.type === '2.교사' ? '교사설문응답' : '학생설문응답') || SS.getSheetByName(SH.survey);
-  if (!sh) {
-    sh = SS.insertSheet(targetName);
-    sh.appendRow(["응답일시", "학교", "개인번호", "이름", "설문구분", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
+  
+  var targetSheets = [];
+  var s1 = SS.getSheetByName(schoolName + "_설문응답");
+  if (s1) targetSheets.push(s1);
+  var s2 = SS.getSheetByName(p.type === '2.교사' ? '교사설문응답' : '학생설문응답') || SS.getSheetByName(SH.survey);
+  if (s2 && targetSheets.indexOf(s2) === -1) targetSheets.push(s2);
+  
+  if (targetSheets.length === 0) {
+    var newSheet = SS.insertSheet(schoolName + "_설문응답");
+    newSheet.appendRow(["응답일시", "학교", "개인번호", "이름", "설문구분", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
+    targetSheets.push(newSheet);
   }
   
   var name = resolveName(p.key, d.name, p.id);
@@ -218,21 +247,24 @@ function saveSurvey(d) {
     } catch (x) { ansList = [rawAnswers]; }
   }
   
-  var headers = sh.getRange(1, 1, 1, Math.max(17, sh.getLastColumn())).getValues()[0];
-  var hasSurveyTypeCol = String(headers[4] || '').indexOf("설문구분") > -1 || String(headers[0] || '').indexOf("응답일시") > -1;
+  targetSheets.forEach(function(sh) {
+    var headers = sh.getRange(1, 1, 1, Math.max(17, sh.getLastColumn())).getValues()[0];
+    var hasSurveyTypeCol = String(headers[4] || '').indexOf("설문구분") > -1 || String(headers[0] || '').indexOf("응답일시") > -1;
+    
+    var row = [];
+    if (hasSurveyTypeCol) {
+      row = [stamp(new Date()), p.school, p.key, p.id, name, d.surveyType || '사전설문'];
+    } else {
+      row = [stamp(new Date()), p.school, p.key, p.id, name, p.type, d.surveyType || '사전설문'];
+    }
+    
+    for (var i = 0; i < 12; i++) {
+      var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : '';
+      row.push(val);
+    }
+    appendOrInsertRow(sh, row);
+  });
   
-  var row = [];
-  if (hasSurveyTypeCol) {
-    row = [stamp(new Date()), p.school, p.key, p.id, name, d.surveyType || '사전설문'];
-  } else {
-    row = [stamp(new Date()), p.school, p.key, p.id, name, p.type, d.surveyType || '사전설문'];
-  }
-  
-  for (var i = 0; i < 12; i++) {
-    var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : '';
-    row.push(val);
-  }
-  sh.appendRow(row);
   return { success: true, message: '설문 저장 완료' };
 }
 

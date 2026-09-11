@@ -605,18 +605,45 @@ function handleGetLeaderboard(sheet) {
   });
 }
 
+function appendOrInsertRow(sheet, rowData) {
+  if (!sheet) return;
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    sheet.appendRow(rowData);
+    return;
+  }
+  var values = sheet.getRange(1, 1, lastRow, 1).getValues();
+  var targetRow = -1;
+  for (var i = 1; i < values.length; i++) {
+    var val = String(values[i][0] || '').trim();
+    if (!val) {
+      targetRow = i + 1;
+      break;
+    }
+  }
+  if (targetRow > 1) {
+    sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+}
+
 // 5. 설문조사 제출 API
 function handleSubmitSurvey(sheet, data) {
   var p = getParticipantDetails(data.studentId, data.school);
   var schoolName = p.school || "A초";
   
-  var targetSheet = sheet.getSheetByName(schoolName + "_설문응답") ||
-                    sheet.getSheetByName(p.surveySheet) ||
-                    sheet.getSheetByName("설문응답");
-                    
-  if (!targetSheet) {
-    targetSheet = sheet.insertSheet(schoolName + "_설문응답");
-    targetSheet.appendRow(["응답일시", "학교", "개인번호", "이름", "설문구분", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
+  var targetSheets = [];
+  var s1 = sheet.getSheetByName(schoolName + "_설문응답");
+  if (s1) targetSheets.push(s1);
+  
+  var s2 = sheet.getSheetByName(p.surveySheet) || sheet.getSheetByName("설문응답");
+  if (s2 && targetSheets.indexOf(s2) === -1) targetSheets.push(s2);
+  
+  if (targetSheets.length === 0) {
+    var newSheet = sheet.insertSheet(schoolName + "_설문응답");
+    newSheet.appendRow(["응답일시", "학교", "개인번호", "이름", "설문구분", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
+    targetSheets.push(newSheet);
   }
   
   var name = (data.name ? data.name : "").toString().trim();
@@ -638,22 +665,25 @@ function handleSubmitSurvey(sheet, data) {
   
   var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
   
-  var headers = targetSheet.getRange(1, 1, 1, Math.max(17, targetSheet.getLastColumn())).getValues()[0];
-  var hasSurveyTypeCol = String(headers[4] || '').indexOf("설문구분") > -1 || String(headers[0] || '').indexOf("응답일시") > -1;
+  targetSheets.forEach(function(targetSheet) {
+    var headers = targetSheet.getRange(1, 1, 1, Math.max(17, targetSheet.getLastColumn())).getValues()[0];
+    var hasSurveyTypeCol = String(headers[4] || '').indexOf("설문구분") > -1 || String(headers[0] || '').indexOf("응답일시") > -1;
+    
+    var rowData = [];
+    if (hasSurveyTypeCol) {
+      rowData = [todayStr, p.school, "'" + p.cleanId, name, data.surveyType || "사전설문"];
+    } else {
+      rowData = [todayStr, p.school, "'" + p.cleanId, name];
+    }
+    
+    for (var i = 0; i < 12; i++) {
+      var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : "";
+      rowData.push(val);
+    }
+    
+    appendOrInsertRow(targetSheet, rowData);
+  });
   
-  var rowData = [];
-  if (hasSurveyTypeCol) {
-    rowData = [todayStr, p.school, "'" + p.cleanId, name, data.surveyType || "사전설문"];
-  } else {
-    rowData = [todayStr, p.school, "'" + p.cleanId, name];
-  }
-  
-  for (var i = 0; i < 12; i++) {
-    var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : "";
-    rowData.push(val);
-  }
-  
-  targetSheet.appendRow(rowData);
   SpreadsheetApp.flush();
   
   return createJsonResponse({
