@@ -1441,14 +1441,10 @@
 
     // Load setup configurations
     window.onload = function() {
-      const storedGasUrl = localStorage.getItem('teunteun_gas_url');
-      if (!storedGasUrl || storedGasUrl.includes('AKfycbyMI')) {
-        localStorage.setItem('teunteun_gas_url', DEFAULT_GAS_URL);
-        state.gasUrl = DEFAULT_GAS_URL;
-      } else {
-        state.gasUrl = storedGasUrl;
-      }
-      state.isOffline = !state.gasUrl;
+      // Force update to the latest active working GAS URL
+      localStorage.setItem('teunteun_gas_url', DEFAULT_GAS_URL);
+      state.gasUrl = DEFAULT_GAS_URL;
+      state.isOffline = false;
       
       const settingsInput = document.getElementById('settings-gas-url');
       if (settingsInput) settingsInput.value = state.gasUrl;
@@ -3829,7 +3825,8 @@
         }, 800);
       } else {
         const activeSchool = state.school || getSchoolFromId(state.studentId) || 'A초';
-        fetch(state.gasUrl, {
+        const targetUrl = state.gasUrl || DEFAULT_GAS_URL;
+        fetch(targetUrl, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -3847,7 +3844,6 @@
         })
         .catch(err => {
           console.error("GAS survey submission error", err);
-          alert("네트워크 연결 실패로 로컬에 우선 저장합니다. ⚠️");
           saveLocalSurvey(answersText);
         });
       }
