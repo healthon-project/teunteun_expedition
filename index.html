@@ -2671,6 +2671,12 @@
         const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
         const totalSticker = Math.floor(totalPts / 100);
         const dailyStk = pointsEarned >= 50 ? 1 : 0;
+        const sid = state.studentId || '';
+        const isTeacher = sid.includes('_T-') || sid.includes('_t-') || sid.startsWith('T-') || sid.startsWith('t-');
+        let nameToSend = state.student ? state.student.name : '';
+        if (isTeacher && nameToSend && !nameToSend.startsWith('t-') && !nameToSend.startsWith('T-')) {
+          nameToSend = 't-' + nameToSend;
+        }
 
         fetch(state.gasUrl, {
           method: 'POST',
@@ -2679,8 +2685,11 @@
           body: JSON.stringify({
             action: 'log_mission',
             school: state.school || 'A초',
-            studentId: state.studentId,
-            name: state.student ? state.student.name : '',
+            studentId: sid,
+            name: nameToSend,
+            role: isTeacher ? '2.교사' : '1.학생',
+            type: isTeacher ? '2.교사' : '1.학생',
+            isTeacher: isTeacher,
             missionType: "일별스티커",
             points: pointsEarned,
             totalPoints: totalPts,

@@ -1,7 +1,7 @@
 /**
  * 꼬꼬챌린지 데이터 관리 (Google Apps Script)
  * 학교별 시트 명확 매핑 & 데이터 분리:
- *  1) {학교} 일일기록 (예: "A초 일일기록", "A초_일일기록", "A초"): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
+ *  1) {학교} 일일기록 (예: "A초 일일기록", "A초_일일기록", "A초", "일일기록"): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
  *  2) {학교}_내몸탐험 (예: "A초_내몸탐험", "A초 내몸탐험"): 월1회 신체기록 (키, 몸무게, BMI, 총스티커, 레벨 / 교사 t-전화번호4자리)
  *  3) {학교}_설문응답 (예: "A초_설문응답", "A초 설문응답"): 학생 + 교사 통합 설문응답 (교사 t-전화번호4자리 / '사전설문' 제거 / 맨윗줄 헤더 보존)
  */
@@ -44,19 +44,22 @@ function parseSchoolName(schoolInput) {
 }
 
 /**
- * 1. 일일기록 시트 전용 탐색 ("A초 일일기록", "A초_일일기록", "A초일일기록", "A초" 대소문자/띄어쓰기 무관 완벽 지원)
+ * 1. 일일기록 시트 전용 탐색 ("일일기록", "A초 일일기록", "A초_일일기록", "A초" 대소문자/띄어쓰기 무관 완벽 지원)
  */
 function getDailySheet(SS, school) {
   var name = parseSchoolName(school); // 예: "A초"
   var sheets = SS.getSheets();
   var nameUpper = name.toUpperCase();
+  var letterOnly = nameUpper.replace('초', '');
 
   // 1) 띄어쓰기/언더바 포함 대소문자/공백 무관 직접 시트 검색
   var candidates = [
     nameUpper + ' 일일기록',
     nameUpper + '_일일기록',
     nameUpper + '일일기록',
-    nameUpper
+    nameUpper,
+    '일일기록 ' + nameUpper,
+    '일일기록_' + nameUpper
   ];
 
   for (var i = 0; i < sheets.length; i++) {
@@ -67,16 +70,25 @@ function getDailySheet(SS, school) {
     }
   }
 
-  // 2) 학교 이름("A초")으로 시작하고 "일일기록" 또는 "기록" 포함 시트 탐색
+  // 2) 학교 이름("A초" 또는 "A")으로 시작/포함하고 "일일기록" 또는 "기록" 포함 시트 탐색
   for (var i = 0; i < sheets.length; i++) {
     var sName = sheets[i].getName().trim();
     var sUpper = sName.toUpperCase();
-    if (sUpper.indexOf(nameUpper) === 0 && (sUpper.indexOf('일일기록') >= 0 || sUpper.indexOf('기록') >= 0) && sUpper.indexOf('내몸탐험') < 0 && sUpper.indexOf('성장') < 0 && sUpper.indexOf('설문') < 0) {
+    if ((sUpper.indexOf(nameUpper) >= 0 || sUpper.indexOf(letterOnly + '초') >= 0) && (sUpper.indexOf('일일기록') >= 0 || sUpper.indexOf('기록') >= 0) && sUpper.indexOf('내몸탐험') < 0 && sUpper.indexOf('성장') < 0 && sUpper.indexOf('설문') < 0) {
       return sheets[i];
     }
   }
 
-  // 3) 학교 이름("A초")으로 시작하고 "내몸탐험", "성장", "설문"이 포함되지 않은 시트 탐색
+  // 3) 학교 이름과 관계없이 단독 "일일기록" 포함 시트 검색 (유저가 탭 이름을 '일일기록'으로 변경했을 때 지원)
+  for (var i = 0; i < sheets.length; i++) {
+    var sName = sheets[i].getName().trim();
+    var sUpper = sName.toUpperCase();
+    if (sUpper.indexOf('일일기록') >= 0 || sUpper.indexOf('일별기록') >= 0) {
+      return sheets[i];
+    }
+  }
+
+  // 4) 학교 이름("A초")으로 시작하고 "내몸탐험", "성장", "설문"이 포함되지 않은 시트 탐색
   for (var i = 0; i < sheets.length; i++) {
     var sName = sheets[i].getName().trim();
     var sUpper = sName.toUpperCase();
@@ -85,7 +97,16 @@ function getDailySheet(SS, school) {
     }
   }
 
-  // 4) 기존 시트가 전혀 없을 때 신규 생성
+  // 5) 첫번째 시트가 성장/설문 시트가 아니라면 사용
+  if (sheets.length > 0) {
+    var firstSheet = sheets[0];
+    var firstName = firstSheet.getName().trim();
+    if (firstName.indexOf('내몸탐험') < 0 && firstName.indexOf('성장') < 0 && firstName.indexOf('설문') < 0) {
+      return firstSheet;
+    }
+  }
+
+  // 6) 기존 시트가 전혀 없을 때 신규 생성
   var newSh = SS.insertSheet(name + ' 일일기록');
   newSh.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']]).setFontWeight('bold').setBackground('#e8f0fe');
   newSh.setFrozenRows(1);
@@ -330,6 +351,43 @@ function upsert(sh, dupKey, row) {
   return '추가함';
 }
 
+function buildDailyRow(headers, p, name, date, now, pts, sticker) {
+  var targetKey = String(p.key || '').trim();
+  var targetId = String(p.id || '').trim();
+  var todayDateStr = date;
+  var timestampStr = stamp(now);
+  var finalSticker = 1;
+
+  var row = [];
+  for (var c = 0; c < headers.length; c++) {
+    var h = String(headers[c] || '').trim();
+    if (h === '중복키') {
+      row.push(targetKey + '|' + todayDateStr);
+    } else if (h === '일시' || h === '응답일시') {
+      row.push(timestampStr);
+    } else if (h === '학교') {
+      row.push(p.school);
+    } else if (h === '학생키') {
+      row.push(targetKey);
+    } else if (h === '개인번호' || h === '학번' || h === 'ID') {
+      row.push("'" + targetId);
+    } else if (h === '이름') {
+      row.push(name);
+    } else if (h === '구분') {
+      row.push(p.type);
+    } else if (h === '날짜') {
+      row.push(todayDateStr);
+    } else if (h === '포인트') {
+      row.push(pts);
+    } else if (h === '스티커' || h === '일별스티커') {
+      row.push(finalSticker);
+    } else {
+      row.push('');
+    }
+  }
+  return row;
+}
+
 function upsertDailyRow(sh, p, name, date, now, pts, sticker) {
   if (!sh) return;
   var lastRow = sh.getLastRow();
@@ -339,53 +397,47 @@ function upsertDailyRow(sh, p, name, date, now, pts, sticker) {
     lastRow = 1;
   }
 
+  var headers = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getValues()[0];
   var todayDateStr = ymd(now);
   var targetKey = String(p.key || '').trim();
   var targetId = String(p.id || '').trim();
-  var finalSticker = 1;
+  var numIdOnly = targetId.replace(/^[Tt]-?/i, '');
 
   if (lastRow >= 2) {
-    var data = sh.getRange(2, 1, lastRow - 1, Math.max(10, sh.getLastColumn())).getValues();
+    var data = sh.getRange(2, 1, lastRow - 1, headers.length).getValues();
     for (var i = 0; i < data.length; i++) {
       var row = data[i];
-      var rDate1 = formatDateStr(row[0]);
-      var rDate2 = formatDateStr(row[1]);
-      var rDate8 = formatDateStr(row[7]);
-      var isToday = (rDate1 === todayDateStr || rDate2 === todayDateStr || rDate8 === todayDateStr);
 
-      var rDupKey = String(row[0] || '').trim();
-      var rKey = String(row[3] || '').trim();
-      var rId1 = String(row[2] || '').trim().replace(/^'/, '');
-      var rId2 = String(row[4] || '').trim().replace(/^'/, '');
+      var isToday = false;
+      for (var col = 0; col < row.length; col++) {
+        var formatted = formatDateStr(row[col]);
+        if (formatted === todayDateStr) {
+          isToday = true;
+          break;
+        }
+      }
 
-      var isSameStudent = (rDupKey.indexOf(targetKey) === 0 || rKey === targetKey || rId1 === targetId || rId2 === targetId);
+      var isSameStudent = false;
+      for (var col = 0; col < row.length; col++) {
+        var cellVal = String(row[col] || '').trim().replace(/^'/, '');
+        var numCellOnly = cellVal.replace(/^[Tt]-?/i, '');
+        if (cellVal === targetKey || cellVal === targetId || (numIdOnly.length >= 4 && numCellOnly === numIdOnly) || cellVal.indexOf(targetKey) === 0) {
+          isSameStudent = true;
+          break;
+        }
+      }
 
       if (isToday && isSameStudent) {
         var targetRowIndex = i + 2;
-        var headers = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getValues()[0];
-        var firstColName = String(headers[0] || '').trim();
-
-        if (firstColName === '중복키') {
-          var updatedRow = [targetKey + '|' + todayDateStr, stamp(now), p.school, targetKey, targetId, name, p.type, todayDateStr, pts, finalSticker];
-          sh.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
-        } else {
-          var updatedRow = [stamp(now), p.school, "'" + targetId, name, p.type, finalSticker];
-          sh.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
-        }
+        var updatedRow = buildDailyRow(headers, p, name, date, now, pts, sticker);
+        sh.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
         return 'updated';
       }
     }
   }
 
-  var headers = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getValues()[0];
-  var firstColName = String(headers[0] || '').trim();
-  if (firstColName === '중복키') {
-    var newRow = [targetKey + '|' + todayDateStr, stamp(now), p.school, targetKey, targetId, name, p.type, todayDateStr, pts, finalSticker];
-    appendOrInsertRow(sh, newRow);
-  } else {
-    var newRow = [stamp(now), p.school, "'" + targetId, name, p.type, finalSticker];
-    appendOrInsertRow(sh, newRow);
-  }
+  var newRow = buildDailyRow(headers, p, name, date, now, pts, sticker);
+  appendOrInsertRow(sh, newRow);
   return 'inserted';
 }
 
@@ -394,14 +446,15 @@ function countStickers(key, schoolName) {
   var sh = getDailySheet(SS, schoolName || 'A초');
   if (!sh || sh.getLastRow() < 2) return 0;
   var targetKey = String(key || '').trim();
+  var numOnly = targetKey.replace(/^[A-Za-z0-9가-힣]+초?-?/i, '').replace(/^[Tt]-?/i, '');
   if (!targetKey) return 0;
 
   var lastRow = sh.getLastRow();
-  var v = sh.getRange(2, 1, lastRow - 1, Math.min(10, sh.getLastColumn())).getValues();
+  var v = sh.getRange(2, 1, lastRow - 1, sh.getLastColumn()).getValues();
   var n = 0;
   for (var i = 0; i < v.length; i++) {
-    var studentKey = String(v[i][3] || v[i][2] || '').trim();
-    if (studentKey === targetKey || studentKey.indexOf(targetKey) > -1) {
+    var rowStr = v[i].join(' ');
+    if (rowStr.indexOf(targetKey) >= 0 || (numOnly.length >= 4 && rowStr.indexOf(numOnly) >= 0)) {
       var sVal = Number(v[i][v[i].length - 1]);
       n += (!isNaN(sVal) && sVal > 0) ? sVal : 1;
     }
@@ -492,7 +545,7 @@ function doPost(e) {
   }
 }
 
-// 1. 일일기록 저장 ("A초 일일기록", "A초_일일기록", "A초" 시트 중 어느것이든 무조건 정밀 저장을 보장!)
+// 1. 일일기록 저장 ("A초 일일기록", "A초_일일기록", "A초", "일일기록" 시트 중 어느것이든 무조건 정밀 저장을 보장!)
 function saveDaily(d) {
   var SS = getSS();
   var p = parseId(d.studentId, d.school);
