@@ -256,6 +256,7 @@ function backupToDrive() {
 
 function parseId(rawId, fallbackSchool) {
   var raw = String(rawId || '').trim();
+  var origRaw = raw;
   var school = '';
 
   if (raw.indexOf('_') > 0) {
@@ -271,7 +272,7 @@ function parseId(rawId, fallbackSchool) {
     if (school.indexOf('초') < 0) school += '초';
   }
 
-  var id = raw.replace(/^[A-Za-z0-9가-힣]+초[_-]/i, '').replace(/^[A-Za-z0-9가-힣]+[_-]/i, '').trim();
+  var id = raw.replace(/^[A-Za-z0-9가-힣]+초[_-]/i, '').trim();
 
   if (!school) {
     school = String(fallbackSchool || '').trim();
@@ -279,8 +280,12 @@ function parseId(rawId, fallbackSchool) {
   }
   if (!school) school = 'A초';
 
+  var isTeacherMatch = /^T-?\d+$/i.test(id) || /^t-?\d+$/i.test(id) || 
+                       origRaw.indexOf('교사') >= 0 || origRaw.indexOf('teacher') >= 0 || 
+                       origRaw.indexOf('T-') >= 0 || origRaw.indexOf('t-') >= 0;
+
   var type;
-  if (/^T-?\d+$/i.test(id) || /^t-?\d+$/i.test(id) || raw.indexOf('교사') >= 0 || raw.indexOf('teacher') >= 0 || raw.indexOf('T-') >= 0 || raw.indexOf('t-') >= 0) {
+  if (isTeacherMatch) {
     type = '2.교사';
     var numOnly = id.replace(/^[Tt]-?/i, '');
     id = 't-' + numOnly;
