@@ -1758,8 +1758,8 @@
       if (state.isOffline) {
         refreshStudentData();
       } else {
-        // Realtime GAS sync (Only sync if today's points >= 50, i.e., 1 sticker)
-        if (todayTotal >= 50) {
+        // Realtime GAS sync
+        if (todayTotal > 0) {
           const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
           const totalSticker = Math.floor(totalPts / 100);
 
@@ -1769,14 +1769,14 @@
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
               action: 'log_mission',
-              school: state.school || 'A초',
+              school: state.school || getSchoolFromId(state.studentId) || 'A초',
               studentId: state.studentId,
               name: state.student ? state.student.name : '',
-              missionType: "일별스티커",
+              missionType: missionName || "일별스티커",
               points: todayTotal,
               totalPoints: totalPts,
               stickerCount: totalSticker,
-              dailySticker: 1,
+              dailySticker: todayTotal >= 50 ? 1 : 0,
               isSetAbsolute: true,
               weight: ""
             })

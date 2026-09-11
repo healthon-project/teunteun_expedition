@@ -98,6 +98,7 @@ function resolveName(key, given, id) {
 }
 
 function upsert(sh, dupKey, row) {
+  if (!sh) return '시트없음';
   var last = sh.getLastRow();
   var targetKey = String(dupKey).trim();
   if (last >= 2) {
@@ -109,24 +110,24 @@ function upsert(sh, dupKey, row) {
       }
     }
   }
-  sh.appendRow(row);
+  appendOrInsertRow(sh, row);
   return '추가함';
 }
 
 function countStickers(key) {
   var SS = getSS();
-  var sh = SS.getSheetByName(SH.daily);
+  var sh = SS.getSheetByName('학생일별스티커') || SS.getSheetByName(SH.daily) || SS.getSheetByName('일별기록');
   if (!sh || sh.getLastRow() < 2) return 0;
   var targetKey = String(key || '').trim();
   if (!targetKey) return 0;
 
   var lastRow = sh.getLastRow();
-  var v = sh.getRange(2, 4, lastRow - 1, 7).getValues();
+  var v = sh.getRange(2, 1, lastRow - 1, Math.min(10, sh.getLastColumn())).getValues();
   var n = 0;
   for (var i = 0; i < v.length; i++) {
-    var studentKey = String(v[i][0] || '').trim();
-    if (studentKey === targetKey) {
-      var sVal = Number(v[i][6]);
+    var studentKey = String(v[i][3] || v[i][2] || '').trim();
+    if (studentKey === targetKey || studentKey.indexOf(targetKey) > -1) {
+      var sVal = Number(v[i][v[i].length - 1]);
       n += (!isNaN(sVal) && sVal > 0) ? sVal : 1;
     }
   }
@@ -169,16 +170,44 @@ function doPost(e) {
 function saveDaily(d) {
   var SS = getSS();
   var p = parseId(d.studentId, d.school);
+  var schoolName = p.school || "A초";
   var name = resolveName(p.key, d.name, p.id);
   var pts = Number(d.points || 0);
-  if (pts < 50 && Number(d.dailySticker || 0) < 1) {
-    return { success: true, message: '포인트 미달' };
-  }
+  var sticker = (pts >= 50 || Number(d.dailySticker || 0) >= 1) ? 1 : 0;
   var now = new Date(), date = ymd(now);
-  upsert(SS.getSheetByName(SH.daily), p.key + '|' + date,
-    [p.key + '|' + date, stamp(now), p.school, p.key, p.id, name, p.type, date, pts, 1]);
+  var dupKey = p.key + '|' + date;
+
+  var targetSheets = [];
+  var s1 = SS.getSheetByName(schoolName);
+  if (s1) targetSheets.push(s1);
+  var s2 = SS.getSheetByName(p.type === '2.교사' ? '교사일별스티커' : '학생일별스티커') || SS.getSheetByName(SH.daily) || SS.getSheetByName('일별기록');
+  if (s2 && targetSheets.indexOf(s2) === -1) targetSheets.push(s2);
+
+  if (targetSheets.length === 0) {
+    var newSheet = SS.insertSheet(schoolName);
+    newSheet.appendRow(['중복키','일시','학교','학생키','개인번호','이름','구분','날짜','포인트','스티커']);
+    targetSheets.push(newSheet);
+  }
+
+  targetSheets.forEach(function(sh) {
+    if (!sh) return;
+    var headers = [];
+    if (sh.getLastRow() >= 1) {
+      headers = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getValues()[0];
+    }
+    var firstColName = String(headers[0] || '').trim();
+
+    if (firstColName === '중복키') {
+      var row = [dupKey, stamp(now), p.school, p.key, p.id, name, p.type, date, pts, sticker];
+      upsert(sh, dupKey, row);
+    } else {
+      var row = [stamp(now), p.school, "'" + p.id, name, sticker > 0 ? sticker : pts];
+      appendOrInsertRow(sh, row);
+    }
+  });
+
   var total = countStickers(p.key);
-  return { success: true, 이름: name, 총스티커: total, 레벨: levelOf(total) };
+  return { success: true, 이름: name, 포인트: pts, 총스티커: total, 레벨: levelOf(total) };
 }
 
 function saveGrowth(d) {

@@ -185,6 +185,7 @@ function setupSheets(sheet) {
 
 // 헬퍼: 오늘자 일일 포인트 행 중복 정리 및 100P 상한 적용
 function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayDateStr, isSetAbsolute) {
+  if (!dailySheet) return;
   var dRows = dailySheet.getDataRange().getValues();
   var matchingRowIndices = [];
   
@@ -211,7 +212,7 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
     dailySheet.getRange(primaryRowIndex, 1).setValue(todayStr);
     dailySheet.getRange(primaryRowIndex, 2).setValue(p.school);
     if (name) dailySheet.getRange(primaryRowIndex, 4).setValue(name);
-    dailySheet.getRange(primaryRowIndex, 5).setValue(targetStickers);
+    dailySheet.getRange(primaryRowIndex, 5).setValue(targetStickers > 0 ? targetStickers : targetPoints);
     
     for (var k = matchingRowIndices.length - 1; k > 0; k--) {
       dailySheet.deleteRow(matchingRowIndices[k]);
@@ -219,9 +220,7 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
   } else {
     targetPoints = Math.min(100, Math.max(0, pointsDelta));
     var targetStickers = (targetPoints >= 50) ? 1 : 0;
-    if (targetStickers >= 1) {
-      dailySheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, 1]);
-    }
+    appendOrInsertRow(dailySheet, [todayStr, p.school, "'" + p.cleanId, name, targetStickers > 0 ? targetStickers : targetPoints]);
   }
   
   SpreadsheetApp.flush();
@@ -231,7 +230,11 @@ function syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayD
 // 1. 참여자 가입/기록 저장 API
 function handleRegister(sheet, data) {
   var p = getParticipantDetails(data.studentId, data.school);
-  var profileSheet = sheet.getSheetByName(p.profileSheet);
+  var profileSheet = sheet.getSheetByName(p.profileSheet) || sheet.getSheetByName("학생기록");
+  if (!profileSheet) {
+    profileSheet = sheet.insertSheet(p.profileSheet);
+    profileSheet.appendRow(["일시", "학교", "개인번호", "이름", "키(cm)", "몸무게(kg)", "BMI", "월총스티커", "누적총스티커", "레벨"]);
+  }
   
   var name = (data.name ? data.name : "").toString().trim();
   var height = parseFloat(data.height) || 0;
@@ -284,11 +287,18 @@ function handleRegister(sheet, data) {
     }
     
     var calcBmi = (prevH > 0 && prevW > 0) ? parseFloat((prevW / ((prevH / 100) * (prevH / 100))).toFixed(1)) : 0;
-    profileSheet.appendRow([todayStr, p.school, "'" + p.cleanId, name, prevH, prevW, calcBmi, 0, 0, "알콩이"]);
+    appendOrInsertRow(profileSheet, [todayStr, p.school, "'" + p.cleanId, name, prevH, prevW, calcBmi, 0, 0, "알콩이"]);
   }
   
-  var dailySheet = sheet.getSheetByName(p.dailySheet);
-  syncDailyRowForToday(dailySheet, p, name, 0, todayStr, todayDateStr, false);
+  var targetDailySheets = [];
+  var s1 = sheet.getSheetByName(p.school);
+  if (s1) targetDailySheets.push(s1);
+  var s2 = sheet.getSheetByName(p.dailySheet);
+  if (s2 && targetDailySheets.indexOf(s2) === -1) targetDailySheets.push(s2);
+  
+  targetDailySheets.forEach(function(dSh) {
+    syncDailyRowForToday(dSh, p, name, 0, todayStr, todayDateStr, false);
+  });
   updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr);
   
   return createJsonResponse({
@@ -301,9 +311,25 @@ function handleRegister(sheet, data) {
 // 2. 미션 및 보너스 포인트 기록 API
 function handleLogMission(sheet, data) {
   var p = getParticipantDetails(data.studentId, data.school);
-  var dailySheet = sheet.getSheetByName(p.dailySheet);
-  var profileSheet = sheet.getSheetByName(p.profileSheet);
+  var schoolName = p.school || "A초";
   
+  var targetDailySheets = [];
+  var s1 = sheet.getSheetByName(schoolName);
+  if (s1) targetDailySheets.push(s1);
+  var s2 = sheet.getSheetByName(p.dailySheet);
+  if (s2 && targetDailySheets.indexOf(s2) === -1) targetDailySheets.push(s2);
+  var s3 = sheet.getSheetByName("학생일별스티커");
+  if (s3 && targetDailySheets.indexOf(s3) === -1) targetDailySheets.push(s3);
+  var s4 = sheet.getSheetByName("일별기록");
+  if (s4 && targetDailySheets.indexOf(s4) === -1) targetDailySheets.push(s4);
+
+  if (targetDailySheets.length === 0) {
+    var newSheet = sheet.insertSheet(schoolName);
+    newSheet.appendRow(["일시", "학교", "개인번호", "이름", "일별스티커"]);
+    targetDailySheets.push(newSheet);
+  }
+  
+  var profileSheet = sheet.getSheetByName(p.profileSheet) || sheet.getSheetByName("학생기록");
   var name = data.name ? data.name.trim() : "";
   var pointsDelta = parseInt(data.points) || 0;
   var height = data.height ? parseFloat(data.height) : "";
@@ -312,7 +338,7 @@ function handleLogMission(sheet, data) {
   var todayDateStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd");
   var currentMonthStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM");
   
-  if (!name) {
+  if (!name && profileSheet) {
     var pRows = profileSheet.getDataRange().getValues();
     for (var i = 1; i < pRows.length; i++) {
       var rSch = pRows[i][1] ? pRows[i][1].toString().trim() : "";
@@ -324,9 +350,11 @@ function handleLogMission(sheet, data) {
     }
   }
   
-  syncDailyRowForToday(dailySheet, p, name, pointsDelta, todayStr, todayDateStr, data.isSetAbsolute);
+  targetDailySheets.forEach(function(dSh) {
+    syncDailyRowForToday(dSh, p, name, pointsDelta, todayStr, todayDateStr, data.isSetAbsolute);
+  });
   
-  if (weight !== "" || height !== "") {
+  if (profileSheet && (weight !== "" || height !== "")) {
     var pRows2 = profileSheet.getDataRange().getValues();
     for (var k = 1; k < pRows2.length; k++) {
       var cellValue = pRows2[k][0];
@@ -358,8 +386,9 @@ function handleLogMission(sheet, data) {
 
 // 헬퍼: 대표 시트(학생기록/교사기록)의 월총포인트, 누적총포인트, 레벨 실시간 동기화
 function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) {
-  var dailySheet = sheet.getSheetByName(p.dailySheet);
-  var profileSheet = sheet.getSheetByName(p.profileSheet);
+  var dailySheet = sheet.getSheetByName(p.school) || sheet.getSheetByName(p.dailySheet) || sheet.getSheetByName("학생일별스티커");
+  var profileSheet = sheet.getSheetByName(p.profileSheet) || sheet.getSheetByName("학생기록");
+  if (!dailySheet || !profileSheet) return;
   
   SpreadsheetApp.flush();
   var updatedDRows = dailySheet.getDataRange().getValues();
