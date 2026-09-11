@@ -1767,6 +1767,12 @@
 
         // Realtime GAS Sync to Daily Log (A초, B초, C초, D초)
         const activeSch = state.school || getSchoolFromId(state.studentId) || 'A초';
+        const isTeacher = state.studentId.includes('_T-') || state.studentId.includes('_t-') || state.studentId.startsWith('T-') || state.studentId.startsWith('t-');
+        let nameToSend = state.student ? state.student.name : '';
+        if (isTeacher && nameToSend && !nameToSend.startsWith('t-') && !nameToSend.startsWith('T-')) {
+          nameToSend = 't-' + nameToSend;
+        }
+
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
@@ -1775,7 +1781,10 @@
             action: 'log_mission',
             school: activeSch,
             studentId: state.studentId,
-            name: state.student ? state.student.name : '',
+            name: nameToSend,
+            role: isTeacher ? '2.교사' : '1.학생',
+            type: isTeacher ? '2.교사' : '1.학생',
+            isTeacher: isTeacher,
             missionType: "일별스티커",
             points: todayTotal,
             totalPoints: state.student ? state.student.totalPoints : 0,
@@ -2126,7 +2135,11 @@
         if (!nameVal) nameVal = '보건선생님';
         if (!phoneVal || phoneVal.length !== 4) phoneVal = '0000';
         
-        const compoundId = `${schoolVal}_T-${phoneVal}`;
+        if (!nameVal.startsWith('t-') && !nameVal.startsWith('T-')) {
+          nameVal = 't-' + nameVal;
+        }
+
+        const compoundId = `${schoolVal}_t-${phoneVal}`;
         
         const loginBtn = document.getElementById('login-teacher-btn');
         if (loginBtn) {
@@ -2263,6 +2276,11 @@
         }
         
         const totalPts = Number(s.totalPoints || (state.student ? state.student.totalPoints : 0)) || 0;
+        const isTeacher = id.includes('_T-') || id.includes('_t-') || id.startsWith('T-') || id.startsWith('t-') || (enteredName && (enteredName.startsWith('t-') || enteredName.startsWith('T-')));
+        let nameToSend = enteredName || s.name || '';
+        if (isTeacher && nameToSend && !nameToSend.startsWith('t-') && !nameToSend.startsWith('T-')) {
+          nameToSend = 't-' + nameToSend;
+        }
 
         fetch(state.gasUrl, {
           method: 'POST',
@@ -2272,7 +2290,10 @@
             action: 'log_mission',
             school: activeSchool,
             studentId: id,
-            name: enteredName || s.name || '',
+            name: nameToSend,
+            role: isTeacher ? '2.교사' : '1.학생',
+            type: isTeacher ? '2.교사' : '1.학생',
+            isTeacher: isTeacher,
             missionType: "일별스티커",
             points: todayTotal,
             totalPoints: totalPts,
