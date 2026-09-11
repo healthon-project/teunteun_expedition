@@ -1,7 +1,7 @@
 /**
  * 꼬꼬챌린지 데이터 관리 (Google Apps Script)
  * 학교별 시트 명확 매핑 & 데이터 분리:
- *  1) {학교} 일일기록 (예: "A초 일일기록", "A초_일일기록", "A초", "일일기록"): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
+ *  1) {학교} 일일기록 (예: "A초 일일기록", "A초_일일기록", "A초", "일일기록", GID: 265693353): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
  *  2) {학교}_내몸탐험 (예: "A초_내몸탐험", "A초 내몸탐험"): 월1회 신체기록 (키, 몸무게, BMI, 총스티커, 레벨 / 교사 t-전화번호4자리)
  *  3) {학교}_설문응답 (예: "A초_설문응답", "A초 설문응답"): 학생 + 교사 통합 설문응답 (교사 t-전화번호4자리 / '사전설문' 제거 / 맨윗줄 헤더 보존)
  */
@@ -44,13 +44,22 @@ function parseSchoolName(schoolInput) {
 }
 
 /**
- * 1. 일일기록 시트 전용 탐색 ("일일기록", "A초 일일기록", "A초_일일기록", "A초" 대소문자/띄어쓰기 무관 완벽 지원)
+ * 1. 일일기록 시트 전용 탐색 (GID: 265693353, "일일기록", "A초 일일기록", "A초_일일기록", "A초" 완벽 지원)
  */
 function getDailySheet(SS, school) {
   var name = parseSchoolName(school); // 예: "A초"
   var sheets = SS.getSheets();
   var nameUpper = name.toUpperCase();
   var letterOnly = nameUpper.replace('초', '');
+
+  // 0) GID 265693353 직접 일치 시트 탐색 (유저가 링크로 지정한 일일기록 시트 탭 GID)
+  if (nameUpper === 'A초' || nameUpper === 'A') {
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() === 265693353) {
+        return sheets[i];
+      }
+    }
+  }
 
   // 1) 띄어쓰기/언더바 포함 대소문자/공백 무관 직접 시트 검색
   var candidates = [
@@ -88,7 +97,14 @@ function getDailySheet(SS, school) {
     }
   }
 
-  // 4) 학교 이름("A초")으로 시작하고 "내몸탐험", "성장", "설문"이 포함되지 않은 시트 탐색
+  // 4) GID 265693353 보조 탐색 (어느 학교명이든 GID가 존재하면 우선 채택)
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].getSheetId() === 265693353) {
+      return sheets[i];
+    }
+  }
+
+  // 5) 학교 이름("A초")으로 시작하고 "내몸탐험", "성장", "설문"이 포함되지 않은 시트 탐색
   for (var i = 0; i < sheets.length; i++) {
     var sName = sheets[i].getName().trim();
     var sUpper = sName.toUpperCase();
@@ -97,7 +113,7 @@ function getDailySheet(SS, school) {
     }
   }
 
-  // 5) 첫번째 시트가 성장/설문 시트가 아니라면 사용
+  // 6) 첫번째 시트가 성장/설문 시트가 아니라면 사용
   if (sheets.length > 0) {
     var firstSheet = sheets[0];
     var firstName = firstSheet.getName().trim();
@@ -106,7 +122,7 @@ function getDailySheet(SS, school) {
     }
   }
 
-  // 6) 기존 시트가 전혀 없을 때 신규 생성
+  // 7) 기존 시트가 전혀 없을 때 신규 생성
   var newSh = SS.insertSheet(name + ' 일일기록');
   newSh.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']]).setFontWeight('bold').setBackground('#e8f0fe');
   newSh.setFrozenRows(1);
