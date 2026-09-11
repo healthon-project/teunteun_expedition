@@ -1,10 +1,9 @@
 /**
  * 꼬꼬챌린지 데이터 관리 (Google Apps Script)
- * 학교별 전용 시트 자동 찾기 & 데이터 누적:
- *  1) {학교} (일일기록: 스티커 1개로 학생 위, 교사 t-전화번호4자리 아래 정렬)
- *  2) {학교}_내몸탐험 (학생, 교사 t-전화번호4자리)
- *  3) {학교}_설문응답 (학생, 교사 t-전화번호4자리 / '사전설문' 제거 / 맨윗줄 헤더 자동 보존)
- *  * 이미 생성된 시트를 자동으로 탐색하여 기록합니다 (시트 새로 만들기/삭제 금지).
+ * 학교별 시트 명확 매핑 & 데이터 분리:
+ *  1) {학교} (예: A초, B초, C초, D초): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
+ *  2) {학교}_내몸탐험 (예: A초_내몸탐험): 월1회 신체기록 (키, 몸무게, BMI, 총스티커, 레벨 / 교사 t-전화번호4자리)
+ *  3) {학교}_설문응답 (예: A초_설문응답): 학생 + 교사 통합 설문응답 (교사 t-전화번호4자리 / '사전설문' 제거 / 맨윗줄 헤더 보존)
  */
 
 const TZ = 'Asia/Seoul';
@@ -12,7 +11,7 @@ const SCHOOLS = ['A초', 'B초', 'C초', 'D초'];
 
 const HEADERS = {
   '일별기록': ['중복키','일시','학교','학생키','개인번호','이름','구분','날짜','포인트','스티커'],
-  '월별성장': ['중복키','측정일시','학교','학생키','개인번호','이름','구분','측정월','키(cm)','몸무게(kg)','BMI'],
+  '월별성장': ['중복키','측정일시','학교','학생키','개인번호','이름','구분','측정월','키(cm)','몸무게(kg)','BMI','총스티커','레벨'],
   '설문응답': ['응답일시','학교','개인번호','이름','구분','문항1','문항2','문항3','문항4','문항5','문항6','문항7','문항8','문항9','문항10','문항11','문항12']
 };
 
@@ -33,47 +32,89 @@ function onOpen() {
     .addToUi();
 }
 
-/**
- * 이미 생성된 시트를 유연하게 탐색 (새 시트 생성/삭제 없이 기존 시트에 자동 연결)
- */
-function findSheet(SS, schoolName, sheetType) {
-  var sheets = SS.getSheets();
-  var targetSchool = String(schoolName || 'A초').trim().toUpperCase();
-  if (targetSchool.indexOf('초') < 0) targetSchool += '초';
+function parseSchoolName(schoolInput) {
+  var str = String(schoolInput || 'A초').trim().toUpperCase();
+  var m = str.match(/^([A-Za-z0-9가-힣]+)초?/);
+  if (m) {
+    var name = m[1];
+    if (name.indexOf('초') < 0) name += '초';
+    return name;
+  }
+  return 'A초';
+}
 
+/**
+ * 1. 일일기록 시트 전용 탐색 (예: "A초", "B초", "C초")
+ * 언더바(_)가 없는 순수 학교 시트에만 연결되도록 안전 보장!
+ */
+function getDailySheet(SS, school) {
+  var name = parseSchoolName(school);
+  
+  // 1) 정확한 이름 매칭 ("A초")
+  var sh = SS.getSheetByName(name);
+  if (sh) return sh;
+  
+  // 2) 대소문자 및 트림 매칭 (언더바 없는 탭 검색)
+  var sheets = SS.getSheets();
   for (var i = 0; i < sheets.length; i++) {
     var sName = sheets[i].getName().trim();
-    var upperName = sName.toUpperCase();
-
-    if (sheetType === 'daily') {
-      if (upperName === targetSchool) return sheets[i];
-    } else if (sheetType === 'growth') {
-      if (upperName.indexOf(targetSchool) === 0 && (sName.indexOf('내몸탐험') >= 0 || sName.indexOf('월별성장') >= 0 || sName.indexOf('성장') >= 0)) {
-        return sheets[i];
-      }
-    } else if (sheetType === 'survey') {
-      if (upperName.indexOf(targetSchool) === 0 && sName.indexOf('설문') >= 0) {
-        return sheets[i];
-      }
+    if (sName.toUpperCase() === name.toUpperCase()) return sheets[i];
+  }
+  
+  for (var i = 0; i < sheets.length; i++) {
+    var sName = sheets[i].getName().trim();
+    if (sName.toUpperCase().indexOf(name.toUpperCase()) === 0 && sName.indexOf('_') < 0) {
+      return sheets[i];
     }
   }
 
-  // 기존 시트에 정확한 이름이 없는 경우 기본 이름으로 시트 가져오기 또는 최초 1회 생성
-  var fallbackName = targetSchool;
-  if (sheetType === 'growth') fallbackName += '_내몸탐험';
-  if (sheetType === 'survey') fallbackName += '_설문응답';
+  // 기존 시트 없을 경우 생성
+  var newSh = SS.insertSheet(name);
+  newSh.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']]).setFontWeight('bold').setBackground('#e8f0fe');
+  newSh.setFrozenRows(1);
+  return newSh;
+}
 
-  var existing = SS.getSheetByName(fallbackName);
-  if (existing) return existing;
+/**
+ * 2. 내몸탐험 시트 전용 탐색 (예: "A초_내몸탐험")
+ */
+function getGrowthSheet(SS, school) {
+  var name = parseSchoolName(school);
+  var sh = SS.getSheetByName(name + '_내몸탐험');
+  if (sh) return sh;
 
-  var newSh = SS.insertSheet(fallbackName);
-  if (sheetType === 'daily') {
-    newSh.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']]).setFontWeight('bold').setBackground('#e8f0fe');
-  } else if (sheetType === 'growth') {
-    newSh.getRange(1, 1, 1, 11).setValues([HEADERS['월별성장']]).setFontWeight('bold').setBackground('#e2f0d9');
-  } else if (sheetType === 'survey') {
-    newSh.getRange(1, 1, 1, 17).setValues([HEADERS['설문응답']]).setFontWeight('bold').setBackground('#fff2cc');
+  var sheets = SS.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var sName = sheets[i].getName().trim();
+    if (sName.toUpperCase().indexOf(name.toUpperCase()) === 0 && (sName.indexOf('내몸탐험') >= 0 || sName.indexOf('성장') >= 0)) {
+      return sheets[i];
+    }
   }
+
+  var newSh = SS.insertSheet(name + '_내몸탐험');
+  newSh.getRange(1, 1, 1, 13).setValues([HEADERS['월별성장']]).setFontWeight('bold').setBackground('#e2f0d9');
+  newSh.setFrozenRows(1);
+  return newSh;
+}
+
+/**
+ * 3. 설문응답 시트 전용 탐색 (예: "A초_설문응답")
+ */
+function getSurveySheet(SS, school) {
+  var name = parseSchoolName(school);
+  var sh = SS.getSheetByName(name + '_설문응답');
+  if (sh) return sh;
+
+  var sheets = SS.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var sName = sheets[i].getName().trim();
+    if (sName.toUpperCase().indexOf(name.toUpperCase()) === 0 && sName.indexOf('설문') >= 0) {
+      return sheets[i];
+    }
+  }
+
+  var newSh = SS.insertSheet(name + '_설문응답');
+  newSh.getRange(1, 1, 1, 17).setValues([HEADERS['설문응답']]).setFontWeight('bold').setBackground('#fff2cc');
   newSh.setFrozenRows(1);
   return newSh;
 }
@@ -81,22 +122,22 @@ function findSheet(SS, schoolName, sheetType) {
 function setup() {
   var SS = getSS();
   SCHOOLS.forEach(function(school) {
-    var sh1 = findSheet(SS, school, 'daily');
+    var sh1 = getDailySheet(SS, school);
     if (sh1.getLastRow() === 0) {
       sh1.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']]).setFontWeight('bold').setBackground('#e8f0fe');
       sh1.setFrozenRows(1);
     }
 
-    var sh2 = findSheet(SS, school, 'growth');
+    var sh2 = getGrowthSheet(SS, school);
     if (sh2.getLastRow() === 0) {
-      sh2.getRange(1, 1, 1, 11).setValues([HEADERS['월별성장']]).setFontWeight('bold').setBackground('#e2f0d9');
+      sh2.getRange(1, 1, 1, 13).setValues([HEADERS['월별성장']]).setFontWeight('bold').setBackground('#e2f0d9');
       sh2.setFrozenRows(1);
     }
 
-    var sh3 = findSheet(SS, school, 'survey');
+    var sh3 = getSurveySheet(SS, school);
     cleanAndFixSurveySheet(sh3);
   });
-  Logger.log('학교별 시트 연결 및 점검 완료');
+  Logger.log('학교별 시트 연결 점검 완료');
 }
 
 function cleanAndFixSurveySheet(sh) {
@@ -167,10 +208,13 @@ function backupToDrive() {
 function parseId(rawId, fallbackSchool) {
   var raw = String(rawId || '').trim();
   var school = '';
-  var m = raw.match(/^([A-Za-z0-9가-힣])초?[_-]/);
-  if (m) school = m[1].toUpperCase() + '초';
+  var m = raw.match(/^([A-Za-z0-9가-힣]+)초?[_-]/);
+  if (m) {
+    school = m[1].toUpperCase();
+    if (school.indexOf('초') < 0) school += '초';
+  }
 
-  var id = raw.replace(/^[A-Za-z0-9가-힣]초[_-]/i, '').replace(/^[A-Za-z0-9가-힣][_-]/i, '').trim();
+  var id = raw.replace(/^[A-Za-z0-9가-힣]+초[_-]/i, '').replace(/^[A-Za-z0-9가-힣]+[_-]/i, '').trim();
 
   if (!school) {
     school = String(fallbackSchool || '').trim();
@@ -279,7 +323,7 @@ function upsertDailyRow(sh, p, name, date, now, pts, sticker) {
 
 function countStickers(key, schoolName) {
   var SS = getSS();
-  var sh = findSheet(SS, schoolName || 'A초', 'daily');
+  var sh = getDailySheet(SS, schoolName || 'A초');
   if (!sh || sh.getLastRow() < 2) return 0;
   var targetKey = String(key || '').trim();
   if (!targetKey) return 0;
@@ -335,7 +379,7 @@ function appendOrInsertRow(sheet, rowData) {
   }
 }
 
-// 동적 열 정렬: 학생(1.학생)은 위, 교사(2.교사)는 아래로 정렬
+// 학생(1.학생)은 위, 교사(2.교사)는 아래로 정렬
 function sortDailySheet(sh) {
   if (!sh || sh.getLastRow() < 3) return;
   var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
@@ -357,7 +401,7 @@ function sortDailySheet(sh) {
 function sortDailyAll() {
   var SS = getSS();
   SCHOOLS.forEach(function(school) {
-    var sh = findSheet(SS, school, 'daily');
+    var sh = getDailySheet(SS, school);
     if (sh) sortDailySheet(sh);
   });
 }
@@ -380,6 +424,7 @@ function doPost(e) {
   }
 }
 
+// 1. 일일기록 저장 ({학교}: A초, B초, C초 시트에 무조건 저장을 보장!)
 function saveDaily(d) {
   var SS = getSS();
   var p = parseId(d.studentId, d.school);
@@ -401,7 +446,8 @@ function saveDaily(d) {
   var sticker = 1;
   var now = new Date(), date = ymd(now);
 
-  var sh = findSheet(SS, schoolName, 'daily');
+  // 무조건 순수 학교 시트(A초, B초, C초 등)에 기록! (절대 _내몸탐험이나 _설문응답으로 가지 않음)
+  var sh = getDailySheet(SS, schoolName);
   upsertDailyRow(sh, p, name, date, now, pts, sticker);
   sortDailySheet(sh);
 
@@ -409,6 +455,7 @@ function saveDaily(d) {
   return { success: true, 이름: name, 구분: p.type, 포인트: pts, 총스티커: total, 레벨: levelOf(total) };
 }
 
+// 2. 내몸탐험 저장 ({학교}_내몸탐험: 월1회 키, 몸무게, BMI, 총스티커, 레벨)
 function saveGrowth(d) {
   var SS = getSS();
   var p = parseId(d.studentId, d.school);
@@ -431,14 +478,33 @@ function saveGrowth(d) {
   var h = Number(d.height || 0), w = Number(d.weight || 0);
   var bmi = (h > 0 && w > 0) ? Math.round(w / Math.pow(h / 100, 2) * 10) / 10 : '';
 
-  var sh = findSheet(SS, schoolName, 'growth');
-  upsert(sh, p.key + '|' + month,
-    [p.key + '|' + month, stamp(now), p.school, p.key, idToSave, name, p.type, month, h, w, bmi]);
-
   var total = countStickers(p.key, schoolName);
-  return { success: true, 이름: name, 구분: p.type, BMI: bmi, 총스티커: total, 레벨: levelOf(total) };
+  var lvl = levelOf(total);
+
+  var sh = getGrowthSheet(SS, schoolName);
+  
+  if (sh.getLastRow() >= 1) {
+    var headers = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getValues()[0];
+    var firstColName = String(headers[0] || '').trim();
+
+    if (firstColName === '중복키') {
+      upsert(sh, p.key + '|' + month,
+        [p.key + '|' + month, stamp(now), p.school, p.key, idToSave, name, p.type, month, h, w, bmi, total, lvl]);
+    } else {
+      upsert(sh, p.key + '|' + month,
+        [stamp(now), p.school, "'" + idToSave, name, p.type, month, h, w, bmi, total, lvl]);
+    }
+  } else {
+    sh.getRange(1, 1, 1, 13).setValues([HEADERS['월별성장']]).setFontWeight('bold').setBackground('#e2f0d9');
+    sh.setFrozenRows(1);
+    upsert(sh, p.key + '|' + month,
+      [p.key + '|' + month, stamp(now), p.school, p.key, idToSave, name, p.type, month, h, w, bmi, total, lvl]);
+  }
+
+  return { success: true, 이름: name, 구분: p.type, BMI: bmi, 총스티커: total, 레벨: lvl };
 }
 
+// 3. 설문응답 저장 ({학교}_설문응답)
 function saveSurvey(d) {
   var SS = getSS();
   var p = parseId(d.studentId, d.school);
@@ -455,7 +521,7 @@ function saveSurvey(d) {
     p.id = idToSave;
   }
 
-  var sh = findSheet(SS, schoolName, 'survey');
+  var sh = getSurveySheet(SS, schoolName);
   cleanAndFixSurveySheet(sh);
 
   var rawAnswers = d.answers || d.surveyAnswers || [];
@@ -490,7 +556,7 @@ function doGet(e) {
     var preSurveyDone = false;
     var isTeacher = p.type === '2.교사' || String(e.parameter && e.parameter.role || '').indexOf('교사') >= 0;
 
-    var sh = findSheet(SS, schoolName, 'survey');
+    var sh = getSurveySheet(SS, schoolName);
     if (sh && sh.getLastRow() >= 2) {
       var sRows = sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues();
       for (var r = 0; r < sRows.length; r++) {
