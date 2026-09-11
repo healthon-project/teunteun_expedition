@@ -711,7 +711,12 @@
       <section id="tab-stickers" class="tab-content hidden pt-6 pc:pt-14 pb-8 px-3 pc:px-5 bg-white rounded-[24px] pc:rounded-[50px] shadow-md text-slate-800 flex flex-col items-center">
 
         <h3 class="text-3xl font-black text-slate-800 mb-1.5 text-center flex items-center justify-center gap-1.5">🏅 실천 스티커판</h3>
-        <p class="text-xs sm:text-sm font-bold text-slate-500 mb-6 text-center w-full">오늘의 미션 완료 시 스티커 1개 획득!</p>
+        <p class="text-xs sm:text-sm font-bold text-slate-500 mb-3 text-center w-full">오늘의 미션 완료 시 스티커 1개 획득!</p>
+
+        <!-- Sticker Manual Restore / Correction Button -->
+        <button onclick="restoreStickersManually()" class="mb-5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 shadow-sm border border-slate-200 cursor-pointer">
+          <span>🔄 스티커 복구 / 수동 보정</span>
+        </button>
 
         <!-- Sticker Grid (60 Slots for 8-Week Challenge) -->
         <div class="grid grid-cols-5 gap-2 sm:gap-3 p-3 sm:p-5 bg-white border-4 border-pastelPink-light rounded-[32px] shadow-inner w-full max-w-[420px] max-h-[420px] overflow-y-auto custom-scrollbar">
@@ -1465,6 +1470,33 @@
         state.lastLevel = 1;
         alert("모든 스티커 및 등록 기록이 0개로 깨끗하게 초기화되었습니다! 🧹✨");
         location.reload();
+      }
+    };
+
+    window.restoreStickersManually = function(targetCount) {
+      const input = targetCount !== undefined ? String(targetCount) : prompt("복구 또는 보정할 스티커 개수를 입력해주세요 (예: 9):", "9");
+      if (input !== null && input.trim() !== '' && !isNaN(Number(input))) {
+        const num = Math.max(0, parseInt(input, 10));
+        const sid = state.studentId || localStorage.getItem('teunteun_student_id') || 'guest';
+        const candidateIds = getPossibleIdKeys(sid);
+        
+        for (const candId of candidateIds) {
+          localStorage.setItem(`teunteun_stickers_max_${candId}`, num);
+        }
+        
+        if (state.student) {
+          state.student.totalPoints = Math.max(state.student.totalPoints || 0, num * 100);
+          localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
+          const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+          if (students[sid]) {
+            students[sid].totalPoints = Math.max(students[sid].totalPoints || 0, num * 100);
+            localStorage.setItem('mock_students', JSON.stringify(students));
+          }
+        }
+        
+        renderStickers();
+        triggerDailyAttendanceSync();
+        alert(`스티커가 ${num}개로 성공적으로 복구되었습니다! 🥳✨`);
       }
     };
 
