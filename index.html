@@ -1481,6 +1481,7 @@
         }
         renderHome();
         refreshStudentData();
+        triggerDailyAttendanceSync();
       } else {
         state.student = { ...DEFAULT_GUEST };
         state.lastLevel = getLevelData(0).level;
@@ -2201,6 +2202,47 @@
       return '';
     }
 
+
+    // Helper to send attendance log directly to GAS Daily Sheet
+    function triggerDailyAttendanceSync() {
+      if (!state.studentId || state.isOffline || !state.gasUrl) return;
+      const sid = state.studentId;
+      const sch = state.school || getSchoolFromId(sid) || 'A초';
+      const isTeacher = sid.includes('_T-') || sid.includes('_t-') || sid.startsWith('T-') || sid.startsWith('t-');
+      
+      let nameToSend = (state.student && state.student.name) || localStorage.getItem('teunteun_student_name') || localStorage.getItem('teunteun_teacher_name') || '';
+      if (isTeacher && nameToSend && !nameToSend.startsWith('t-') && !nameToSend.startsWith('T-')) {
+        nameToSend = 't-' + nameToSend;
+      }
+
+      let todayTotal = 0;
+      const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
+      for (const [mId, isDone] of Object.entries(state.todayMissions || {})) {
+        if (isDone === true) todayTotal += pointsConfig[mId];
+      }
+      const totalPts = Number((state.student && state.student.totalPoints) || 0);
+
+      fetch(state.gasUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'log_mission',
+          school: sch,
+          studentId: sid,
+          name: nameToSend,
+          role: isTeacher ? '2.교사' : '1.학생',
+          type: isTeacher ? '2.교사' : '1.학생',
+          isTeacher: isTeacher,
+          missionType: "일별스티커",
+          points: todayTotal,
+          totalPoints: totalPts,
+          stickerCount: 1,
+          dailySticker: 1,
+          isSetAbsolute: true
+        })
+      }).catch(err => console.error("Auto attendance GAS sync error", err));
+    }
 
     // Unified login sync logic (Instant 0.01s login, background GAS sync)
     function executeLoginSync(id, loginBtn, enteredName = '', schoolVal = '') {
