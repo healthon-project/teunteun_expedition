@@ -2,7 +2,7 @@
  * 꼬꼬챌린지 데이터 관리 (Google Apps Script)
  * 학교별 4개 시트 (총 12개 시트 구조):
  *  - A초, B초, C초 (일일기록: 학생 위, 교사 아래 t-전화번호4자리)
- *  - A초_월별성장, B초_월별성장, C초_월별성장 (내몸탐험)
+ *  - A초_내몸탐험, B초_내몸탐험, C초_내몸탐험 (신체기록/월별성장)
  *  - A초_학생설문응답, B초_학생설문응답, C초_학생설문응답
  *  - A초_교사설문응답, B초_교사설문응답, C초_교사설문응답
  */
@@ -28,7 +28,7 @@ function getSS() {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('📁 꼬꼬챌린지 관리')
-    .addItem('① 학교별 12개 시트 준비', 'setup')
+    .addItem('① 학교별 12개 시트 준비 (불필요 탭 삭제)', 'setup')
     .addSeparator()
     .addItem('💾 드라이브에 백업', 'backupToDrive')
     .addItem('🧹 일별기록 정렬 (학생 위 / 교사 아래)', 'sortDailyAll')
@@ -38,7 +38,7 @@ function onOpen() {
 function setup() {
   var SS = getSS();
   
-  // 글로벌 통합 시트 자동 정리 (생성 방지 및 삭제)
+  // 글로벌 통합 시트 자동 정리 (학생기록, 교사기록, 스티커 탭 등 삭제)
   var deleteGlobalTabs = [
     '학생기록', '교사기록', '학생일별스티커', '교사일별스티커',
     '학생설문응답', '교사설문응답', '명단', '일별기록', '월별성장', '설문응답'
@@ -58,8 +58,8 @@ function setup() {
       .setFontWeight('bold').setBackground('#e8f0fe');
     sh1.setFrozenRows(1);
 
-    // 2. 내몸탐험 ({학교}_월별성장)
-    var sh2 = SS.getSheetByName(school + '_월별성장') || SS.getSheetByName(school + '_내몸탐험') || SS.insertSheet(school + '_월별성장');
+    // 2. 내몸탐험 ({학교}_내몸탐험)
+    var sh2 = SS.getSheetByName(school + '_내몸탐험') || SS.getSheetByName(school + '_월별성장') || SS.insertSheet(school + '_내몸탐험');
     sh2.getRange(1, 1, 1, 11).setValues([HEADERS['월별성장']])
       .setFontWeight('bold').setBackground('#e2f0d9');
     sh2.setFrozenRows(1);
@@ -279,7 +279,7 @@ function saveGrowth(d) {
   var h = Number(d.height || 0), w = Number(d.weight || 0);
   var bmi = (h > 0 && w > 0) ? Math.round(w / Math.pow(h / 100, 2) * 10) / 10 : '';
 
-  var sh = SS.getSheetByName(schoolName + '_월별성장') || SS.getSheetByName(schoolName + '_내몸탐험') || SS.insertSheet(schoolName + '_월별성장');
+  var sh = SS.getSheetByName(schoolName + '_내몸탐험') || SS.getSheetByName(schoolName + '_월별성장') || SS.insertSheet(schoolName + '_내몸탐험');
   upsert(sh, p.key + '|' + month,
     [p.key + '|' + month, stamp(now), p.school, p.key, p.id, name, p.type, month, h, w, bmi]);
 
