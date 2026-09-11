@@ -3,9 +3,21 @@
  * 학생용/교사역 분리 및 개인번호(4자리) 기반 누적 합산 스키마 (데이트 파싱 버그 수정 버젼)
  */
 
+function getSS() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) return ss;
+  } catch(e) {}
+  try {
+    return SpreadsheetApp.openById('1iAt-AhzYwCIW-si0-BtmVKI1vUujTHzX-e2w_t_3Uvc');
+  } catch(e) {
+    return null;
+  }
+}
+
 function doGet(e) {
   var action = (e && e.parameter) ? e.parameter.action : null;
-  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = getSS();
   
   try {
     setupSheets(sheet);
@@ -41,7 +53,7 @@ function doPost(e) {
   }
 
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = getSS();
     
     try {
       setupSheets(sheet);
@@ -68,7 +80,7 @@ function doPost(e) {
       return handleRegister(sheet, postData);
     } else if (action === 'log_mission') {
       return handleLogMission(sheet, postData);
-    } else if (action === 'submit_survey') {
+    } else if (action === 'submit_survey' || action === 'save_survey') {
       return handleSubmitSurvey(sheet, postData);
     }
     
@@ -367,13 +379,9 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
     }
   }
 
-  var level = "🥚 알콩이 (0~7개)";
-  if (cumulativeStickers >= 45) level = "👑 꼬꼬대장 (45개+)";
-  else if (cumulativeStickers >= 24) level = "🐥 튼튼이 (24~44개)";
-  else if (cumulativeStickers >= 8) level = "🐣 삐약이 (8~23개)";
-
   var pRows3 = profileSheet.getDataRange().getValues();
   var foundProfileRow = -1;
+  var existingCumulative = 0;
   for (var pIdx = 1; pIdx < pRows3.length; pIdx++) {
     var cellVal = pRows3[pIdx][0];
     var pMonthStr = formatDateToYYYYMM(cellVal);
@@ -381,9 +389,17 @@ function updateProfilePointsRealtime(sheet, p, name, todayStr, currentMonthStr) 
     var pId = pRows3[pIdx][2] ? pRows3[pIdx][2].toString().trim() : "";
     if (pId === p.cleanId && (pSch === p.school || !pSch) && pMonthStr === currentMonthStr) {
       foundProfileRow = pIdx + 1;
+      existingCumulative = parseInt(pRows3[pIdx][8]) || 0;
       break;
     }
   }
+
+  cumulativeStickers = Math.max(cumulativeStickers, existingCumulative);
+
+  var level = "🥚 알콩이 (0~7개)";
+  if (cumulativeStickers >= 45) level = "👑 꼬꼬대장 (45개+)";
+  else if (cumulativeStickers >= 24) level = "🐥 튼튼이 (24~44개)";
+  else if (cumulativeStickers >= 8) level = "🐣 삐약이 (8~23개)";
 
   if (foundProfileRow > -1) {
     profileSheet.getRange(foundProfileRow, 1).setValue(todayStr);            // A: 일시
@@ -448,16 +464,23 @@ function handleGetStudent(sheet, studentId) {
   }
   
   // 사전 설문 조사 참여 여부 체크
-  var surveySheet = sheet.getSheetByName(p.surveySheet);
-  var sRows = surveySheet.getDataRange().getValues();
   var preSurveyDone = false;
-  for (var k = 1; k < sRows.length; k++) {
-    var sSch = sRows[k][1] ? sRows[k][1].toString().trim() : "";
-    var sId = sRows[k][2] ? sRows[k][2].toString().trim() : "";
-    if (sId === p.cleanId && (sSch === school || !sSch)) {
-      preSurveyDone = true;
-      break;
+  var targetSurveySheets = [school + "_설문응답", p.surveySheet, "설문응답", "A초_설문응답", "B초_설문응답", "C초_설문응답", "D초_설문응답"];
+  for (var ts = 0; ts < targetSurveySheets.length; ts++) {
+    var sSheet = sheet.getSheetByName(targetSurveySheets[ts]);
+    if (sSheet && sSheet.getLastRow() >= 2) {
+      var sRows = sSheet.getRange(2, 1, sSheet.getLastRow() - 1, 4).getValues();
+      for (var k = 0; k < sRows.length; k++) {
+        var sSch = sRows[k][1] ? sRows[k][1].toString().trim() : "";
+        var sId = sRows[k][2] ? sRows[k][2].toString().trim() : "";
+        var sCleanId = sId.replace(/^[A-Da-d]초[_-]/i, '').replace(/^[A-Da-d][_-]/i, '').trim();
+        if ((sId === p.cleanId || sCleanId === p.cleanId) && (sSch === school || !sSch || !school)) {
+          preSurveyDone = true;
+          break;
+        }
+      }
     }
+    if (preSurveyDone) break;
   }
   
   // 닉네임 자동 빌드
@@ -585,32 +608,53 @@ function handleGetLeaderboard(sheet) {
 // 5. 설문조사 제출 API
 function handleSubmitSurvey(sheet, data) {
   var p = getParticipantDetails(data.studentId, data.school);
-  var surveySheet = sheet.getSheetByName(p.surveySheet);
+  var schoolName = p.school || "A초";
+  
+  var targetSheet = sheet.getSheetByName(schoolName + "_설문응답") ||
+                    sheet.getSheetByName(p.surveySheet) ||
+                    sheet.getSheetByName("설문응답");
+                    
+  if (!targetSheet) {
+    targetSheet = sheet.insertSheet(schoolName + "_설문응답");
+    targetSheet.appendRow(["응답일시", "학교", "개인번호", "이름", "설문구분", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
+  }
   
   var name = (data.name ? data.name : "").toString().trim();
-  var answers = data.answers;
-  var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  var rawAnswers = data.answers || data.surveyAnswers || [];
+  var ansList = [];
   
-  if (surveySheet.getLastRow() === 0) {
-    surveySheet.appendRow(["일시", "학교", "개인번호", "이름", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
-  } else {
-    var lastCol = surveySheet.getLastColumn();
-    if (lastCol < 16) {
-      for (var col = lastCol + 1; col <= 16; col++) {
-        surveySheet.getRange(1, col).setValue("문항" + (col - 4));
+  if (Object.prototype.toString.call(rawAnswers) === '[object Array]') {
+    ansList = rawAnswers;
+  } else if (typeof rawAnswers === 'string') {
+    try {
+      ansList = JSON.parse(rawAnswers);
+      if (Object.prototype.toString.call(ansList) !== '[object Array]') {
+        ansList = [rawAnswers];
       }
+    } catch (e) {
+      ansList = [rawAnswers];
     }
   }
   
-  var rowData = [todayStr, p.school, "'" + p.cleanId, name];
-  var totalQ = (answers && answers.length) ? answers.length : 12;
-  for (var i = 0; i < totalQ; i++) {
-    rowData.push(answers[i] !== undefined && answers[i] !== null ? answers[i] : "");
+  var todayStr = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  
+  var headers = targetSheet.getRange(1, 1, 1, Math.max(17, targetSheet.getLastColumn())).getValues()[0];
+  var hasSurveyTypeCol = String(headers[4] || '').indexOf("설문구분") > -1 || String(headers[0] || '').indexOf("응답일시") > -1;
+  
+  var rowData = [];
+  if (hasSurveyTypeCol) {
+    rowData = [todayStr, p.school, "'" + p.cleanId, name, data.surveyType || "사전설문"];
+  } else {
+    rowData = [todayStr, p.school, "'" + p.cleanId, name];
   }
   
-  surveySheet.appendRow(rowData);
+  for (var i = 0; i < 12; i++) {
+    var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : "";
+    rowData.push(val);
+  }
+  
+  targetSheet.appendRow(rowData);
   SpreadsheetApp.flush();
-  sortSheetByDateAndStudent(surveySheet, rowData.length);
   
   return createJsonResponse({
     success: true,

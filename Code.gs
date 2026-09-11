@@ -1,426 +1,403 @@
-// ========================================================
-// 꼬꼬챌린지 - Option A: 백업 함수명 미찾음 버그 100% 방지 완결판 (Code.gs)
-// (backupToDrive 및 backupAllSheets 두 함수명 완벽 호환 연결)
-// (최종 갱신 시각: 2026-09-01 15:33:00 - 날짜 표기 YYYY-MM-DD HH:mm:ss 통일 반영판)
-// ========================================================
+/**
+ * 꼬꼬챌린지 데이터 관리
+ * 시트: 명단 / 일별기록 / 월별성장 / 설문응답
+ */
 
-// 구글 시트 오픈 시 상단 커스텀 메뉴
+const TZ = 'Asia/Seoul';
+const OLD_SCHOOLS = ['A초', 'B초', 'C초', 'D초'];
+
+const SH = { roster: '명단', daily: '일별기록', growth: '월별성장', survey: '설문응답' };
+
+const HEADERS = {
+  '명단':     ['학생키','학교','개인번호','이름','구분','학년'],
+  '일별기록': ['중복키','일시','학교','학생키','개인번호','이름','구분','날짜','포인트','스티커'],
+  '월별성장': ['중복키','측정일시','학교','학생키','개인번호','이름','구분','측정월','키(cm)','몸무게(kg)','BMI'],
+  '설문응답': ['응답일시','학교','학생키','개인번호','이름','구분','설문구분',
+               '문항1','문항2','문항3','문항4','문항5','문항6',
+               '문항7','문항8','문항9','문항10','문항11','문항12']
+};
+
+function getSS() {
+  try {
+    return SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById('1iAt-AhzYwCIW-si0-BtmVKI1vUujTHzX-e2w_t_3Uvc');
+  } catch(e) {
+    return SpreadsheetApp.openById('1iAt-AhzYwCIW-si0-BtmVKI1vUujTHzX-e2w_t_3Uvc');
+  }
+}
+
 function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu('📁 꼬꼬챌린지 관리')
-    .addItem('💾 내 구글 드라이브에 별도 백업파일 만들기', 'backupToDrive')
-    .addItem('📊 4개 학교 시트/탭 자동 세팅', 'setupAllSchoolSheets')
-    .addItem('🧹 전체 시트 달력 날짜순 정렬', 'sortAllSheetsNow')
+  SpreadsheetApp.getUi().createMenu('📁 꼬꼬챌린지 관리')
+    .addItem('① 시트 준비', 'setup')
+    .addItem('② 기존자료 변환', 'migrate')
+    .addSeparator()
+    .addItem('💾 드라이브에 백업', 'backupToDrive')
+    .addItem('🧹 일별기록 정렬', 'sortDaily')
     .addToUi();
 }
 
-function doPost(e) {
-  const lock = LockService.getScriptLock();
-  const hasLock = lock.tryLock(10000);
-
-  try {
-    const data = JSON.parse(e.postData.contents);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    let school = String(data.school || "").trim();
-    if (!school || school === "undefined" || school === "A초") {
-      const extracted = getSchoolFromId(data.studentId);
-      if (extracted && extracted !== "A초") school = extracted;
-    }
-    
-    if (!school) school = "A초";
-    if (!school.endsWith("초")) school += "초";
-    
-    if (!["A초", "B초", "C초", "D초"].includes(school)) {
-      school = "B초";
-    }
-
-    const action = data.action;
-    const timestamp = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
-
-    // 1. 일일 출석 및 미션 스티커 ➡️ [A초, B초, C초, D초] 매일 출석부 탭 (5열 1일 1행 고정!)
-    if (action === 'log_mission') {
-      const dailySheet = getOrCreateDailySheet(ss, school);
-      upsertDailySticker5Col(dailySheet, school, data, timestamp);
-      return responseJSON({ success: true, message: `${school} 매일출석부 연동 성공` });
-    }
-    
-    // 2. 키, 몸무게 (내몸탐험) ➡️ [A초_월별성장, B초_월별성장 등] 탭
-    else if (action === 'update_bmi') {
-      const monthlySheet = getOrCreateMonthlySheet(ss, `${school}_월별성장`);
-      const cleanId = cleanStudentId(data.studentId);
-      const name = String(data.name || cleanId).trim();
-      const pts = Number(data.totalPoints || 0);
-      const totalStickers = Math.floor(pts / 100);
-      const levelName = getLevelNameFromPoints(pts);
-      
-      monthlySheet.appendRow([
-        timestamp,
-        school,
-        cleanId,
-        name,
-        `${data.month || (new Date().getMonth() + 1)}월`,
-        data.height || 0,
-        data.weight || 0,
-        data.bmi || "",
-        totalStickers,
-        levelName
-      ]);
-
-      sortSheetStudentsFirst(monthlySheet, 10);
-      return responseJSON({ success: true, message: `${school}_월별성장 신체기록 완료` });
-    }
-    
-    // 3. 사전 / 사후 설문조사 ➡️ [A초_설문응답, B초_설문응답 등] 탭 (문항1~문항12 열 개별 분리!)
-    else if (action === 'save_survey' || action === 'submit_survey') {
-      const surveySheet = getOrCreateSurveySheet(ss, `${school}_설문응답`);
-      const cleanId = cleanStudentId(data.studentId);
-      const name = String(data.name || cleanId).trim();
-      
-      let answersArr = [];
-      if (Array.isArray(data.answers)) {
-        answersArr = data.answers;
-      } else if (typeof data.answers === 'string') {
-        try { answersArr = JSON.parse(data.answers); } catch(e) { answersArr = [data.answers]; }
-      }
-
-      const rowData = [
-        timestamp,
-        school,
-        cleanId,
-        name,
-        data.surveyType || "사전설문"
-      ];
-
-      for (let i = 0; i < 12; i++) {
-        rowData.push(answersArr[i] !== undefined ? String(answersArr[i]) : "");
-      }
-
-      surveySheet.appendRow(rowData);
-      sortSheetStudentsFirst(surveySheet, 17);
-      return responseJSON({ success: true, message: `${school}_설문응답 문항별 12열 개별 저장 완료` });
-    }
-
-    return responseJSON({ success: true, message: "수신 완료" });
-  } catch (err) {
-    return responseJSON({ success: false, error: err.toString() });
-  } finally {
-    if (hasLock) lock.releaseLock();
-  }
+function setup() {
+  var SS = getSS();
+  Object.entries(HEADERS).forEach(function (pair) {
+    var name = pair[0], header = pair[1];
+    var sh = SS.getSheetByName(name) || SS.insertSheet(name);
+    sh.getRange(1, 1, 1, header.length).setValues([header])
+      .setFontWeight('bold').setBackground('#e8f0fe');
+    sh.setFrozenRows(1);
+  });
+  Logger.log('시트 준비 완료');
 }
 
-// 💾 내 구글 드라이브에 별도의 새 파일(복사본)로 백업 생성!
 function backupToDrive() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const file = DriveApp.getFileById(ss.getId());
-  const todayStr = Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd_HHmmss");
-  const backupFileName = `[꼬꼬챌린지 백업] ${todayStr}`;
-  
-  // 구글 드라이브에 별도의 새 파일로 복사본 생성!
-  file.makeCopy(backupFileName);
-  
-  SpreadsheetApp.getUi().alert(
-    `🎉 구글 드라이브에 백업 파일이 새로 생성되었습니다!\n\n` +
-    `📁 파일명: ${backupFileName}\n` +
-    `📍 위치: 내 구글 드라이브 (https://drive.google.com)\n\n` +
-    `메인 시트에 탭이 늘어나지 않고 구글 드라이브에 별도 파일로 깔끔하게 보관됩니다!`
-  );
+  var SS = getSS();
+  var name = '[꼬꼬챌린지 백업] ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd_HHmmss');
+  DriveApp.getFileById(SS.getId()).makeCopy(name);
+  Logger.log('백업 완료: ' + name);
 }
 
-// 이전 메뉴 캐시 오류 방지용 호환 연결 함수!
-function backupAllSheets() {
-  backupToDrive();
+/* ── 공통 ────────────────────────────── */
+
+function parseId(rawId, fallbackSchool) {
+  var raw = String(rawId || '').trim();
+  var school = '';
+  var m = raw.match(/^([A-Da-d])초?[_-]/);
+  if (m) school = m[1].toUpperCase() + '초';
+
+  var id = raw.replace(/^[A-Da-d]초[_-]/i, '').replace(/^[A-Da-d][_-]/i, '').trim();
+
+  if (!school) {
+    school = String(fallbackSchool || '').trim();
+    if (school && school.slice(-1) !== '초') school += '초';
+  }
+  if (OLD_SCHOOLS.indexOf(school) < 0) school = 'A초';
+
+  var type;
+  if (/^T-?\d+$/i.test(id)) { type = '2.교사'; id = 'T-' + id.replace(/^T-?/i, ''); }
+  else if (/^guest$/i.test(id)) { type = '3.게스트'; id = 'guest'; }
+  else { type = '1.학생'; }
+
+  return { school: school, id: id, type: type, key: school + '-' + id };
 }
 
-// 4개 학교 탭 자동 생성 세팅
-function setupAllSchoolSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const schools = ["A초", "B초", "C초", "D초"];
-  schools.forEach(sch => {
-    getOrCreateDailySheet(ss, sch);
-    getOrCreateMonthlySheet(ss, `${sch}_월별성장`);
-    getOrCreateSurveySheet(ss, `${sch}_설문응답`);
-  });
-  SpreadsheetApp.getUi().alert("A초, B초, C초, D초 4개 학교의 모든 시트 세팅이 완벽하게 완료되었습니다! 🎉");
-}
-
-// 전체 시트 달력 날짜순 정렬
-function sortAllSheetsNow() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheets = ss.getSheets();
-  sheets.forEach(sheet => {
-    const name = sheet.getName();
-    if (name.includes("_월별성장")) {
-      sortSheetByDateAndStudent(sheet, 10);
-    } else if (name.includes("_설문응답")) {
-      sortSheetByDateAndStudent(sheet, 17);
-    } else if (["A초", "B초", "C초", "D초", "학생기록", "교사기록", "학생일별스티커", "교사일별스티커", "학생설문응답", "교사설문응답"].includes(name)) {
-      const cols = sheet.getLastColumn() || 5;
-      sortSheetByDateAndStudent(sheet, cols);
+var _roster = null;
+function rosterName(key) {
+  if (!_roster) {
+    _roster = {};
+    var SS = getSS();
+    var sh = SS.getSheetByName(SH.roster);
+    if (sh && sh.getLastRow() >= 2) {
+      sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues().forEach(function (r) {
+        if (r[0]) _roster[String(r[0]).trim()] = String(r[3]).trim();
+      });
     }
-  });
-  SpreadsheetApp.getUi().alert("모든 시트의 달력 날짜순 정렬이 완료되었습니다! 🧹📅");
+  }
+  return _roster[key] || '';
 }
 
-function getLevelNameFromPoints(points) {
-  if (points >= 4500) return "4단계 꼬꼬대장";
-  if (points >= 2400) return "3단계 튼튼이";
-  if (points >= 800) return "2단계 삐약이";
-  return "1단계 알콩이";
+function resolveName(key, given, id) {
+  return rosterName(key) || String(given || '').trim() || id;
 }
 
-function upsertDailySticker5Col(sheet, schoolName, data, timestamp) {
-  const rawId = String(data.studentId || "").trim();
-  const cleanId = cleanStudentId(rawId);
-  const name = String(data.name || cleanId).trim();
-  
-  // 💡 오늘 적립 포인트가 50점 이상(최소 운동 인증 등)일 때 일일 스티커 1개, 50점 미만이면 0개
-  const pts = Number(data.points !== undefined ? data.points : 0);
-  const dailyStickerVal = (pts >= 50 || Number(data.dailySticker || 0) >= 1) ? 1 : 0;
-
-  const today = new Date();
-  const curY = today.getFullYear();
-  const curM = today.getMonth() + 1;
-  const curD = today.getDate();
-
-  const lastRow = sheet.getLastRow();
-  let foundRow = -1;
-
-  if (lastRow > 1) {
-    const values = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
-    for (let i = values.length - 1; i >= 0; i--) {
-      const rowDateVal = values[i][0];
-      const rowIdStr = String(values[i][2] || "").trim();
-      const rowCleanId = cleanStudentId(rowIdStr);
-
-      let isSameDate = false;
-      if (rowDateVal instanceof Date) {
-        isSameDate = (rowDateVal.getFullYear() === curY && 
-                      (rowDateVal.getMonth() + 1) === curM && 
-                      rowDateVal.getDate() === curD);
-      } else {
-        const str = String(rowDateVal);
-        isSameDate = str.includes(`${curY}`) && str.includes(`${curD}`);
-      }
-
-      let isSameId = (rowCleanId === cleanId) || (rowIdStr === rawId) || (cleanId.length > 0 && rowCleanId.includes(cleanId));
-
-      if (isSameDate && isSameId) {
-        foundRow = i + 2;
-        break;
+function upsert(sh, dupKey, row) {
+  var last = sh.getLastRow();
+  var targetKey = String(dupKey).trim();
+  if (last >= 2) {
+    var keys = sh.getRange(2, 1, last - 1, 1).getValues();
+    for (var i = 0; i < keys.length; i++) {
+      if (String(keys[i][0]).trim() === targetKey) {
+        sh.getRange(i + 2, 1, 1, row.length).setValues([row]);
+        return '덮어씀';
       }
     }
   }
+  sh.appendRow(row);
+  return '추가함';
+}
 
-  // 💡 50점 미만(0점)이고 기존 행이 없으면 0행을 시트에 생성하지 않고 즉시 종료!
-  if (foundRow <= 1 && dailyStickerVal === 0) {
-    return;
-  }
+function countStickers(key) {
+  var SS = getSS();
+  var sh = SS.getSheetByName(SH.daily);
+  if (!sh || sh.getLastRow() < 2) return 0;
+  var targetKey = String(key || '').trim();
+  if (!targetKey) return 0;
 
-  if (foundRow > 1) {
-    const existingVal = Number(sheet.getRange(foundRow, 5).getValue() || 0);
-    const existingStk = (existingVal >= 1 && existingVal < 10) ? 1 : (existingVal >= 50 ? 1 : 0);
-    const finalStickerVal = Math.max(existingStk, dailyStickerVal);
-
-    if (finalStickerVal >= 1) {
-      sheet.getRange(foundRow, 1).setValue(timestamp);
-      sheet.getRange(foundRow, 3).setValue(cleanId);
-      sheet.getRange(foundRow, 4).setValue(name);
-      sheet.getRange(foundRow, 5).setValue(finalStickerVal);
+  var lastRow = sh.getLastRow();
+  var v = sh.getRange(2, 4, lastRow - 1, 7).getValues();
+  var n = 0;
+  for (var i = 0; i < v.length; i++) {
+    var studentKey = String(v[i][0] || '').trim();
+    if (studentKey === targetKey) {
+      var sVal = Number(v[i][6]);
+      n += (!isNaN(sVal) && sVal > 0) ? sVal : 1;
     }
-  } else if (dailyStickerVal >= 1) {
-    sheet.appendRow([
-      timestamp,
-      schoolName,
-      cleanId,
-      name,
-      1
-    ]);
-    sortSheetByDateAndStudent(sheet, 5);
   }
-
-  sortSheetStudentsFirst(sheet, 5);
+  return n;
 }
 
-function getOrCreateDailySheet(ss, schoolName) {
-  let sheet = ss.getSheetByName(schoolName);
-  if (!sheet) {
-    sheet = ss.insertSheet(schoolName);
-    sheet.appendRow(["일시", "학교", "개인번호", "이름", "일별스티커"]);
-    sheet.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#D8F3DC");
-  }
-  return sheet;
+function levelOf(n) {
+  if (n >= 45) return '4단계 꼬꼬대장';
+  if (n >= 24) return '3단계 튼튼이';
+  if (n >= 8)  return '2단계 삐약이';
+  return '1단계 알콩이';
 }
 
-function getOrCreateMonthlySheet(ss, sheetName) {
-  let sheet = ss.getSheetByName(sheetName);
-  if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
-    sheet.appendRow(["측정일시", "학교", "개인번호", "이름", "측정월", "키(cm)", "몸무게(kg)", "BMI", "총스티커(개)", "레벨"]);
-    sheet.getRange(1, 1, 1, 10).setFontWeight("bold").setBackground("#E2ECE9");
+function ymd(d)   { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd'); }
+function stamp(d) { return Utilities.formatDate(d, TZ, 'yyyy-MM-dd HH:mm:ss'); }
+
+function json(o) {
+  return ContentService.createTextOutput(JSON.stringify(o))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ── 앱 요청 처리 ────────────────────── */
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  var got = lock.tryLock(30000);
+  try {
+    var d = JSON.parse(e.postData.contents);
+    if (d.action === 'log_mission') return json(saveDaily(d));
+    if (d.action === 'update_bmi')  return json(saveGrowth(d));
+    if (d.action === 'save_survey' || d.action === 'submit_survey') return json(saveSurvey(d));
+    return json({ success: true, message: '수신 완료' });
+  } catch (err) {
+    return json({ success: false, error: String(err) });
+  } finally {
+    if (got) lock.releaseLock();
+  }
+}
+
+function saveDaily(d) {
+  var SS = getSS();
+  var p = parseId(d.studentId, d.school);
+  var name = resolveName(p.key, d.name, p.id);
+  var pts = Number(d.points || 0);
+  if (pts < 50 && Number(d.dailySticker || 0) < 1) {
+    return { success: true, message: '포인트 미달' };
+  }
+  var now = new Date(), date = ymd(now);
+  upsert(SS.getSheetByName(SH.daily), p.key + '|' + date,
+    [p.key + '|' + date, stamp(now), p.school, p.key, p.id, name, p.type, date, pts, 1]);
+  var total = countStickers(p.key);
+  return { success: true, 이름: name, 총스티커: total, 레벨: levelOf(total) };
+}
+
+function saveGrowth(d) {
+  var SS = getSS();
+  var p = parseId(d.studentId, d.school);
+  var name = resolveName(p.key, d.name, p.id);
+  var now = new Date();
+  var month = Utilities.formatDate(now, TZ, 'yyyy-MM');
+  var h = Number(d.height || 0), w = Number(d.weight || 0);
+  var bmi = (h > 0 && w > 0) ? Math.round(w / Math.pow(h / 100, 2) * 10) / 10 : '';
+  upsert(SS.getSheetByName(SH.growth), p.key + '|' + month,
+    [p.key + '|' + month, stamp(now), p.school, p.key, p.id, name, p.type, month, h, w, bmi]);
+  var total = countStickers(p.key);
+  return { success: true, 이름: name, BMI: bmi, 총스티커: total, 레벨: levelOf(total) };
+}
+
+function saveSurvey(d) {
+  var SS = getSS();
+  var p = parseId(d.studentId, d.school);
+  var schoolName = p.school || "A초";
+  var targetName = schoolName + "_설문응답";
+  var sh = SS.getSheetByName(targetName) || SS.getSheetByName(p.type === '2.교사' ? '교사설문응답' : '학생설문응답') || SS.getSheetByName(SH.survey);
+  if (!sh) {
+    sh = SS.insertSheet(targetName);
+    sh.appendRow(["응답일시", "학교", "개인번호", "이름", "설문구분", "문항1", "문항2", "문항3", "문항4", "문항5", "문항6", "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"]);
+  }
+  
+  var name = resolveName(p.key, d.name, p.id);
+  var rawAnswers = d.answers || d.surveyAnswers || [];
+  var ansList = [];
+  if (Object.prototype.toString.call(rawAnswers) === '[object Array]') {
+    ansList = rawAnswers;
+  } else if (typeof rawAnswers === 'string') {
+    try {
+      ansList = JSON.parse(rawAnswers);
+      if (Object.prototype.toString.call(ansList) !== '[object Array]') ansList = [rawAnswers];
+    } catch (x) { ansList = [rawAnswers]; }
+  }
+  
+  var headers = sh.getRange(1, 1, 1, Math.max(17, sh.getLastColumn())).getValues()[0];
+  var hasSurveyTypeCol = String(headers[4] || '').indexOf("설문구분") > -1 || String(headers[0] || '').indexOf("응답일시") > -1;
+  
+  var row = [];
+  if (hasSurveyTypeCol) {
+    row = [stamp(new Date()), p.school, p.key, p.id, name, d.surveyType || '사전설문'];
   } else {
-    sheet.getRange(1, 9).setValue("총스티커(개)").setFontWeight("bold");
-    sheet.getRange(1, 10).setValue("레벨").setFontWeight("bold");
-  }
-  return sheet;
-}
-
-function getOrCreateSurveySheet(ss, schoolName) {
-  let sheet = ss.getSheetByName(sheetName);
-  const headers = [
-    "응답일시", "학교", "개인번호", "이름", "설문구분",
-    "문항1", "문항2", "문항3", "문항4", "문항5", "문항6",
-    "문항7", "문항8", "문항9", "문항10", "문항11", "문항12"
-  ];
-  if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
-    sheet.appendRow(headers);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#FDE2E4");
-  } else {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight("bold").setBackground("#FDE2E4");
-  }
-  return sheet;
-}
-
-function cleanStudentId(id) {
-  let str = String(id || "").trim();
-  str = str.replace(/^[A-D]초_/i, '').replace(/^[A-D]_/i, '');
-  return str;
-}
-
-function sortSheetByDateAndStudent(sheet, numCols) {
-  if (!sheet) return;
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return;
-  
-  const cols = numCols || sheet.getLastColumn() || 5;
-  sheet.getRange(2, 1, Math.max(1, lastRow - 1), 1).setNumberFormat("@");
-
-  if (lastRow <= 2) {
-    if (lastRow === 2) {
-      const singleCellVal = sheet.getRange(2, 1).getValue();
-      const formatted = formatDateToStandardString(singleCellVal);
-      if (formatted) sheet.getRange(2, 1).setValue(formatted);
-    }
-    return;
-  }
-
-  const range = sheet.getRange(2, 1, lastRow - 1, cols);
-  const values = range.getValues();
-
-  values.forEach(row => {
-    row[0] = formatDateToStandardString(row[0]);
-  });
-
-  values.sort((a, b) => {
-    // 1. Primary sort: Date/timestamp in Column A ascending (달력 날짜순)
-    const timeA = parseDateValue(a[0]);
-    const timeB = parseDateValue(b[0]);
-
-    if (timeA !== timeB) {
-      return timeA - timeB;
-    }
-
-    // 2. Secondary sort: Student ID / Teacher
-    const idA = String(a[2] || "").trim();
-    const idB = String(b[2] || "").trim();
-
-    const isTeacherA = /^t/i.test(idA);
-    const isTeacherB = /^t/i.test(idB);
-
-    if (isTeacherA !== isTeacherB) {
-      return isTeacherA ? 1 : -1;
-    }
-    return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
-  });
-
-  range.setValues(values);
-}
-
-function formatDateToStandardString(val) {
-  if (!val) return "";
-  if (val instanceof Date) {
-    return Utilities.formatDate(val, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
-  }
-  const str = String(val).trim();
-  if (!str) return "";
-  
-  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(str)) {
-    return str;
+    row = [stamp(new Date()), p.school, p.key, p.id, name, p.type, d.surveyType || '사전설문'];
   }
   
-  const parsed = Date.parse(str);
-  if (!isNaN(parsed)) {
-    return Utilities.formatDate(new Date(parsed), "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
+  for (var i = 0; i < 12; i++) {
+    var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : '';
+    row.push(val);
   }
-  
-  const match = str.match(/(\d{4})[-.\s]+(\d{1,2})[-.\s]+(\d{1,2})(?:\s+(오전|오후)?\s*(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
-  if (match) {
-    const y = parseInt(match[1], 10);
-    const m = parseInt(match[2], 10) - 1;
-    const d = parseInt(match[3], 10);
-    const ampm = match[4];
-    let hh = match[5] ? parseInt(match[5], 10) : 0;
-    const mm = match[6] ? parseInt(match[6], 10) : 0;
-    const ss = match[7] ? parseInt(match[7], 10) : 0;
-    
-    if (ampm === "오후" && hh < 12) hh += 12;
-    if (ampm === "오전" && hh === 12) hh = 0;
-    
-    const dt = new Date(y, m, d, hh, mm, ss);
-    return Utilities.formatDate(dt, "Asia/Seoul", "yyyy-MM-dd HH:mm:ss");
-  }
-  
-  return str;
-}
-
-function sortSheetStudentsFirst(sheet, numCols) {
-  sortSheetByDateAndStudent(sheet, numCols);
-}
-
-function parseDateValue(val) {
-  if (!val) return 0;
-  if (val instanceof Date) return val.getTime();
-  const str = String(val).trim();
-  if (!str) return 0;
-  const parsed = Date.parse(str);
-  if (!isNaN(parsed)) return parsed;
-  const match = str.match(/(\d{4})[-.\/s]+(\d{1,2})[-.\/s]+(\d{1,2})/);
-  if (match) {
-    const y = parseInt(match[1], 10);
-    const m = parseInt(match[2], 10) - 1;
-    const d = parseInt(match[3], 10);
-    return new Date(y, m, d).getTime();
-  }
-  return 0;
-}
-
-function getSchoolFromId(id) {
-  if (!id) return "";
-  const str = String(id).trim().toUpperCase();
-  const first = str.charAt(0);
-  if (["A", "B", "C", "D"].includes(first)) return first + "초";
-  if (str.includes("A초") || str.includes("A_")) return "A초";
-  if (str.includes("B초") || str.includes("B_")) return "B초";
-  if (str.includes("C초") || str.includes("C_")) return "C초";
-  if (str.includes("D초") || str.includes("D_")) return "D초";
-  return "";
+  sh.appendRow(row);
+  return { success: true, message: '설문 저장 완료' };
 }
 
 function doGet(e) {
   try {
-    const rawId = String((e.parameter && e.parameter.studentId) || "").trim();
-    const cleanId = cleanStudentId(rawId);
-    return responseJSON({
-      success: true,
-      student: { id: rawId, name: cleanId || "학생", totalPoints: 0 }
-    });
+    var raw = String((e.parameter && e.parameter.studentId) || '').trim();
+    var p = parseId(raw, e.parameter && e.parameter.school);
+    var total = countStickers(p.key);
+    var SS = getSS();
+    var preSurveyDone = false;
+    var surveySheets = ['학생설문응답', '교사설문응답', SH.survey];
+    for (var s = 0; s < surveySheets.length; s++) {
+      var sh = SS.getSheetByName(surveySheets[s]);
+      if (sh && sh.getLastRow() >= 2) {
+        var sRows = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues();
+        for (var r = 0; r < sRows.length; r++) {
+          var rowSch = String(sRows[r][1] || '').trim();
+          var rowKey = String(sRows[r][2] || '').trim();
+          var rowId = String(sRows[r][3] || '').trim();
+          if (rowKey === p.key || (rowId === p.id && (rowSch === p.school || !rowSch))) {
+            preSurveyDone = true;
+            break;
+          }
+        }
+      }
+      if (preSurveyDone) break;
+    }
+    return json({ success: true, student: {
+      id: raw, name: resolveName(p.key, '', p.id),
+      totalSticker: total, level: levelOf(total), preSurveyDone: preSurveyDone } });
   } catch (err) {
-    return responseJSON({ success: true, student: { id: "guest", name: "학생", totalPoints: 0 } });
+    return json({ success: true, student: { id: 'guest', name: '학생', totalSticker: 0, preSurveyDone: false } });
   }
 }
 
-function responseJSON(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+/* ── 기존자료 변환 ───────────────────── */
+
+function migrate() { runMigrate(); }
+
+function runMigrate() {
+  var SS = getSS();
+  var log = { daily: 0, growth: 0, dupDaily: 0, dupGrowth: 0, survey: 0 };
+  SS.getSheets().forEach(function (sh) {
+    Logger.log('시트 [' + sh.getName() + '] ' + sh.getLastRow() + '행');
+  });
+  migDaily(log);
+  migGrowth(log);
+  migSurvey(log);
+  sortDaily();
+  Logger.log('결과 ' + JSON.stringify(log));
+  return log;
+}
+
+function migDaily(log) {
+  var SS = getSS();
+  var out = SS.getSheetByName(SH.daily);
+  var seen = {}, order = [];
+
+  OLD_SCHOOLS.forEach(function (school) {
+    var sh = SS.getSheetByName(school);
+    if (!sh || sh.getLastRow() < 2) return;
+    sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues().forEach(function (r) {
+      if (!r[0] || !r[2]) return;
+      if (Number(r[4] || 0) < 1) return;
+      var when = new Date(r[0]);
+      if (isNaN(when.getTime())) return;
+
+      var p = parseId(r[2], r[1] || school);
+      var date = ymd(when);
+      var k = p.key + '|' + date;
+
+      if (seen[k]) log.dupDaily++; else order.push(k);
+      seen[k] = [k, stamp(when), p.school, p.key, p.id,
+                 resolveName(p.key, r[3], p.id), p.type, date, 100, 1];
+    });
+  });
+
+  var rows = order.map(function (k) { return seen[k]; })
+                  .sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
+
+  if (out.getLastRow() >= 2) {
+    out.getRange(2, 1, out.getLastRow() - 1, out.getLastColumn()).clearContent();
+  }
+
+  if (rows.length) {
+    out.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+    log.daily = rows.length;
+  }
+}
+
+function migGrowth(log) {
+  var SS = getSS();
+  var out = SS.getSheetByName(SH.growth);
+  var seen = {}, order = [];
+
+  OLD_SCHOOLS.forEach(function (school) {
+    var sh = SS.getSheetByName(school + '_월별성장');
+    if (!sh || sh.getLastRow() < 2) return;
+    sh.getRange(2, 1, sh.getLastRow() - 1, 10).getValues().forEach(function (r) {
+      if (!r[0] || !r[2]) return;
+      var when = new Date(r[0]);
+      if (isNaN(when.getTime())) return;
+
+      var p = parseId(r[2], r[1] || school);
+      var ym = Utilities.formatDate(when, TZ, 'yyyy-MM');
+      var mn = parseInt(String(r[4] || '').replace(/월/g, '').trim(), 10);
+      if (mn >= 1 && mn <= 12) ym = when.getFullYear() + '-' + ('0' + mn).slice(-2);
+
+      var k = p.key + '|' + ym;
+      var H = Number(r[5] || 0), W = Number(r[6] || 0);
+      var bmi = (H > 0 && W > 0) ? Math.round(W / Math.pow(H / 100, 2) * 10) / 10 : '';
+
+      if (seen[k]) log.dupGrowth++; else order.push(k);
+      seen[k] = [k, stamp(when), p.school, p.key, p.id,
+                 resolveName(p.key, r[3], p.id), p.type, ym, H, W, bmi];
+    });
+  });
+
+  var rows = order.map(function (k) { return seen[k]; })
+                  .sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
+
+  if (out.getLastRow() >= 2) {
+    out.getRange(2, 1, out.getLastRow() - 1, out.getLastColumn()).clearContent();
+  }
+
+  if (rows.length) {
+    out.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+    log.growth = rows.length;
+  }
+}
+
+function migSurvey(log) {
+  var SS = getSS();
+  var out = SS.getSheetByName(SH.survey);
+  var rows = [];
+
+  OLD_SCHOOLS.forEach(function (school) {
+    var sh = SS.getSheetByName(school + '_설문응답');
+    if (!sh || sh.getLastRow() < 2) return;
+    sh.getRange(2, 1, sh.getLastRow() - 1, 17).getValues().forEach(function (r) {
+      if (!r[0] || !r[2]) return;
+      var p = parseId(r[2], r[1] || school);
+      var row = [r[0], p.school, p.key, p.id,
+                 resolveName(p.key, r[3], p.id), p.type, r[4] || '사전설문'];
+      for (var i = 5; i < 17; i++) row.push(r[i] !== undefined ? String(r[i]) : '');
+      rows.push(row);
+    });
+  });
+
+  if (out.getLastRow() >= 2) {
+    out.getRange(2, 1, out.getLastRow() - 1, out.getLastColumn()).clearContent();
+  }
+
+  if (rows.length) {
+    out.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+    log.survey = rows.length;
+  }
+}
+
+function sortDaily() {
+  var SS = getSS();
+  var sh = SS.getSheetByName(SH.daily);
+  if (!sh || sh.getLastRow() < 3) return;
+  sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn())
+    .sort([{ column: 7, ascending: true },
+           { column: 4, ascending: true },
+           { column: 8, ascending: true }]);
 }

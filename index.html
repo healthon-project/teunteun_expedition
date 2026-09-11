@@ -2187,6 +2187,16 @@
       return `${prefix}${dispName}`.trim();
     }
 
+    // Helper to extract school name from student ID
+    function getSchoolFromId(id) {
+      if (!id) return '';
+      const str = String(id).trim();
+      if (str.includes('_')) return str.split('_')[0];
+      const m = str.match(/^([A-Da-d])초?[_-]/);
+      if (m) return m[1].toUpperCase() + '초';
+      return '';
+    }
+
 
     // Unified login sync logic (Instant 0.01s login, background GAS sync)
     function executeLoginSync(id, loginBtn, enteredName = '', schoolVal = '') {
@@ -2352,20 +2362,44 @@
             state.student.weight = parseFloat(stored[latestM].weight);
           }
 
+          // Auto-recovery: If GAS sheet doesn't have survey recorded yet but local device saved answers, auto-sync to GAS
+          const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+          if (!res.student.preSurveyDone) {
+            const cachedAnswers = (students[id] && students[id].preSurveyAnswers) || (state.student && state.student.preSurveyAnswers);
+            if (cachedAnswers && cachedAnswers.length > 0) {
+              const activeSchool = state.school || getSchoolFromId(id) || 'A초';
+              fetch(state.gasUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                  action: 'submit_survey',
+                  school: activeSchool,
+                  studentId: id,
+                  name: res.student.name || '',
+                  surveyType: "사전설문",
+                  answers: cachedAnswers
+                })
+              });
+              state.student.preSurveyDone = true;
+            }
+          }
+
           // Sync to local mock database for backup
           localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
           
           // STRICT SYNC: Keep local mock_students DB synchronized with GAS server data
-          const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
           if (students[id]) {
             students[id].totalPoints = res.student.totalPoints;
             students[id].history = res.student.history || [];
+            students[id].preSurveyDone = state.student.preSurveyDone;
             if (latestM > 0) {
               students[id].height = state.student.height;
               students[id].weight = state.student.weight;
             }
             localStorage.setItem('mock_students', JSON.stringify(students));
           }
+          updateSurveyButtonUI();
           callback(true);
         } else {
           callback(false);
@@ -3116,6 +3150,7 @@
               missionType: "일별스티커",
               points: pointsEarned,
               totalPoints: totalPts,
+              stickerCount: Math.floor(totalPts / 100) || getStickerCount(),
               dailySticker: dailyStk,
               weight: ""
             })
@@ -3293,7 +3328,8 @@
             weight: wVal,
             bmi: bmiVal,
             month: month,
-            totalPoints: totalPts
+            totalPoints: totalPts,
+            stickerCount: getStickerCount()
           })
         }).catch(err => console.error("GAS BMI mission log error", err));
       }
@@ -3792,13 +3828,13 @@
           saveLocalSurvey(answersText);
         }, 800);
       } else {
-        const activeSchool = state.school || getSchoolFromId(state.studentId) || 'B초';
+        const activeSchool = state.school || getSchoolFromId(state.studentId) || 'A초';
         fetch(state.gasUrl, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
-            action: 'save_survey',
+            action: 'submit_survey',
             school: activeSchool,
             studentId: state.studentId,
             name: state.student ? state.student.name : '',
