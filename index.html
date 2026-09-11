@@ -1758,33 +1758,6 @@
       if (state.isOffline) {
         refreshStudentData();
       } else {
-        // Realtime GAS sync
-        if (todayTotal > 0) {
-          const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
-          const totalSticker = Math.floor(totalPts / 100);
-
-          fetch(state.gasUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'log_mission',
-              school: state.school || getSchoolFromId(state.studentId) || 'A초',
-              studentId: state.studentId,
-              name: state.student ? state.student.name : '',
-              missionType: missionName || "일별스티커",
-              points: todayTotal,
-              totalPoints: totalPts,
-              stickerCount: totalSticker,
-              dailySticker: todayTotal >= 50 ? 1 : 0,
-              isSetAbsolute: true,
-              weight: ""
-            })
-          }).catch(err => {
-            console.error("GAS sync error", err);
-          });
-        }
-
         // Sync local storage cache instantly
         localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
 

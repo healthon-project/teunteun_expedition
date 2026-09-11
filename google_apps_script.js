@@ -1,10 +1,10 @@
 /**
  * 꼬꼬챌린지 데이터 관리 (Google Apps Script)
- * 학교별 4개 시트 (총 12개 시트 구조):
- *  - A초, B초, C초 (일일기록: 학생 위, 교사 아래 t-전화번호4자리)
- *  - A초_내몸탐험, B초_내몸탐험, C초_내몸탐험 (신체기록/월별성장)
- *  - A초_학생설문응답, B초_학생설문응답, C초_학생설문응답
- *  - A초_교사설문응답, B초_교사설문응답, C초_교사설문응답
+ * 학교당 총 4개 시트 (3개교 총 12개 시트 전용 구조):
+ *  1) A초 (일일기록: 스티커 1개로 학생/교사 하루 당 단 1행만 기록 및 정렬)
+ *  2) A초_내몸탐험 (월1회 신체기록)
+ *  3) A초_학생설문응답
+ *  4) A초_교사설문응답
  */
 
 const TZ = 'Asia/Seoul';
@@ -38,7 +38,7 @@ function onOpen() {
 function setup() {
   var SS = getSS();
   
-  // 글로벌 통합 시트 자동 정리 (학생기록, 교사기록, 스티커 탭 등 삭제)
+  // 글로벌 통합 시트 자동 정리 (불필요 탭 삭제)
   var deleteGlobalTabs = [
     '학생기록', '교사기록', '학생일별스티커', '교사일별스티커',
     '학생설문응답', '교사설문응답', '명단', '일별기록', '월별성장', '설문응답'
@@ -50,7 +50,7 @@ function setup() {
     }
   });
 
-  // 학교별 4개 시트 생성 (총 3학교 * 4 = 12개 시트)
+  // 학교당 4개 시트 생성 (총 3개교 * 4 = 12개 시트)
   SCHOOLS.forEach(function(school) {
     // 1. 일일기록 ({학교})
     var sh1 = SS.getSheetByName(school) || SS.insertSheet(school);
@@ -76,7 +76,7 @@ function setup() {
       .setFontWeight('bold').setBackground('#f8cbad');
     sh4.setFrozenRows(1);
   });
-  Logger.log('학교별 4개 시트 (총 12개 시트) 준비 완료');
+  Logger.log('학교당 4개 시트 (총 12개 시트) 준비 완료');
 }
 
 function backupToDrive() {
@@ -121,6 +121,16 @@ function resolveName(key, given, id) {
   return String(given || '').trim() || id;
 }
 
+function formatDateStr(val) {
+  if (!val) return '';
+  if (Object.prototype.toString.call(val) === '[object Date]') {
+    return Utilities.formatDate(val, TZ, 'yyyy-MM-dd');
+  }
+  var s = String(val).trim();
+  var m = s.match(/(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : s;
+}
+
 function upsert(sh, dupKey, row) {
   if (!sh) return '시트없음';
   var last = sh.getLastRow();
@@ -136,6 +146,61 @@ function upsert(sh, dupKey, row) {
   }
   appendOrInsertRow(sh, row);
   return '추가함';
+}
+
+// 스티커 1개로 단 1줄만 보존 (당일 중복 덮어쓰기)
+function upsertDailyRow(sh, p, name, date, now, pts, sticker) {
+  if (!sh) return;
+  var lastRow = sh.getLastRow();
+  var todayDateStr = ymd(now);
+  var targetKey = String(p.key || '').trim();
+  var targetId = String(p.id || '').trim();
+  var finalSticker = 1; // 스티커 1개 고정
+
+  if (lastRow >= 2) {
+    var data = sh.getRange(2, 1, lastRow - 1, Math.max(10, sh.getLastColumn())).getValues();
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      var rDate1 = formatDateStr(row[0]);
+      var rDate2 = formatDateStr(row[1]);
+      var rDate8 = formatDateStr(row[7]);
+      var isToday = (rDate1 === todayDateStr || rDate2 === todayDateStr || rDate8 === todayDateStr);
+
+      var rDupKey = String(row[0] || '').trim();
+      var rKey = String(row[3] || '').trim();
+      var rId1 = String(row[2] || '').trim().replace(/^'/, '');
+      var rId2 = String(row[4] || '').trim().replace(/^'/, '');
+
+      var isSameStudent = (rDupKey.indexOf(targetKey) === 0 || rKey === targetKey || rId1 === targetId || rId2 === targetId);
+
+      if (isToday && isSameStudent) {
+        var targetRowIndex = i + 2;
+        var headers = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getValues()[0];
+        var firstColName = String(headers[0] || '').trim();
+
+        if (firstColName === '중복키') {
+          var updatedRow = [targetKey + '|' + todayDateStr, stamp(now), p.school, targetKey, targetId, name, p.type, todayDateStr, pts, finalSticker];
+          sh.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
+        } else {
+          var updatedRow = [stamp(now), p.school, "'" + targetId, name, p.type, finalSticker];
+          sh.getRange(targetRowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
+        }
+        return 'updated';
+      }
+    }
+  }
+
+  // 오늘자 기록이 없을 때만 1줄 추가 (스티커 1개)
+  var headers = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getValues()[0];
+  var firstColName = String(headers[0] || '').trim();
+  if (firstColName === '중복키') {
+    var newRow = [targetKey + '|' + todayDateStr, stamp(now), p.school, targetKey, targetId, name, p.type, todayDateStr, pts, finalSticker];
+    appendOrInsertRow(sh, newRow);
+  } else {
+    var newRow = [stamp(now), p.school, "'" + targetId, name, p.type, finalSticker];
+    appendOrInsertRow(sh, newRow);
+  }
+  return 'inserted';
 }
 
 function countStickers(key, schoolName) {
@@ -243,24 +308,13 @@ function saveDaily(d) {
   var schoolName = p.school || "A초";
   var name = resolveName(p.key, d.name, p.id);
   var pts = Number(d.points || 0);
-  var sticker = (pts >= 50 || Number(d.dailySticker || 0) >= 1) ? 1 : 0;
+  var sticker = 1; // 스티커 1개 고정
   var now = new Date(), date = ymd(now);
-  var dupKey = p.key + '|' + date;
 
   var sh = SS.getSheetByName(schoolName) || SS.insertSheet(schoolName);
-  var headers = [];
-  if (sh.getLastRow() >= 1) {
-    headers = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getValues()[0];
-  }
-  var firstColName = String(headers[0] || '').trim();
 
-  if (firstColName === '중복키') {
-    var row = [dupKey, stamp(now), p.school, p.key, p.id, name, p.type, date, pts, sticker];
-    upsert(sh, dupKey, row);
-  } else {
-    var row = [stamp(now), p.school, "'" + p.id, name, p.type, sticker > 0 ? sticker : pts];
-    appendOrInsertRow(sh, row);
-  }
+  // 스티커 1개로 당일 기록 단 1줄만 보존/갱신
+  upsertDailyRow(sh, p, name, date, now, pts, sticker);
 
   // 학생(1.학생) 위, 교사(2.교사) 아래 자동 정렬
   sortDailySheet(sh);
