@@ -3,7 +3,7 @@
  * 학교별 전용 시트 구조:
  *  1) A초 (일일기록: 스티커 1개로 학생 위, 교사 t-전화번호4자리 아래 정렬)
  *  2) A초_내몸탐험 (월1회 신체기록)
- *  3) A초_설문응답 (학생 + 교사 통합 설문응답 / 문항1 밀림 방지 / 교사 이름/ID 앞 't-' 부착)
+ *  3) A초_설문응답 (학생 + 교사 통합 설문응답 / '사전설문' 단어 전면 제거 / 맨윗줄 문항1~문항12 헤더 완벽 복구)
  */
 
 const TZ = 'Asia/Seoul';
@@ -25,7 +25,7 @@ function getSS() {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('📁 꼬꼬챌린지 관리')
-    .addItem('① 학교별 시트 준비 (문항1 밀림 수정 탭 정리)', 'setup')
+    .addItem('① 학교별 시트 준비 (맨윗줄 헤더 복구 & 사전설문 삭제)', 'setup')
     .addSeparator()
     .addItem('💾 드라이브에 백업', 'backupToDrive')
     .addItem('🧹 일별기록 정렬 (학생 위 / 교사 아래)', 'sortDailyAll')
@@ -52,27 +52,90 @@ function setup() {
     }
   });
 
-  // 학교당 시트 생성
+  // 학교당 3개 시트 생성 및 헤더 행(맨윗줄) 강제 설정
   SCHOOLS.forEach(function(school) {
     // 1. 일일기록 ({학교})
     var sh1 = SS.getSheetByName(school) || SS.insertSheet(school);
-    sh1.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']])
-      .setFontWeight('bold').setBackground('#e8f0fe');
-    sh1.setFrozenRows(1);
+    var first1 = (sh1.getLastRow() > 0) ? String(sh1.getRange(1, 1).getValue() || '').trim() : '';
+    if (first1 !== '중복키') {
+      if (sh1.getLastRow() > 0) sh1.insertRowBefore(1);
+      sh1.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']])
+        .setFontWeight('bold').setBackground('#e8f0fe');
+      sh1.setFrozenRows(1);
+    }
 
     // 2. 내몸탐험 ({학교}_내몸탐험)
     var sh2 = SS.getSheetByName(school + '_내몸탐험') || SS.getSheetByName(school + '_월별성장') || SS.insertSheet(school + '_내몸탐험');
-    sh2.getRange(1, 1, 1, 11).setValues([HEADERS['월별성장']])
-      .setFontWeight('bold').setBackground('#e2f0d9');
-    sh2.setFrozenRows(1);
+    var first2 = (sh2.getLastRow() > 0) ? String(sh2.getRange(1, 1).getValue() || '').trim() : '';
+    if (first2 !== '중복키') {
+      if (sh2.getLastRow() > 0) sh2.insertRowBefore(1);
+      sh2.getRange(1, 1, 1, 11).setValues([HEADERS['월별성장']])
+        .setFontWeight('bold').setBackground('#e2f0d9');
+      sh2.setFrozenRows(1);
+    }
 
-    // 3. 통합 설문응답 ({학교}_설문응답: 문항1 밀림 방지 헤더)
+    // 3. 통합 설문응답 ({학교}_설문응답: 맨윗줄 문항1~문항12 헤더 복구 & 사전설문 삭제)
     var sh3 = SS.getSheetByName(school + '_설문응답') || SS.insertSheet(school + '_설문응답');
-    sh3.getRange(1, 1, 1, 17).setValues([HEADERS['설문응답']])
-      .setFontWeight('bold').setBackground('#fff2cc');
-    sh3.setFrozenRows(1);
+    cleanAndFixSurveySheet(sh3);
   });
-  Logger.log('학교별 통합 시트 준비 완료');
+  Logger.log('학교별 시트 헤더 복구 및 준비 완료');
+}
+
+function cleanAndFixSurveySheet(sh) {
+  if (!sh) return;
+  
+  var expectedHeaders = HEADERS['설문응답']; // 17개 열: 응답일시, 학교, 개인번호, 이름, 구분, 문항1~문항12
+  var lastRow = sh.getLastRow();
+  
+  if (lastRow === 0) {
+    sh.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders])
+      .setFontWeight('bold').setBackground('#fff2cc');
+    sh.setFrozenRows(1);
+    return;
+  }
+
+  var firstCell = String(sh.getRange(1, 1).getValue() || '').trim();
+
+  if (firstCell !== '응답일시') {
+    sh.insertRowBefore(1);
+    sh.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders])
+      .setFontWeight('bold').setBackground('#fff2cc');
+    sh.setFrozenRows(1);
+    lastRow = sh.getLastRow();
+  } else {
+    sh.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders])
+      .setFontWeight('bold').setBackground('#fff2cc');
+    sh.setFrozenRows(1);
+  }
+
+  if (lastRow >= 2) {
+    var maxCols = Math.max(18, sh.getLastColumn());
+    var dataRange = sh.getRange(2, 1, lastRow - 1, maxCols);
+    var rows = dataRange.getValues();
+    var modified = false;
+
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      var foundIdx = -1;
+      for (var c = 0; c < row.length; c++) {
+        if (String(row[c] || '').trim() === '사전설문') {
+          foundIdx = c;
+          break;
+        }
+      }
+      if (foundIdx !== -1) {
+        row.splice(foundIdx, 1);
+        while (row.length < 17) row.push('');
+        rows[r] = row.slice(0, 17);
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      sh.getRange(2, 1, rows.length, 17).setValues(rows);
+      Logger.log(sh.getName() + ' 사전설문 제거 및 열 밀림 수정 완료');
+    }
+  }
 }
 
 function backupToDrive() {
@@ -347,6 +410,9 @@ function saveSurvey(d) {
   var targetSheetName = schoolName + "_설문응답";
   var sh = SS.getSheetByName(targetSheetName) || SS.insertSheet(targetSheetName);
 
+  // 1행 맨윗줄 헤더 복구 & 사전설문 삭제 상태 확인 및 적용
+  cleanAndFixSurveySheet(sh);
+
   var name = resolveName(p.key, d.name, p.id);
   var idToSave = p.id;
   
@@ -366,28 +432,14 @@ function saveSurvey(d) {
       if (Object.prototype.toString.call(ansList) !== '[object Array]') ansList = [rawAnswers];
     } catch (x) { ansList = [rawAnswers]; }
   }
-  
-  var headers = [];
-  if (sh.getLastRow() >= 1) {
-    headers = sh.getRange(1, 1, 1, Math.max(17, sh.getLastColumn())).getValues()[0];
-  }
-  
-  var hasSurveyTypeCol = false;
-  for (var h = 0; h < headers.length; h++) {
-    if (String(headers[h] || '').indexOf('설문구분') > -1) {
-      hasSurveyTypeCol = true;
-      break;
-    }
-  }
 
-  // 문항1 밀림 방지: '설문구분' 헤더 열이 있는 경우에만 '사전설문' 항목 추가
+  // '사전설문' 단어를 전면 제거한 17개 열 정밀 구조:
+  // [응답일시, 학교, 개인번호, 이름, 구분, 문항1, 문항2, ..., 문항12]
   var row = [stamp(new Date()), p.school, "'" + idToSave, name, p.type];
-  if (hasSurveyTypeCol) {
-    row.push(d.surveyType || '사전설문');
-  }
 
   for (var i = 0; i < 12; i++) {
     var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : '';
+    if (val === '사전설문') val = '';
     row.push(val);
   }
   appendOrInsertRow(sh, row);
@@ -411,9 +463,10 @@ function doGet(e) {
         var sRows = sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues();
         for (var r = 0; r < sRows.length; r++) {
           var rowSch = String(sRows[r][1] || '').trim();
-          var rowKey = String(sRows[r][2] || '').trim();
-          var rowId = String(sRows[r][3] || '').trim().replace(/^'/, '');
-          if (rowKey === p.key || (rowId === p.id && (rowSch === p.school || !rowSch))) {
+          var rowId = String(sRows[r][2] || '').trim().replace(/^'/, '');
+          var targetId = p.id;
+          if (isTeacher && targetId.indexOf('t-') !== 0) targetId = 't-' + targetId.replace(/^[Tt]-?/, '');
+          if ((rowId === targetId || rowId === p.id) && (rowSch === p.school || !rowSch)) {
             preSurveyDone = true;
             break;
           }
