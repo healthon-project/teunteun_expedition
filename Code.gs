@@ -1,9 +1,9 @@
 /**
  * 꼬꼬챌린지 데이터 관리 (Google Apps Script)
  * 학교별 시트 명확 매핑 & 데이터 분리:
- *  1) {학교}_일일기록 (예: A초_일일기록, B초_일일기록, C초_일일기록): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
- *  2) {학교}_내몸탐험 (예: A초_내몸탐험): 월1회 신체기록 (키, 몸무게, BMI, 총스티커, 레벨 / 교사 t-전화번호4자리)
- *  3) {학교}_설문응답 (예: A초_설문응답): 학생 + 교사 통합 설문응답 (교사 t-전화번호4자리 / '사전설문' 제거 / 맨윗줄 헤더 보존)
+ *  1) {학교} 일일기록 (예: "A초 일일기록", "A초_일일기록", "A초"): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
+ *  2) {학교}_내몸탐험 (예: "A초_내몸탐험", "A초 내몸탐험"): 월1회 신체기록 (키, 몸무게, BMI, 총스티커, 레벨 / 교사 t-전화번호4자리)
+ *  3) {학교}_설문응답 (예: "A초_설문응답", "A초 설문응답"): 학생 + 교사 통합 설문응답 (교사 t-전화번호4자리 / '사전설문' 제거 / 맨윗줄 헤더 보존)
  */
 
 const TZ = 'Asia/Seoul';
@@ -33,51 +33,62 @@ function onOpen() {
 }
 
 function parseSchoolName(schoolInput) {
-  var str = String(schoolInput || 'A초').trim().toUpperCase();
-  var m = str.match(/^([A-Za-z0-9가-힣]+)초?/);
+  var str = String(schoolInput || 'A초').trim();
+  var m = str.match(/([A-Za-z0-9가-힣]+)초?/);
   if (m) {
-    var name = m[1];
-    if (name.indexOf('초') < 0) name += '초';
-    return name;
+    var letter = m[1].toUpperCase();
+    if (letter.indexOf('초') < 0) letter += '초';
+    return letter;
   }
   return 'A초';
 }
 
 /**
- * 1. 일일기록 시트 전용 탐색 (예: "A초_일일기록", "A초 일일기록", "A초")
+ * 1. 일일기록 시트 전용 탐색 ("A초 일일기록", "A초_일일기록", "A초일일기록", "A초" 완벽 지원)
  */
 function getDailySheet(SS, school) {
-  var name = parseSchoolName(school);
-  
-  // 1) "A초_일일기록", "A초 일일기록", "A초" 직관 매칭
-  var sh1 = SS.getSheetByName(name + '_일일기록') || SS.getSheetByName(name + ' 일일기록') || SS.getSheetByName(name);
-  if (sh1) return sh1;
-  
-  // 2) 시트 이름에 학교이름과 "일일기록" 단어가 모두 들어간 시트 탐색
+  var name = parseSchoolName(school); // 예: "A초"
   var sheets = SS.getSheets();
+
+  // 1) 띄어쓰기/언더바 포함 직접 시트 검색
+  var candidates = [
+    name + ' 일일기록',
+    name + '_일일기록',
+    name + '일일기록',
+    name
+  ];
+  for (var k = 0; k < candidates.length; k++) {
+    var sh = SS.getSheetByName(candidates[k]);
+    if (sh) return sh;
+  }
+
+  // 2) 대소문자 무관학교 이름("A초")과 "일일기록" 단어가 포함된 시트 검색
   for (var i = 0; i < sheets.length; i++) {
     var sName = sheets[i].getName().trim();
-    var upperName = sName.toUpperCase();
-    if (upperName.indexOf(name.toUpperCase()) === 0 && sName.indexOf('일일기록') >= 0) {
+    var upper = sName.toUpperCase();
+    if (upper.indexOf(name.toUpperCase()) === 0 && sName.indexOf('일일기록') >= 0) {
       return sheets[i];
     }
   }
 
-  // 3) 언더바 없는 순수 학교 시트 탐색
+  // 3) 학교 이름("A초")으로 시작하고 "내몸탐험", "성장", "설문"이 포함되지 않은 시트 탐색
   for (var i = 0; i < sheets.length; i++) {
     var sName = sheets[i].getName().trim();
-    if (sName.toUpperCase() === name.toUpperCase()) return sheets[i];
+    var upper = sName.toUpperCase();
+    if (upper.indexOf(name.toUpperCase()) === 0 && sName.indexOf('내몸탐험') < 0 && sName.indexOf('성장') < 0 && sName.indexOf('설문') < 0) {
+      return sheets[i];
+    }
   }
 
-  // 기존 시트가 없을 경우 생성
-  var newSh = SS.insertSheet(name + '_일일기록');
+  // 4) 기존 시트가 전혀 없을 때 신규 생성
+  var newSh = SS.insertSheet(name + ' 일일기록');
   newSh.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']]).setFontWeight('bold').setBackground('#e8f0fe');
   newSh.setFrozenRows(1);
   return newSh;
 }
 
 /**
- * 2. 내몸탐험 시트 전용 탐색 (예: "A초_내몸탐험")
+ * 2. 내몸탐험 시트 전용 탐색 (예: "A초_내몸탐험", "A초 내몸탐험")
  */
 function getGrowthSheet(SS, school) {
   var name = parseSchoolName(school);
@@ -99,7 +110,7 @@ function getGrowthSheet(SS, school) {
 }
 
 /**
- * 3. 설문응답 시트 전용 탐색 (예: "A초_설문응답")
+ * 3. 설문응답 시트 전용 탐색 (예: "A초_설문응답", "A초 설문응답")
  */
 function getSurveySheet(SS, school) {
   var name = parseSchoolName(school);
@@ -433,7 +444,7 @@ function doPost(e) {
   }
 }
 
-// 1. 일일기록 저장 ({학교}_일일기록 또는 {학교} 시트에 무조건 저장을 보장!)
+// 1. 일일기록 저장 ("A초 일일기록", "A초_일일기록", "A초" 시트 중 어느것이든 무조건 정밀 저장을 보장!)
 function saveDaily(d) {
   var SS = getSS();
   var p = parseId(d.studentId, d.school);
@@ -455,7 +466,7 @@ function saveDaily(d) {
   var sticker = 1;
   var now = new Date(), date = ymd(now);
 
-  // 일일기록 시트 (예: A초_일일기록 또는 A초)에 기록!
+  // 무조건 일일기록 시트에 기록!
   var sh = getDailySheet(SS, schoolName);
   upsertDailyRow(sh, p, name, date, now, pts, sticker);
   sortDailySheet(sh);
