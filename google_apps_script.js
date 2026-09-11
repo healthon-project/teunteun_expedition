@@ -1,7 +1,7 @@
 /**
  * 꼬꼬챌린지 데이터 관리 (Google Apps Script)
  * 학교별 시트 명확 매핑 & 데이터 분리:
- *  1) {학교} (예: A초, B초, C초, D초): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
+ *  1) {학교}_일일기록 (예: A초_일일기록, B초_일일기록, C초_일일기록): 일일 로그인/미션 기록 (당일 1줄만 보존 / 스티커 1개 / 학생 위, 교사 t-전화번호4자리 아래 정렬)
  *  2) {학교}_내몸탐험 (예: A초_내몸탐험): 월1회 신체기록 (키, 몸무게, BMI, 총스티커, 레벨 / 교사 t-전화번호4자리)
  *  3) {학교}_설문응답 (예: A초_설문응답): 학생 + 교사 통합 설문응답 (교사 t-전화번호4자리 / '사전설문' 제거 / 맨윗줄 헤더 보존)
  */
@@ -44,32 +44,33 @@ function parseSchoolName(schoolInput) {
 }
 
 /**
- * 1. 일일기록 시트 전용 탐색 (예: "A초", "B초", "C초")
- * 언더바(_)가 없는 순수 학교 시트에만 연결되도록 안전 보장!
+ * 1. 일일기록 시트 전용 탐색 (예: "A초_일일기록", "A초 일일기록", "A초")
  */
 function getDailySheet(SS, school) {
   var name = parseSchoolName(school);
   
-  // 1) 정확한 이름 매칭 ("A초")
-  var sh = SS.getSheetByName(name);
-  if (sh) return sh;
+  // 1) "A초_일일기록", "A초 일일기록", "A초" 직관 매칭
+  var sh1 = SS.getSheetByName(name + '_일일기록') || SS.getSheetByName(name + ' 일일기록') || SS.getSheetByName(name);
+  if (sh1) return sh1;
   
-  // 2) 대소문자 및 트림 매칭 (언더바 없는 탭 검색)
+  // 2) 시트 이름에 학교이름과 "일일기록" 단어가 모두 들어간 시트 탐색
   var sheets = SS.getSheets();
   for (var i = 0; i < sheets.length; i++) {
     var sName = sheets[i].getName().trim();
-    if (sName.toUpperCase() === name.toUpperCase()) return sheets[i];
-  }
-  
-  for (var i = 0; i < sheets.length; i++) {
-    var sName = sheets[i].getName().trim();
-    if (sName.toUpperCase().indexOf(name.toUpperCase()) === 0 && sName.indexOf('_') < 0) {
+    var upperName = sName.toUpperCase();
+    if (upperName.indexOf(name.toUpperCase()) === 0 && sName.indexOf('일일기록') >= 0) {
       return sheets[i];
     }
   }
 
-  // 기존 시트 없을 경우 생성
-  var newSh = SS.insertSheet(name);
+  // 3) 언더바 없는 순수 학교 시트 탐색
+  for (var i = 0; i < sheets.length; i++) {
+    var sName = sheets[i].getName().trim();
+    if (sName.toUpperCase() === name.toUpperCase()) return sheets[i];
+  }
+
+  // 기존 시트가 없을 경우 생성
+  var newSh = SS.insertSheet(name + '_일일기록');
   newSh.getRange(1, 1, 1, 10).setValues([HEADERS['일별기록']]).setFontWeight('bold').setBackground('#e8f0fe');
   newSh.setFrozenRows(1);
   return newSh;
@@ -80,7 +81,7 @@ function getDailySheet(SS, school) {
  */
 function getGrowthSheet(SS, school) {
   var name = parseSchoolName(school);
-  var sh = SS.getSheetByName(name + '_내몸탐험');
+  var sh = SS.getSheetByName(name + '_내몸탐험') || SS.getSheetByName(name + ' 내몸탐험');
   if (sh) return sh;
 
   var sheets = SS.getSheets();
@@ -102,7 +103,7 @@ function getGrowthSheet(SS, school) {
  */
 function getSurveySheet(SS, school) {
   var name = parseSchoolName(school);
-  var sh = SS.getSheetByName(name + '_설문응답');
+  var sh = SS.getSheetByName(name + '_설문응답') || SS.getSheetByName(name + ' 설문응답');
   if (sh) return sh;
 
   var sheets = SS.getSheets();
@@ -208,8 +209,16 @@ function backupToDrive() {
 function parseId(rawId, fallbackSchool) {
   var raw = String(rawId || '').trim();
   var school = '';
+
+  if (raw.indexOf('_') > 0) {
+    var parts = raw.split('_');
+    school = parts[0].trim();
+    if (school.indexOf('초') < 0) school += '초';
+    raw = parts.slice(1).join('_').trim();
+  }
+
   var m = raw.match(/^([A-Za-z0-9가-힣]+)초?[_-]/);
-  if (m) {
+  if (m && !school) {
     school = m[1].toUpperCase();
     if (school.indexOf('초') < 0) school += '초';
   }
@@ -424,7 +433,7 @@ function doPost(e) {
   }
 }
 
-// 1. 일일기록 저장 ({학교}: A초, B초, C초 시트에 무조건 저장을 보장!)
+// 1. 일일기록 저장 ({학교}_일일기록 또는 {학교} 시트에 무조건 저장을 보장!)
 function saveDaily(d) {
   var SS = getSS();
   var p = parseId(d.studentId, d.school);
@@ -446,7 +455,7 @@ function saveDaily(d) {
   var sticker = 1;
   var now = new Date(), date = ymd(now);
 
-  // 무조건 순수 학교 시트(A초, B초, C초 등)에 기록! (절대 _내몸탐험이나 _설문응답으로 가지 않음)
+  // 일일기록 시트 (예: A초_일일기록 또는 A초)에 기록!
   var sh = getDailySheet(SS, schoolName);
   upsertDailyRow(sh, p, name, date, now, pts, sticker);
   sortDailySheet(sh);
