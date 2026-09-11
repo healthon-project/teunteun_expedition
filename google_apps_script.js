@@ -1,10 +1,9 @@
 /**
  * 꼬꼬챌린지 데이터 관리 (Google Apps Script)
- * 학교당 총 4개 시트 (3개교 총 12개 시트 전용 구조):
- *  1) A초 (일일기록: 스티커 1개로 학생/교사 하루 당 단 1행만 기록 및 정렬)
+ * 학교별 전용 시트 구조:
+ *  1) A초 (일일기록: 스티커 1개로 학생 위, 교사 t-전화번호4자리 아래 정렬)
  *  2) A초_내몸탐험 (월1회 신체기록)
- *  3) A초_학생설문응답
- *  4) A초_교사설문응답
+ *  3) A초_설문응답 (학생 + 교사 통합 설문응답 / 교사 이름/ID 앞 't-' 부착)
  */
 
 const TZ = 'Asia/Seoul';
@@ -13,7 +12,7 @@ const SCHOOLS = ['A초', 'B초', 'C초'];
 const HEADERS = {
   '일별기록': ['중복키','일시','학교','학생키','개인번호','이름','구분','날짜','포인트','스티커'],
   '월별성장': ['중복키','측정일시','학교','학생키','개인번호','이름','구분','측정월','키(cm)','몸무게(kg)','BMI'],
-  '설문응답': ['응답일시','학교','학생키','개인번호','이름','구분','설문구분',
+  '설문응답': ['응답일시','학교','개인번호','이름','구분','설문구분',
                '문항1','문항2','문항3','문항4','문항5','문항6',
                '문항7','문항8','문항9','문항10','문항11','문항12']
 };
@@ -28,7 +27,7 @@ function getSS() {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('📁 꼬꼬챌린지 관리')
-    .addItem('① 학교별 12개 시트 준비 (불필요 탭 삭제)', 'setup')
+    .addItem('① 학교별 시트 준비 (통합 설문응답 탭 정리)', 'setup')
     .addSeparator()
     .addItem('💾 드라이브에 백업', 'backupToDrive')
     .addItem('🧹 일별기록 정렬 (학생 위 / 교사 아래)', 'sortDailyAll')
@@ -38,19 +37,24 @@ function onOpen() {
 function setup() {
   var SS = getSS();
   
-  // 글로벌 통합 시트 자동 정리 (불필요 탭 삭제)
-  var deleteGlobalTabs = [
+  // 글로벌 및 분리 설문 탭 자동 정리
+  var deleteTabs = [
     '학생기록', '교사기록', '학생일별스티커', '교사일별스티커',
     '학생설문응답', '교사설문응답', '명단', '일별기록', '월별성장', '설문응답'
   ];
-  deleteGlobalTabs.forEach(function(name) {
+  SCHOOLS.forEach(function(school) {
+    deleteTabs.push(school + '_학생설문응답');
+    deleteTabs.push(school + '_교사설문응답');
+  });
+
+  deleteTabs.forEach(function(name) {
     var target = SS.getSheetByName(name);
     if (target) {
       try { SS.deleteSheet(target); } catch(e) {}
     }
   });
 
-  // 학교당 4개 시트 생성 (총 3개교 * 4 = 12개 시트)
+  // 학교당 시트 생성
   SCHOOLS.forEach(function(school) {
     // 1. 일일기록 ({학교})
     var sh1 = SS.getSheetByName(school) || SS.insertSheet(school);
@@ -64,19 +68,13 @@ function setup() {
       .setFontWeight('bold').setBackground('#e2f0d9');
     sh2.setFrozenRows(1);
 
-    // 3. 학생설문응답 ({학교}_학생설문응답)
-    var sh3 = SS.getSheetByName(school + '_학생설문응답') || SS.insertSheet(school + '_학생설문응답');
-    sh3.getRange(1, 1, 1, 19).setValues([HEADERS['설문응답']])
+    // 3. 통합 설문응답 ({학교}_설문응답: 학생 + 교사 한곳에 모음)
+    var sh3 = SS.getSheetByName(school + '_설문응답') || SS.insertSheet(school + '_설문응답');
+    sh3.getRange(1, 1, 1, 18).setValues([HEADERS['설문응답']])
       .setFontWeight('bold').setBackground('#fff2cc');
     sh3.setFrozenRows(1);
-
-    // 4. 교사설문응답 ({학교}_교사설문응답)
-    var sh4 = SS.getSheetByName(school + '_교사설문응답') || SS.insertSheet(school + '_교사설문응답');
-    sh4.getRange(1, 1, 1, 19).setValues([HEADERS['설문응답']])
-      .setFontWeight('bold').setBackground('#f8cbad');
-    sh4.setFrozenRows(1);
   });
-  Logger.log('학교당 4개 시트 (총 12개 시트) 준비 완료');
+  Logger.log('학교별 통합 시트 준비 완료');
 }
 
 function backupToDrive() {
@@ -347,10 +345,19 @@ function saveSurvey(d) {
   var schoolName = p.school || "A초";
   var isTeacher = p.type === '2.교사';
   
-  var targetSheetName = schoolName + (isTeacher ? "_교사설문응답" : "_학생설문응답");
+  // 학교당 1개의 설문응답 통합 탭 사용 (예: A초_설문응답)
+  var targetSheetName = schoolName + "_설문응답";
   var sh = SS.getSheetByName(targetSheetName) || SS.insertSheet(targetSheetName);
 
   var name = resolveName(p.key, d.name, p.id);
+  var idToSave = p.id;
+  
+  // 교사인 경우 개인번호와 이름 앞에 't-' 부착
+  if (isTeacher) {
+    if (idToSave.indexOf('t-') !== 0) idToSave = 't-' + idToSave.replace(/^[Tt]-?/, '');
+    if (name.indexOf('t-') !== 0) name = 't-' + name;
+  }
+
   var rawAnswers = d.answers || d.surveyAnswers || [];
   var ansList = [];
   if (Object.prototype.toString.call(rawAnswers) === '[object Array]') {
@@ -362,7 +369,7 @@ function saveSurvey(d) {
     } catch (x) { ansList = [rawAnswers]; }
   }
   
-  var row = [stamp(new Date()), p.school, p.key, p.id, name, p.type, d.surveyType || '사전설문'];
+  var row = [stamp(new Date()), p.school, "'" + idToSave, name, p.type, d.surveyType || '사전설문'];
   for (var i = 0; i < 12; i++) {
     var val = (ansList && ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]).trim() : '';
     row.push(val);
@@ -381,19 +388,22 @@ function doGet(e) {
     var SS = getSS();
     var preSurveyDone = false;
     var isTeacher = p.type === '2.교사';
-    var surveySheetName = schoolName + (isTeacher ? '_교사설문응답' : '_학생설문응답');
-    var sh = SS.getSheetByName(surveySheetName) || SS.getSheetByName(schoolName + '_설문응답');
-    if (sh && sh.getLastRow() >= 2) {
-      var sRows = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues();
-      for (var r = 0; r < sRows.length; r++) {
-        var rowSch = String(sRows[r][1] || '').trim();
-        var rowKey = String(sRows[r][2] || '').trim();
-        var rowId = String(sRows[r][3] || '').trim();
-        if (rowKey === p.key || (rowId === p.id && (rowSch === p.school || !rowSch))) {
-          preSurveyDone = true;
-          break;
+    var surveySheetNames = [schoolName + '_설문응답', schoolName + (isTeacher ? '_교사설문응답' : '_학생설문응답')];
+    for (var i = 0; i < surveySheetNames.length; i++) {
+      var sh = SS.getSheetByName(surveySheetNames[i]);
+      if (sh && sh.getLastRow() >= 2) {
+        var sRows = sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues();
+        for (var r = 0; r < sRows.length; r++) {
+          var rowSch = String(sRows[r][1] || '').trim();
+          var rowKey = String(sRows[r][2] || '').trim();
+          var rowId = String(sRows[r][3] || '').trim().replace(/^'/, '');
+          if (rowKey === p.key || (rowId === p.id && (rowSch === p.school || !rowSch))) {
+            preSurveyDone = true;
+            break;
+          }
         }
       }
+      if (preSurveyDone) break;
     }
     return json({ success: true, student: {
       id: raw, name: resolveName(p.key, '', p.id),
