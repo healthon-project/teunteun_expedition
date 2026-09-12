@@ -190,12 +190,10 @@
       <!-- Hidden placeholder for JS compatibility -->
       <div id="header-level-badge" class="hidden"></div>
       
-      <!-- Settings Icon for Teacher Link (Password Protected) -->
-      <button onclick="openTeacherSettings()" class="absolute right-4 top-10 p-2 rounded-full hover:bg-pastelPink/30 active:scale-95 transition-transform" title="보건교사 관리자 전용 설정">
-        <svg class="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-        </svg>
+      <!-- Settings Button for Teacher Link (Password Protected) -->
+      <button onclick="openTeacherSettings()" class="absolute right-3 top-3 bg-white hover:bg-slate-50 text-slate-800 font-black text-xs sm:text-sm px-3 py-1.5 rounded-2xl shadow-md border-2 border-pastelPink flex items-center gap-1.5 active:scale-95 transition-transform z-20 cursor-pointer" title="보건교사 관리자 전용 설정">
+        <span class="text-base">⚙️</span>
+        <span class="font-black text-slate-800">관리자 설정</span>
       </button>
     </div>
 
@@ -352,7 +350,12 @@
             <hr class="border-t border-dashed border-pastelBlue my-2 opacity-35">
 
             <div class="pt-2">
-              <span class="text-sm sm:text-base font-extrabold text-slate-600 block mb-2.5 cursor-pointer select-none animate-pulse" ondblclick="openTeacherSettings()" title="더블클릭 시 보건교사 설정창이 열립니다.">👩‍🏫 교사 참여자 로그인</span>
+              <div class="flex items-center justify-between w-full max-w-[360px] mx-auto mb-2">
+                <span class="text-sm sm:text-base font-extrabold text-slate-600 cursor-pointer" onclick="openTeacherSettings()">👩‍🏫 교사 참여자 로그인</span>
+                <button onclick="openTeacherSettings()" class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-extrabold text-xs px-2.5 py-1 rounded-xl shadow-sm transition active:scale-95 cursor-pointer flex items-center gap-1">
+                  <span>⚙️ 관리자 설정</span>
+                </button>
+              </div>
               <div class="flex flex-nowrap justify-center items-center gap-1.5 w-full max-w-[360px] mx-auto">
                 <input type="text" id="input-teacher-name" placeholder="이름" class="w-16 sm:w-20 bg-white border-2 border-slate-300 rounded-xl py-1.5 px-2 text-center text-xs font-bold text-slate-800 focus:outline-none focus:border-pastelBlue placeholder-slate-400">
                 <input type="text" id="input-teacher-phone" maxlength="4" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="전화번호 끝4자리" class="w-28 sm:w-32 bg-white border-2 border-slate-300 rounded-xl py-1.5 px-2 text-center text-xs font-bold text-slate-800 focus:outline-none focus:border-pastelBlue placeholder-slate-400">
@@ -970,6 +973,17 @@
           <textarea id="settings-gas-url" rows="3" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-pastelBlue custom-scrollbar"></textarea>
         </div>
 
+        <!-- 사전설문 시트 복구 & 동기화 관리 -->
+        <div class="p-3.5 bg-pink-50 rounded-2xl border-2 border-pink-200 text-xs space-y-2.5">
+          <p class="font-black text-pink-900 text-center text-sm">📝 사전설문 구글시트 연동 관리</p>
+          <button onclick="bulkSyncAllPendingSurveys()" class="w-full bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-3 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-sm">
+            🚀 저장된 사전설문 구글시트로 일괄 전송
+          </button>
+          <button onclick="testCheckGasConnection()" class="w-full bg-white hover:bg-slate-100 text-slate-700 font-bold py-2 px-3 rounded-xl border border-slate-300 active:scale-95 transition-transform text-center shadow-sm cursor-pointer text-xs">
+            🔍 구글 시트 연동 상태 테스트
+          </button>
+        </div>
+
         <!-- 교사용 테스트 시뮬레이터 -->
         <div class="p-3.5 bg-amber-50 rounded-2xl border-2 border-amber-200 text-xs space-y-2.5">
           <p class="font-black text-amber-900 text-center text-sm">🧪 테스트 시뮬레이터</p>
@@ -1572,6 +1586,7 @@
         renderHome();
         refreshStudentData();
         triggerDailyAttendanceSync();
+        triggerPendingSurveySync();
       } else {
         state.student = { ...DEFAULT_GUEST };
         state.lastLevel = getLevelData(0).level;
@@ -2334,6 +2349,169 @@
       }).catch(err => console.error("Auto attendance GAS sync error", err));
     }
 
+    // Automatic background sync for survey responses saved locally prior to GAS connection
+    function triggerPendingSurveySync() {
+      if (!state.studentId || state.isOffline || !state.gasUrl) return;
+      const student = state.student || JSON.parse(localStorage.getItem('teunteun_student_cached') || '{}');
+      if (!student || !student.preSurveyDone || !student.preSurveyAnswers || !Array.isArray(student.preSurveyAnswers)) return;
+
+      const syncedKey = `teunteun_survey_synced_${state.studentId}`;
+      if (localStorage.getItem(syncedKey) === 'true') return;
+
+      const activeSchool = state.school || getSchoolFromId(state.studentId) || 'A초';
+      const targetUrl = state.gasUrl || DEFAULT_GAS_URL;
+
+      fetch(targetUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'submit_survey',
+          school: activeSchool,
+          studentId: state.studentId,
+          name: student.name || '',
+          surveyType: "사전설문",
+          answers: student.preSurveyAnswers
+        })
+      })
+      .then(() => {
+        localStorage.setItem(syncedKey, 'true');
+        console.log("Pending survey auto-synced to Google Sheets!");
+      })
+      .catch(err => {
+        console.error("Pending survey GAS sync error", err);
+      });
+    }
+
+    function triggerPendingSurveySyncManually() {
+      if (!state.studentId || !state.gasUrl) {
+        alert("구글 시트 연동 URL이 설정되지 않았거나 로그인 상태가 아닙니다.");
+        return;
+      }
+      const student = state.student || JSON.parse(localStorage.getItem('teunteun_student_cached') || '{}');
+      if (!student || !student.preSurveyAnswers) {
+        alert("저장된 사전설문 응답이 없습니다.");
+        return;
+      }
+
+      const activeSchool = state.school || getSchoolFromId(state.studentId) || 'A초';
+      const targetUrl = state.gasUrl || DEFAULT_GAS_URL;
+
+      fetch(targetUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'submit_survey',
+          school: activeSchool,
+          studentId: state.studentId,
+          name: student.name || '',
+          surveyType: "사전설문",
+          answers: student.preSurveyAnswers
+        })
+      })
+      .then(() => {
+        const syncedKey = `teunteun_survey_synced_${state.studentId}`;
+        localStorage.setItem(syncedKey, 'true');
+        alert("사전설문 응답이 구글 시트로 성공적으로 재동기화/전송되었습니다! 🐾✨");
+      })
+      .catch(err => {
+        alert("구글 시트 동기화 중 오류가 발생했습니다: " + err);
+      });
+    }
+
+    function bulkSyncAllPendingSurveys() {
+      const url = state.gasUrl || DEFAULT_GAS_URL;
+      if (!url) {
+        alert("구글 시트 연동 URL이 설정되어 있지 않습니다.");
+        return;
+      }
+
+      const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+      const cached = JSON.parse(localStorage.getItem('teunteun_student_cached') || '{}');
+      if (cached && cached.studentId) {
+        students[cached.studentId] = { ...(students[cached.studentId] || {}), ...cached };
+      }
+
+      const pendingList = [];
+      for (const [id, s] of Object.entries(students)) {
+        if (s && s.preSurveyDone && s.preSurveyAnswers && Array.isArray(s.preSurveyAnswers)) {
+          pendingList.push({
+            id: id,
+            name: s.name || '',
+            school: s.school || getSchoolFromId(id) || state.school || 'A초',
+            answers: s.preSurveyAnswers
+          });
+        }
+      }
+
+      if (pendingList.length === 0) {
+        if (state.student && state.student.preSurveyAnswers) {
+          pendingList.push({
+            id: state.studentId || 'GUEST',
+            name: state.student.name || '',
+            school: state.school || 'A초',
+            answers: state.student.preSurveyAnswers
+          });
+        }
+      }
+
+      if (pendingList.length === 0) {
+        alert("이 기기에 저장된 사전설문 응답 기록이 없습니다.\n\n참여자가 각자의 스마트폰에서 링크에 한 번 접속하거나 '설문 완료!' 버튼을 누르면 구글 시트로 자동 전송됩니다.");
+        return;
+      }
+
+      let count = 0;
+      pendingList.forEach(item => {
+        fetch(url, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'submit_survey',
+            school: item.school,
+            studentId: item.id,
+            name: item.name,
+            surveyType: "사전설문",
+            answers: item.answers
+          })
+        }).then(() => {
+          localStorage.setItem(`teunteun_survey_synced_${item.id}`, 'true');
+        }).catch(e => console.error(e));
+        count++;
+      });
+
+      alert(`✅ 이 기기에 보관된 사전설문 응답 ${count}건을 구글 시트로 성공적으로 전송 요청했습니다!\n\n(참고: 다른 참여자의 스마트폰에 저장된 설문은 참여자가 본인 폰에서 튼튼탐험대 링크를 1회 클릭할 때 자동 전송됩니다.)`);
+    }
+
+    function testCheckGasConnection() {
+      const url = state.gasUrl || DEFAULT_GAS_URL;
+      if (!url) {
+        alert("구글 시트 URL이 설정되지 않았습니다.");
+        return;
+      }
+
+      fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'submit_survey',
+          school: state.school || 'A초',
+          studentId: 'TEST_CHECK',
+          name: '연동테스트',
+          surveyType: "사전설문",
+          answers: ["그렇다(5-7회) 😀", "보통이다(3-4회) 😐", "그렇다(5-7회) 😀"]
+        })
+      })
+      .then(() => {
+        alert("🎉 구글 시트 신호 전송 성공!\n구글 시트에 '연동테스트' 항목이 추가되었는지 확인해 보세요.");
+      })
+      .catch(err => {
+        alert("⚠️ 구글 시트 연결 오류: " + err);
+      });
+    }
+
     // Unified login sync logic (Instant 0.01s login, background GAS sync)
     function executeLoginSync(id, loginBtn, enteredName = '', schoolVal = '') {
       const activeSchool = schoolVal || state.school || 'A초';
@@ -2434,6 +2612,7 @@
             isSetAbsolute: true
           })
         }).catch(err => console.error("Login attendance GAS sync error", err));
+        triggerPendingSurveySync();
       }
     }
 
@@ -4055,6 +4234,10 @@
       // Clear survey progress cache
       localStorage.removeItem(`survey_answers_${state.studentId}`);
       
+      if (state.studentId) {
+        localStorage.setItem(`teunteun_survey_synced_${state.studentId}`, 'true');
+      }
+      
       const submitBtn = document.getElementById('survey-submit-btn');
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -4073,13 +4256,19 @@
       if (!surveyBtn) return;
       
       if (state.student && state.student.preSurveyDone) {
-        surveyBtn.innerText = "설문 제출 완료! 🌟";
-        surveyBtn.disabled = true;
-        surveyBtn.className = "inline-block w-[80%] bg-slate-300 text-slate-500 font-black py-5 px-8 rounded-[24px] shadow-sm text-xl text-center border-2 border-slate-200 cursor-not-allowed";
+        surveyBtn.innerText = "설문 완료! (시트 재동기화 🔄)";
+        surveyBtn.disabled = false;
+        surveyBtn.className = "inline-block w-[80%] bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 px-6 rounded-[24px] shadow-md text-lg text-center border-2 border-white cursor-pointer transition active:scale-95";
+        surveyBtn.onclick = function() {
+          triggerPendingSurveySyncManually();
+        };
       } else {
         surveyBtn.innerText = "사전설문";
         surveyBtn.disabled = false;
         surveyBtn.className = "inline-block w-[80%] bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-5 px-8 rounded-[24px] shadow-lg transition active:scale-95 text-xl text-center border-2 border-white cursor-pointer";
+        surveyBtn.onclick = function() {
+          openSurveyModal();
+        };
       }
     }
 
