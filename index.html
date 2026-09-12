@@ -1598,6 +1598,7 @@
 
       // Show home tab by default on startup
       switchTab('home');
+      updateSurveyButtonUI();
 
       // Start animation loops
       initConfetti();
@@ -4254,15 +4255,23 @@
       const surveyBtn = document.getElementById('open-google-form-btn');
       if (!surveyBtn) return;
       
-      if (state.student && state.student.preSurveyDone) {
-        surveyBtn.innerHTML = "<div class='text-lg sm:text-xl font-black leading-tight whitespace-nowrap'>설문 완료! 🌟</div><div class='text-xs sm:text-sm font-bold mt-1 text-emerald-100 whitespace-nowrap'>(시트 재동기화 🔄)</div>";
+      let isDone = (state.student && state.student.preSurveyDone);
+      if (!isDone && state.studentId) {
+        try {
+          const cached = JSON.parse(localStorage.getItem('teunteun_student_cached') || '{}');
+          if (cached && cached.preSurveyDone) isDone = true;
+        } catch(e){}
+      }
+
+      if (isDone) {
+        surveyBtn.innerHTML = "<div class='text-lg sm:text-2xl font-black leading-tight whitespace-nowrap'>설문 완료! 🌟</div><div class='text-xs sm:text-sm font-bold mt-1 text-emerald-100 whitespace-nowrap'>(시트 재동기화 🔄)</div>";
         surveyBtn.disabled = false;
         surveyBtn.className = "inline-flex flex-col justify-center items-center w-[85%] max-w-[340px] bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 sm:py-4 px-4 sm:px-6 rounded-[20px] sm:rounded-[24px] shadow-md text-center border-2 border-white cursor-pointer transition active:scale-95";
         surveyBtn.onclick = function() {
           triggerPendingSurveySyncManually();
         };
       } else {
-        surveyBtn.innerText = "사전설문";
+        surveyBtn.innerHTML = "사전설문";
         surveyBtn.disabled = false;
         surveyBtn.className = "inline-block w-[80%] bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-5 px-8 rounded-[24px] shadow-lg transition active:scale-95 text-xl text-center border-2 border-white cursor-pointer";
         surveyBtn.onclick = function() {
