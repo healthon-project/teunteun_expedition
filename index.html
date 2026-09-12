@@ -4237,6 +4237,7 @@
       if (state.studentId) {
         localStorage.setItem(`teunteun_survey_synced_${state.studentId}`, 'true');
       }
+      localStorage.setItem('teunteun_global_survey_done', 'true');
       
       const submitBtn = document.getElementById('survey-submit-btn');
       if (submitBtn) {
@@ -4255,16 +4256,20 @@
       const surveyBtn = document.getElementById('open-google-form-btn');
       if (!surveyBtn) return;
       
-      let isDone = (state.student && state.student.preSurveyDone);
-      if (!isDone && state.studentId) {
+      let isDone = false;
+      if (state.student && state.student.preSurveyDone) isDone = true;
+      if (!isDone) {
         try {
           const cached = JSON.parse(localStorage.getItem('teunteun_student_cached') || '{}');
           if (cached && cached.preSurveyDone) isDone = true;
         } catch(e){}
       }
+      if (!isDone && localStorage.getItem('teunteun_global_survey_done') === 'true') {
+        isDone = true;
+      }
 
       if (isDone) {
-        surveyBtn.innerHTML = "<div class='text-lg sm:text-2xl font-black leading-tight whitespace-nowrap'>설문 완료! 🌟</div><div class='text-xs sm:text-sm font-bold mt-1 text-emerald-100 whitespace-nowrap'>(시트 재동기화 🔄)</div>";
+        surveyBtn.innerHTML = "<div style='display:block; line-height:1.2; font-weight:900; font-size:18px; white-space:nowrap;'>설문 완료! 🌟</div><div style='display:block; margin-top:4px; font-weight:700; font-size:13px; opacity:0.95; white-space:nowrap;'>(시트 재동기화 🔄)</div>";
         surveyBtn.disabled = false;
         surveyBtn.className = "inline-flex flex-col justify-center items-center w-[85%] max-w-[340px] bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 sm:py-4 px-4 sm:px-6 rounded-[20px] sm:rounded-[24px] shadow-md text-center border-2 border-white cursor-pointer transition active:scale-95";
         surveyBtn.onclick = function() {
