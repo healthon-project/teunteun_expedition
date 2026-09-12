@@ -961,7 +961,7 @@
         <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">구글 시트 연동 URL 및 테스트 기능을 관리합니다.</p>
       </div>
       
-      <div class="space-y-3.5 overflow-y-auto pr-1 custom-scrollbar max-h-[52vh] my-1">
+      <div class="space-y-3 overflow-y-auto pr-1 custom-scrollbar max-h-[42vh] my-1">
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">🔑 관리자 비밀번호 변경 (접근 차단용)</label>
           <input type="password" id="settings-admin-pw" placeholder="새 비밀번호 입력" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-pastelBlue font-bold">
@@ -998,12 +998,12 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-slate-100 shrink-0">
-        <button onclick="toggleModal('settings-modal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 px-4 rounded-2xl active:scale-95 transition-transform cursor-pointer">
+      <div class="grid grid-cols-2 gap-2.5 mt-3 pt-3 border-t-2 border-slate-100 shrink-0 bg-white z-10">
+        <button onclick="toggleModal('settings-modal')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-black text-sm py-3.5 px-4 rounded-2xl active:scale-95 transition-all cursor-pointer text-center">
           취소
         </button>
-        <button onclick="saveSettings()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-3 px-4 rounded-2xl shadow-md active:scale-95 transition-transform cursor-pointer">
-          저장 💾
+        <button onclick="saveSettings()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-sm py-3.5 px-4 rounded-2xl shadow-lg active:scale-95 transition-all cursor-pointer text-center flex items-center justify-center gap-1">
+          <span>저장 💾</span>
         </button>
       </div>
     </div>
