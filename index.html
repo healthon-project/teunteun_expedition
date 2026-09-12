@@ -4255,9 +4255,9 @@
       if (!surveyBtn) return;
       
       if (state.student && state.student.preSurveyDone) {
-        surveyBtn.innerText = "설문 완료! (시트 재동기화 🔄)";
+        surveyBtn.innerHTML = "<div>설문 완료! 🌟</div><div class='text-xs sm:text-sm font-bold mt-1 text-emerald-100'>(시트 재동기화 🔄)</div>";
         surveyBtn.disabled = false;
-        surveyBtn.className = "inline-block w-[80%] bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 px-6 rounded-[24px] shadow-md text-lg text-center border-2 border-white cursor-pointer transition active:scale-95";
+        surveyBtn.className = "inline-flex flex-col justify-center items-center w-[85%] bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 sm:py-4 px-6 rounded-[20px] sm:rounded-[24px] shadow-md text-base sm:text-xl text-center border-2 border-white cursor-pointer transition active:scale-95";
         surveyBtn.onclick = function() {
           triggerPendingSurveySyncManually();
         };
