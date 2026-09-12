@@ -958,11 +958,16 @@
 
   <!-- ==================== DIALOG 2: TEACHER SETTINGS MODAL ==================== -->
   <div id="settings-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-    <div class="bg-white rounded-[36px] w-full max-w-[340px] p-6 shadow-2xl border-4 border-pastelBlue">
-      <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-1.5">⚙️ 연동 및 운영 설정</h3>
-      <p class="text-[11px] text-slate-500 mb-4 leading-relaxed">구글 시트 연동 URL 및 테스트 기능을 관리합니다.</p>
+    <div class="bg-white rounded-[32px] sm:rounded-[36px] w-full max-w-[360px] max-h-[88vh] p-5 sm:p-6 shadow-2xl border-4 border-pastelBlue flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center gap-1.5">⚙️ 연동 및 운영 설정</h3>
+          <button onclick="toggleModal('settings-modal')" class="text-slate-400 hover:text-slate-700 font-bold text-xl px-1.5 py-0.5 rounded-lg">✕</button>
+        </div>
+        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">구글 시트 연동 URL 및 테스트 기능을 관리합니다.</p>
+      </div>
       
-      <div class="space-y-4">
+      <div class="space-y-3.5 overflow-y-auto pr-1 custom-scrollbar max-h-[52vh] my-1">
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">🔑 관리자 비밀번호 변경 (접근 차단용)</label>
           <input type="password" id="settings-admin-pw" placeholder="새 비밀번호 입력" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-3 py-2 text-xs focus:outline-none focus:border-pastelBlue font-bold">
@@ -974,9 +979,9 @@
         </div>
 
         <!-- 사전설문 시트 복구 & 동기화 관리 -->
-        <div class="p-3.5 bg-pink-50 rounded-2xl border-2 border-pink-200 text-xs space-y-2.5">
+        <div class="p-3 bg-pink-50 rounded-2xl border-2 border-pink-200 text-xs space-y-2">
           <p class="font-black text-pink-900 text-center text-sm">📝 사전설문 구글시트 연동 관리</p>
-          <button onclick="bulkSyncAllPendingSurveys()" class="w-full bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-3 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-sm">
+          <button onclick="bulkSyncAllPendingSurveys()" class="w-full bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white font-black py-2.5 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-xs sm:text-sm">
             🚀 저장된 사전설문 구글시트로 일괄 전송
           </button>
           <button onclick="testCheckGasConnection()" class="w-full bg-white hover:bg-slate-100 text-slate-700 font-bold py-2 px-3 rounded-xl border border-slate-300 active:scale-95 transition-transform text-center shadow-sm cursor-pointer text-xs">
@@ -985,25 +990,25 @@
         </div>
 
         <!-- 교사용 테스트 시뮬레이터 -->
-        <div class="p-3.5 bg-amber-50 rounded-2xl border-2 border-amber-200 text-xs space-y-2.5">
+        <div class="p-3 bg-amber-50 rounded-2xl border-2 border-amber-200 text-xs space-y-2">
           <p class="font-black text-amber-900 text-center text-sm">🧪 테스트 시뮬레이터</p>
-          <button onclick="testComplete100P()" class="w-full bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-black py-3 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-sm">
+          <button onclick="testComplete100P()" class="w-full bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-slate-900 font-black py-2.5 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-xs sm:text-sm">
             ⚡ 오늘 미션 완료 (스티커 +1개 획득!)
           </button>
-          <button onclick="testSimulateTomorrow()" class="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-black py-3 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-sm">
+          <button onclick="testSimulateTomorrow()" class="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-black py-2.5 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-md cursor-pointer text-xs sm:text-sm">
             🌙 자고 일어나기 (+1일 다음 날로 이동)
           </button>
-          <button onclick="testShowLevelUpModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer">
+          <button onclick="testShowLevelUpModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-3 rounded-xl active:scale-95 transition-transform text-center shadow-sm cursor-pointer text-xs">
             🎉 레벨업 축하 팝업 미리보기 (테스트)
           </button>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 mt-5">
-        <button onclick="toggleModal('settings-modal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3.5 px-4 rounded-2xl active:scale-95 transition-transform cursor-pointer">
+      <div class="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-slate-100 shrink-0">
+        <button onclick="toggleModal('settings-modal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 px-4 rounded-2xl active:scale-95 transition-transform cursor-pointer">
           취소
         </button>
-        <button onclick="saveSettings()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-3.5 px-4 rounded-2xl shadow-md active:scale-95 transition-transform cursor-pointer">
+        <button onclick="saveSettings()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-3 px-4 rounded-2xl shadow-md active:scale-95 transition-transform cursor-pointer">
           저장 💾
         </button>
       </div>
