@@ -256,11 +256,27 @@
           </div>
         </div>
 
-        <!-- 2. Main Character Image (Fixed Alkong-i Golden Egg) -->
-        <div id="character-card-container" class="w-full aspect-square max-w-[270px] sm:max-w-[320px] flex justify-center items-center relative transition-all duration-500 my-2 z-10 bg-transparent border-none shadow-none">
-          <img id="main-character-img" src="assets/level1_nest.png" alt="알콩이" class="w-[100%] h-[100%] object-contain z-10 char-float transition-all duration-500 drop-shadow-xl" onerror="handleImageError(this)">
-          <div id="main-character-emoji" class="text-[6.5rem] sm:text-[8.5rem] z-10 char-float transition-all duration-500 transform translate-y-1 hidden select-none">🥚</div>
-          <div id="character-level-badge" class="hidden"></div>
+        <!-- 2. 3 Hero Main Characters Showcase (꼬꼬챌린지 3명 주인공) -->
+        <div id="character-card-container" class="w-full max-w-[340px] sm:max-w-[400px] bg-white/95 backdrop-blur-md border-3 border-amber-300 rounded-[28px] p-3.5 shadow-xl my-2 z-10 flex flex-col items-center justify-center text-center">
+          <div class="text-xs font-black text-amber-800 mb-1.5 flex items-center gap-1.5">
+            <span>✨ 꼬꼬챌린지 3인방 주인공</span>
+          </div>
+          <div class="flex justify-around items-center w-full py-2.5 px-3 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 rounded-2xl border border-amber-200/80">
+            <div class="flex flex-col items-center">
+              <span class="text-4xl sm:text-5xl drop-shadow-sm char-float">🥚</span>
+              <span class="text-[11px] font-black text-amber-900 mt-1">알콩이</span>
+            </div>
+            <span class="text-amber-400 font-black text-base">➔</span>
+            <div class="flex flex-col items-center">
+              <span class="text-4xl sm:text-5xl drop-shadow-sm char-float" style="animation-delay: 0.6s;">🐣</span>
+              <span class="text-[11px] font-black text-amber-900 mt-1">삐약이</span>
+            </div>
+            <span class="text-amber-400 font-black text-base">➔</span>
+            <div class="flex flex-col items-center">
+              <span class="text-4xl sm:text-5xl drop-shadow-sm char-float" style="animation-delay: 1.2s;">🐓</span>
+              <span class="text-[11px] font-black text-amber-900 mt-1">꼬꼬대장</span>
+            </div>
+          </div>
         </div>
 
         <!-- 3. Bottom 4-Step Level Progress Bar Card (Currently Earned Sticker Status) -->
@@ -2885,7 +2901,7 @@
         }
       }
       
-      // Fixed background image (User requested: "바탕화면 지금 걸로 고정할게")
+      // Fixed background image
       const screenWrapper = document.getElementById('app-screen-wrapper');
       if (screenWrapper) {
         screenWrapper.style.backgroundImage = `linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.35)), url('assets/cute_farm_bg.png')`;
@@ -2893,20 +2909,8 @@
         screenWrapper.style.backgroundPosition = 'center';
         screenWrapper.style.filter = 'none';
       }
-      
-      // Main Home Character: Fixed Alkong-i Golden Egg (User requested: "초기화면 알그림 밑에 4단계로 단계별 레벨바")
-      const imgEl = document.getElementById('main-character-img');
-      const emojiEl = document.getElementById('main-character-emoji');
-      
-      if (imgEl && emojiEl) {
-        imgEl.dataset.retryCount = '0';
-        imgEl.src = 'assets/level1_nest.png';
-        imgEl.classList.remove('hidden');
-        emojiEl.classList.add('hidden');
-        emojiEl.innerText = '🥚';
-      }
 
-      // Keep level badges hidden per user request
+      // Keep level badges hidden
       const headerLvlBadge = document.getElementById('header-level-badge');
       if (headerLvlBadge) {
         headerLvlBadge.style.display = 'none';
@@ -2915,12 +2919,6 @@
       const charLvlBadge = document.getElementById('character-level-badge');
       if (charLvlBadge) {
         charLvlBadge.style.display = 'none';
-      }
-
-      // Update character speech bubble dialog dynamically
-      const charSpeech = document.getElementById('character-speech-bubble');
-      if (charSpeech) {
-        charSpeech.innerHTML = levelInfo.dialog;
       }
       
       // Update current points in the separate bottom right badge
