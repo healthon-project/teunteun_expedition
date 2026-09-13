@@ -171,7 +171,7 @@
       <canvas id="confetti-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-40"></canvas>
 
       <!-- App Header (Shown on Register tab to show title and Settings icon) -->
-      <div id="app-header" class="pt-10 pb-3 px-6 bg-gradient-to-r from-pastelPink-light via-pastelYellow-light to-pastelMint-light border-b border-pastelPink/30 flex flex-col justify-center items-center gap-2 z-10 relative">
+      <div id="app-header" class="pt-10 pb-2 px-6 bg-transparent border-none flex flex-col justify-center items-center gap-2 z-10 relative">
       <button onclick="switchTab('home')" class="flex items-center justify-center cursor-pointer active:scale-95 transition-transform" title="홈으로 이동">
         <!-- 1,2페이지용 원래 텍스트 타이틀 -->
         <h1 id="header-title-text" class="text-5xl font-black text-transparent bg-clip-text drop-shadow-[0_2px_2px_rgba(0,0,0,0.15)] tracking-wide text-center title-playful" style="background: linear-gradient(to right, #ff3b30, #ff9500, #ffcc00, #34c759, #007aff, #5856d6, #af52de); -webkit-background-clip: text; color: transparent;">꼬꼬챌린지</h1>
@@ -244,30 +244,21 @@
 
 
 
-        <!-- 2. 3 Hero Main Characters Showcase (꼬꼬챌린지 3명 주인공) -->
-        <div id="character-card-container" class="w-full max-w-[340px] sm:max-w-[400px] bg-white/95 backdrop-blur-md border-3 border-amber-300 rounded-[28px] p-3.5 shadow-xl my-2 z-10 flex flex-col items-center justify-center text-center">
-          <div class="text-xs font-black text-amber-800 mb-1.5 flex items-center gap-1.5">
-            <span>✨ 꼬꼬챌린지 3인방 주인공</span>
+
+
+        <!-- 1. 건강 목표 Floating Banner Tag + Goal Box -->
+        <div class="w-full max-w-[340px] sm:max-w-[400px] flex flex-col items-center relative mt-2 mb-4 z-10">
+          <div class="z-10 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] sm:text-xs font-black px-4 py-1 rounded-full shadow-md border-2 border-amber-200 tracking-wider mb-[-12px]">
+            🎯 건강 목표
           </div>
-          <div class="flex justify-around items-center w-full py-2.5 px-3 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 rounded-2xl border border-amber-200/80">
-            <div class="flex flex-col items-center">
-              <span class="text-4xl sm:text-5xl drop-shadow-sm char-float">🥚</span>
-              <span class="text-[11px] font-black text-amber-900 mt-1">알콩이</span>
-            </div>
-            <span class="text-amber-400 font-black text-base">➔</span>
-            <div class="flex flex-col items-center">
-              <span class="text-4xl sm:text-5xl drop-shadow-sm char-float" style="animation-delay: 0.6s;">🐣</span>
-              <span class="text-[11px] font-black text-amber-900 mt-1">삐약이</span>
-            </div>
-            <span class="text-amber-400 font-black text-base">➔</span>
-            <div class="flex flex-col items-center">
-              <span class="text-4xl sm:text-5xl drop-shadow-sm char-float" style="animation-delay: 1.2s;">🐓</span>
-              <span class="text-[11px] font-black text-amber-900 mt-1">꼬꼬대장</span>
+          <div class="w-full bg-gradient-to-b from-amber-400/90 via-amber-500/90 to-orange-500/90 backdrop-blur-sm text-white font-black pt-4 pb-3.5 px-4 sm:px-6 rounded-[28px] shadow-lg text-center border-3 border-amber-200/90 relative">
+            <div class="text-base sm:text-xl tracking-wide drop-shadow-md text-center leading-snug">
+              알콩이에서 꼬꼬대장까지,<br>나는 건강왕! 🏆
             </div>
           </div>
         </div>
 
-        <!-- 3. Bottom 4-Step Level Progress Bar Card (Currently Earned Sticker Status) -->
+        <!-- 2. Bottom 4-Step Level Progress Bar Card (Currently Earned Sticker Status) -->
         <div class="w-full max-w-[340px] sm:max-w-[400px] bg-white/95 backdrop-blur-md border-3 border-amber-300 rounded-[28px] p-4 shadow-xl z-10 mb-2">
           
           <div class="flex justify-between items-center mb-2 px-1">
