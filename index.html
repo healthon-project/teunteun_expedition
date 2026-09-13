@@ -2953,12 +2953,8 @@
         return;
       }
 
-      // Check if already completed today (in local storage to prevent double taps)
-      const lastSubmitDate = localStorage.getItem(`last_submit_${state.studentId}`);
-      if (lastSubmitDate === getTodayDateString()) {
-        alert("오늘의 일일 건강 미션 인증 도장을 이미 찍었어요! 내일 다시 도전하세요! 🐾");
-        return;
-      }
+      // Record submit stamp
+      localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
 
       // Calculate points
       let pointsEarned = 0;
@@ -3807,16 +3803,34 @@
 
     // Helper to explicitly increment sticker count by +1 on mission completion
     function addOneSticker(reason = "미션인증") {
-      if (!state.studentId && !state.student) return 0;
-      const id = state.studentId || (state.student && state.student.studentId);
-      if (!id) return 0;
+      let id = state.studentId || (state.student && state.student.studentId);
+      if (!id) {
+        id = "guest_student";
+        state.studentId = id;
+        state.student = state.student || { studentId: id, name: "모험가", totalPoints: 100 };
+      }
       
       const currentStickers = getStickerCount();
       const newStickers = currentStickers + 1;
       const candidateIds = getPossibleIdKeys(id);
       
+      const ymStr = getYearMonthString();
+      const todayStr = getTodayDateString();
+
       for (const candId of candidateIds) {
         localStorage.setItem(`teunteun_stickers_max_${candId}`, newStickers);
+        
+        const ymKey = `teunteun_stickers_${candId}_${ymStr}`;
+        const allKey = `teunteun_stickers_all_${candId}`;
+        let daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
+        let allDaysList = JSON.parse(localStorage.getItem(allKey) || '[]');
+        
+        const uniqueDayEntry = `${todayStr}_stk_${Date.now()}_${Math.floor(Math.random()*1000)}`;
+        daysList.push(uniqueDayEntry);
+        allDaysList.push(uniqueDayEntry);
+        
+        localStorage.setItem(ymKey, JSON.stringify(daysList));
+        localStorage.setItem(allKey, JSON.stringify(allDaysList));
       }
       
       if (state.student) {
