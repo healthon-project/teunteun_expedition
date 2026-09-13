@@ -692,3 +692,38 @@ function saveSurvey(d) {
   upsert(sh, p.school + '-' + idToSave, row);
   return { success: true, 이름: name, 구분: p.type };
 }
+
+function doGet(e) {
+  try {
+    var params = (e && e.parameter) || {};
+    var action = params.action || '';
+    if (action === 'get_student') {
+      var studentId = params.studentId || '';
+      var school = params.school || 'A초';
+      var p = parseId(studentId, school);
+      var totalStickers = countStickers(p.key, p.school);
+      var totalPts = totalStickers * 100;
+      var lvlName = levelOf(totalStickers);
+      var lvlNum = 1;
+      if (totalStickers >= 45) lvlNum = 4;
+      else if (totalStickers >= 24) lvlNum = 3;
+      else if (totalStickers >= 8) lvlNum = 2;
+
+      return json({
+        success: true,
+        student: {
+          studentId: studentId,
+          school: p.school,
+          name: p.id,
+          totalPoints: totalPts,
+          stickerCount: totalStickers,
+          level: lvlNum,
+          levelName: lvlName
+        }
+      });
+    }
+    return json({ success: true, message: '꼬꼬챌린지 API 실행 중' });
+  } catch(err) {
+    return json({ success: false, error: String(err) });
+  }
+}
