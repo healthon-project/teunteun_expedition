@@ -242,19 +242,7 @@
         <div class="absolute top-4 left-5 text-white/80 text-3xl select-none pointer-events-none">☁️</div>
         <div class="absolute top-5 right-6 text-amber-300/90 text-4xl select-none pointer-events-none">☀️</div>
 
-        <!-- 1. Top Goal Banner Tag + Main Card Box -->
-        <div class="w-full max-w-[340px] sm:max-w-[400px] flex flex-col items-center relative mt-3 mb-2 z-10">
-          <!-- Goal Banner Pill Tag -->
-          <div class="z-10 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] sm:text-xs font-black px-4 py-1 rounded-full shadow-md border-2 border-amber-200 tracking-wider mb-[-12px]">
-            건강 목표
-          </div>
-          <!-- Main Goal Banner Box -->
-          <div class="w-full bg-gradient-to-b from-amber-400 via-amber-500 to-orange-500 text-white font-black pt-4 pb-3.5 px-4 sm:px-6 rounded-[28px] sm:rounded-[36px] shadow-xl text-center border-4 border-amber-200/90 relative">
-            <div class="text-lg sm:text-2xl tracking-wide drop-shadow-md text-center leading-snug">
-              알콩이에서 꼬꼬대장까지,<br>나는 건강왕!
-            </div>
-          </div>
-        </div>
+
 
         <!-- 2. 3 Hero Main Characters Showcase (꼬꼬챌린지 3명 주인공) -->
         <div id="character-card-container" class="w-full max-w-[340px] sm:max-w-[400px] bg-white/95 backdrop-blur-md border-3 border-amber-300 rounded-[28px] p-3.5 shadow-xl my-2 z-10 flex flex-col items-center justify-center text-center">
@@ -1226,11 +1214,7 @@
         } else {
           globalMilestoneHeader.classList.add('hidden');
           if (appContentScroll) {
-            if (tabId === 'register') {
-              appContentScroll.style.paddingTop = '1rem';
-            } else {
-              appContentScroll.style.paddingTop = '3.5rem';
-            }
+            appContentScroll.style.paddingTop = '1rem';
           }
         }
       }
