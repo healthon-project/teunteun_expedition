@@ -2174,9 +2174,8 @@
       
       updateExerciseMissionUI();
       updateTodayPoints();
-      const updatedStickers = addOneSticker("운동인증 완료");
       
-      alert(`인증 사진이 등록되고 운동 미션이 완료되었습니다! 🏃‍♂️🎉\n스티커 +1개 획득! (현재 총 ${updatedStickers || getStickerCount()}개)`);
+      alert("인증 사진이 등록되고 운동 미션이 완료되었습니다! 🏃‍♂️🎉\n하단의 '미션 인증 완료' 버튼을 눌러 스티커 1개를 획득하세요! 🐾");
     }
 
     function cancelExerciseMission() {
@@ -3825,12 +3824,12 @@
         let daysList = JSON.parse(localStorage.getItem(ymKey) || '[]');
         let allDaysList = JSON.parse(localStorage.getItem(allKey) || '[]');
         
-        const uniqueDayEntry = `${todayStr}_stk_${Date.now()}_${Math.floor(Math.random()*1000)}`;
-        daysList.push(uniqueDayEntry);
-        allDaysList.push(uniqueDayEntry);
-        
-        localStorage.setItem(ymKey, JSON.stringify(daysList));
-        localStorage.setItem(allKey, JSON.stringify(allDaysList));
+        if (!daysList.includes(todayStr)) {
+          daysList.push(todayStr);
+          allDaysList.push(todayStr);
+          localStorage.setItem(ymKey, JSON.stringify(daysList));
+          localStorage.setItem(allKey, JSON.stringify(allDaysList));
+        }
       }
       
       if (state.student) {
@@ -3845,7 +3844,6 @@
         localStorage.setItem('mock_students', JSON.stringify(students));
       }
 
-      saveStickerProgress();
       renderStickers();
       renderHome();
       return newStickers;
