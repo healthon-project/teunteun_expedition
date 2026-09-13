@@ -268,7 +268,7 @@
           
           <div class="flex justify-between items-center mb-2 px-1">
             <span class="text-xs font-black text-slate-700">🏆 내 스티커 달성 현황</span>
-            <span id="h-prog-text" class="text-xs font-black text-amber-600">🌟 스티커 0개</span>
+            <span id="h-prog-text" class="hidden"></span>
           </div>
 
           <!-- Progress Bar Fill -->
@@ -1854,7 +1854,7 @@
       const hProgBar = document.getElementById('h-prog-bar');
       const hProgText = document.getElementById('h-prog-text');
       if (hProgBar) hProgBar.style.width = `${percentage}%`;
-      if (hProgText) hProgText.innerText = `🌟 스티커 ${stickerCnt}개 달성 중!`;
+      if (hProgText) hProgText.innerText = '';
 
       // Update Global Progress Bar
       const gProgBar = document.getElementById('g-prog-bar');
