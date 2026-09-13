@@ -2170,8 +2170,9 @@
       
       updateExerciseMissionUI();
       updateTodayPoints();
+      const updatedStickers = addOneSticker("운동인증 완료");
       
-      alert("인증 사진이 등록되고 운동 미션이 완료되었습니다! 🏃‍♂️🎉");
+      alert(`인증 사진이 등록되고 운동 미션이 완료되었습니다! 🏃‍♂️🎉\n스티커 +1개 획득! (현재 총 ${updatedStickers || getStickerCount()}개)`);
     }
 
     function cancelExerciseMission() {
@@ -3068,8 +3069,8 @@
         }).catch(err => console.error("Submit missions GAS sync error", err));
       }
 
-      // Ensure daily sticker progress is saved before form clearing
-      saveStickerProgress();
+      // Increment total sticker count by +1 on mission completion
+      const newStickerCount = addOneSticker("일일미션 완료");
 
       // Current total points and level evaluation
       const currentPoints = state.student ? (state.student.totalPoints || 0) : 0;
@@ -3082,7 +3083,7 @@
       if (currentLevel > prevLevel) {
         triggerLevelUpCelebration(currentLevelData);
       } else {
-        alert(`오늘의 미션 완료! 도장 꾹! 🐾\n총 ${currentPoints}p를 달성하였습니다!`);
+        alert(`오늘의 미션 인증 완료! 스티커 +1개 획득! 🐾🎉\n현재 총 ${newStickerCount || getStickerCount()}개의 스티커를 모았습니다!`);
       }
       
       clearMissionsForm();
@@ -3844,6 +3845,38 @@
     // Draw custom Canvas weight chart
     function drawWeightChart() {
       // Weight chart has been removed based on user request.
+    }
+
+    // Helper to explicitly increment sticker count by +1 on mission completion
+    function addOneSticker(reason = "미션인증") {
+      if (!state.studentId && !state.student) return 0;
+      const id = state.studentId || (state.student && state.student.studentId);
+      if (!id) return 0;
+      
+      const currentStickers = getStickerCount();
+      const newStickers = currentStickers + 1;
+      const candidateIds = getPossibleIdKeys(id);
+      
+      for (const candId of candidateIds) {
+        localStorage.setItem(`teunteun_stickers_max_${candId}`, newStickers);
+      }
+      
+      if (state.student) {
+        state.student.totalPoints = Math.max(state.student.totalPoints || 0, newStickers * 100);
+        localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
+        const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+        for (const candId of candidateIds) {
+          if (students[candId]) {
+            students[candId].totalPoints = state.student.totalPoints;
+          }
+        }
+        localStorage.setItem('mock_students', JSON.stringify(students));
+      }
+
+      saveStickerProgress();
+      renderStickers();
+      renderHome();
+      return newStickers;
     }
 
     // Update and save monthly 100P stickers progress
