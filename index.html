@@ -384,7 +384,7 @@
         <!-- Title -->
         <h3 class="text-3xl font-black text-center text-slate-800 mb-6 flex items-center justify-center gap-2">✨ 오늘의 미션</h3>
 
-        <!-- Mission 1: 운동 미션 (인증샷 업로드 통합) -->
+        <!-- Mission 1: 운동 미션 -->
         <div class="bg-white border-2 border-slate-100 rounded-[28px] p-5 flex flex-col gap-4 shadow-sm hover:border-pastelPink transition duration-150">
           <div class="flex justify-between items-start">
             <div class="flex items-center gap-4">
@@ -397,33 +397,9 @@
             </div>
             <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">+50p</span>
           </div>
-
-          <!-- Unified Photo Upload & Action Button -->
-          <div class="flex flex-col gap-3">
-            <!-- Hidden File Input -->
-            <input type="file" id="mission-photo-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(this)">
-            
-            <!-- Action Button -->
-            <button id="btn-upload-exercise" onclick="document.getElementById('mission-photo-input').click()" class="w-full bg-pastelPeach text-slate-800 text-sm font-black py-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm border border-pastelPeach-dark/20">
-              📷 운동 사진 인증하고 완료하기
-            </button>
-
-            <!-- Uploading Progress Bar -->
-            <div id="photo-upload-progress-container" class="w-full hidden bg-slate-100 border rounded-full h-2.5 overflow-hidden">
-              <div id="photo-upload-progress" class="bg-amber-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
-            </div>
-
-            <!-- Upload Status (hidden by default) -->
-            <div id="photo-upload-preview-box" class="hidden flex items-center justify-between gap-3 bg-emerald-50 border border-emerald-200/60 p-4 rounded-2xl">
-              <div class="text-left">
-                <span id="photo-upload-status" class="text-xs text-emerald-700 font-bold block"></span>
-                <span class="text-[10px] text-slate-400 font-medium">인증 도장이 완료되었습니다!</span>
-              </div>
-              <!-- Cancel button to reset -->
-              <button onclick="cancelExerciseMission()" class="bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold py-2 px-3.5 rounded-xl active:scale-95 transition-all">
-                취소
-              </button>
-            </div>
+          <div class="flex gap-2">
+            <button id="btn-done-1" onclick="toggleMissionButton(1, true)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">완료!</button>
+            <button id="btn-cancel-1" onclick="toggleMissionButton(1, false)" class="flex-1 bg-slate-100 border border-slate-200 text-slate-400 text-sm font-black py-3.5 rounded-xl transition duration-150 active:scale-95">취소</button>
           </div>
         </div>
 
@@ -2027,18 +2003,6 @@
         switchTab('register');
         return;
       }
-      
-      // Mandatory photo upload check for exercise mission
-      if (id === 1 && isDone && !state.photoUploaded) {
-        alert("운동 인증 사진을 먼저 업로드하셔야 미션 완료가 가능합니다! 📷");
-        return;
-      }
-      
-      // Check if photo is uploaded before checking other missions below
-      if (id !== 1 && isDone && !state.photoUploaded) {
-        alert("운동 인증 사진을 먼저 업로드하셔야 다른 미션 포인트 적립이 가능합니다! 🏃‍♂️📷");
-        return;
-      }
 
       // Check if state is actually changing
       const previousState = state.todayMissions[id];
@@ -2960,13 +2924,6 @@
       let missionsList = [];
       const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
       const missionNames = { 1: "운동🏃", 2: "야채🥗", 3: "잠🛌", 4: "단음료🥤", 5: "물💧", 6: "양치질🪥" };
-
-      // Verify photo requirement for exercise mission
-      if (state.todayMissions[1] && !state.photoUploaded) {
-        alert("숨이 찰 정도의 운동 미션을 완료하기 위해서는 운동 사진 인증 업로드가 필요합니다! 📷");
-        return;
-      }
-
       for (let id = 1; id <= 6; id++) {
         if (state.todayMissions[id]) {
           pointsEarned += pointsConfig[id];
@@ -2980,9 +2937,6 @@
       }
 
       let logMessage = `[일일미션] ${missionsList.join(', ')}`;
-      if (state.todayMissions[1] && state.photoUrl) {
-        logMessage += ` (인증샷 첨부됨)`;
-      }
 
       // Save daily submit stamp
       localStorage.setItem(`last_submit_${state.studentId}`, getTodayDateString());
