@@ -2673,10 +2673,15 @@
       .then(res => res.json())
       .then(res => {
         if (res.success && res.student) {
+          const serverPts = Number(res.student.totalPoints || 0);
+          const localPts = Number((state.student && state.student.totalPoints) || 0);
+          const mergedPts = Math.max(serverPts, localPts);
+
           if (!state.student) {
-            state.lastLevel = getLevelData(res.student.totalPoints || 0).level;
+            state.lastLevel = getLevelData(mergedPts).level;
           }
           state.student = res.student;
+          state.student.totalPoints = mergedPts;
           
           // Preserve locally updated monthly height & weight if local monthly bmi exists
           const key = `teunteun_monthly_bmi_${id}`;
@@ -2716,9 +2721,9 @@
           // Sync to local mock database for backup
           localStorage.setItem('teunteun_student_cached', JSON.stringify(state.student));
           
-          // STRICT SYNC: Keep local mock_students DB synchronized with GAS server data
+          // STRICT SYNC: Keep local mock_students DB synchronized with merged totalPoints
           if (students[id]) {
-            students[id].totalPoints = res.student.totalPoints;
+            students[id].totalPoints = mergedPts;
             students[id].history = res.student.history || [];
             students[id].preSurveyDone = state.student.preSurveyDone;
             if (latestM > 0) {
@@ -4256,7 +4261,6 @@
       if (state.studentId) {
         localStorage.setItem(`teunteun_survey_synced_${state.studentId}`, 'true');
       }
-      localStorage.setItem('teunteun_global_survey_done', 'true');
       
       const submitBtn = document.getElementById('survey-submit-btn');
       if (submitBtn) {
@@ -4276,15 +4280,24 @@
       if (!surveyBtn) return;
       
       let isDone = false;
-      if (state.student && state.student.preSurveyDone) isDone = true;
-      if (!isDone) {
+      if (state.student && state.student.preSurveyDone) {
+        isDone = true;
+      }
+      if (!isDone && state.studentId) {
         try {
           const cached = JSON.parse(localStorage.getItem('teunteun_student_cached') || '{}');
-          if (cached && cached.preSurveyDone) isDone = true;
+          if (cached && (cached.id === state.studentId || cached.studentId === state.studentId) && cached.preSurveyDone) {
+            isDone = true;
+          }
         } catch(e){}
-      }
-      if (!isDone && localStorage.getItem('teunteun_global_survey_done') === 'true') {
-        isDone = true;
+        if (!isDone) {
+          try {
+            const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
+            if (students[state.studentId] && students[state.studentId].preSurveyDone) {
+              isDone = true;
+            }
+          } catch(e){}
+        }
       }
 
       if (isDone) {
@@ -4319,6 +4332,7 @@
         localStorage.removeItem('teunteun_student_name');
         localStorage.removeItem('teunteun_teacher_name');
         localStorage.removeItem('teunteun_teacher_phone');
+        localStorage.removeItem('teunteun_global_survey_done');
         
         // Cleanly wipe input fields for both Student and Teacher
         const g = document.getElementById('input-grade');
