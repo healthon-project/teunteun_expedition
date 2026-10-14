@@ -15,6 +15,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
   <!-- CookieRun Webfont from Project Noonnu -->
   <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     @font-face {
       font-family: 'CookieRun';
       src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/CookieRun-Regular.woff') format('woff');
@@ -497,40 +498,138 @@
 
 
         <h3 class="text-3xl font-black text-slate-800 mb-1.5 text-center flex items-center justify-center gap-1.5">🎮 신나는 놀이터</h3>
-        <p class="text-xs sm:text-sm font-bold text-slate-500 mb-6 text-center w-full">떨어지는 음식 중 건강한 음식을 바구니로 받아보세요!</p>
+        <p class="text-xs sm:text-sm font-bold text-slate-500 mb-3 text-center w-full">원하는 게임과 난이도(1·2·3단계)를 골라 플레이해 보세요!</p>
 
-        <!-- Catching Game Card Container -->
-        <div class="w-full max-w-[440px] bg-white border-4 border-pastelPink rounded-[36px] p-5 shadow-md flex flex-col items-center relative overflow-hidden">
-          <div class="relative w-full max-w-[400px] h-[300px] border-2 border-slate-200 rounded-2xl overflow-hidden bg-[#eaf7ff]">
-            <canvas id="gameCanvas" width="400" height="300" class="w-full h-full block bg-[#eaf7ff]"></canvas>
+        <!-- 메인 게임 선택 탭 (1번 러너 vs 2번 짝꿍찾기) -->
+        <div class="w-full max-w-[440px] bg-slate-200/80 p-1.5 rounded-[24px] grid grid-cols-2 gap-1.5 mb-3.5 shadow-inner">
+          <button id="tabBtnRunner" onclick="switchMainGame('runner')" class="py-3 rounded-[20px] font-black text-xs sm:text-sm transition duration-150 flex items-center justify-center gap-1.5 bg-white text-rose-600 shadow-sm border border-slate-200 active:scale-98 cursor-pointer">
+            <span>🏃 1. 칼로리 러너</span>
+          </button>
+          <button id="tabBtnMemory" onclick="switchMainGame('memory')" class="py-3 rounded-[20px] font-bold text-xs sm:text-sm transition duration-150 flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 active:scale-98 cursor-pointer">
+            <span>🃏 2. 짝꿍 찾기</span>
+          </button>
+        </div>
+
+        <!-- ==================== [게임 1: 칼로리 팡팡 러너 컨테이너] ==================== -->
+        <div id="gameBoxRunner" class="w-full max-w-[440px] bg-white border-4 border-[#ffcad4] rounded-[36px] p-4 sm:p-5 shadow-xl flex flex-col items-center relative overflow-hidden">
+          
+          <div class="w-full text-center mb-2">
+            <h3 class="text-base sm:text-lg font-black text-slate-800">🏃 칼로리 팡팡 러너!</h3>
+            <p class="text-[11px] text-slate-500 font-bold">점프로 장애물을 피하고 건강 아이템을 쏙 모아보세요!</p>
+          </div>
+
+          <!-- 러너 단계 선택 탭 (1단계: 초급 / 2단계: 중급 / 3단계: 고급) -->
+          <div class="w-full grid grid-cols-3 gap-1.5 mb-2.5">
+            <button id="rStageBtn1" onclick="selectRunnerStage(1)" class="stage-tab bg-rose-500 text-white font-black text-xs py-2 rounded-xl shadow-sm border-2 border-rose-600 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer">
+              <span>🌱 1단계</span>
+              <span class="text-[9px] font-medium opacity-90">초급 (목표 60)</span>
+            </button>
+            <button id="rStageBtn2" onclick="selectRunnerStage(2)" class="stage-tab bg-white text-slate-700 font-bold text-xs py-2 rounded-xl border-2 border-slate-200 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer">
+              <span>🌿 2단계</span>
+              <span class="text-[9px] font-medium text-slate-400">중급 (목표 100)</span>
+            </button>
+            <button id="rStageBtn3" onclick="selectRunnerStage(3)" class="stage-tab bg-white text-slate-700 font-bold text-xs py-2 rounded-xl border-2 border-slate-200 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer">
+              <span>🌳 3단계</span>
+              <span class="text-[9px] font-medium text-slate-400">고급 (목표 140)</span>
+            </button>
+          </div>
+
+          <!-- 러너 캔버스 (400x300) -->
+          <div class="relative w-full max-w-[400px] h-[300px] border-2 border-slate-200 rounded-2xl overflow-hidden bg-[#eaf7ff] shadow-inner">
+            <canvas id="runnerCanvas" width="400" height="300" class="w-full h-full block bg-[#eaf7ff] cursor-pointer"></canvas>
             
-            <!-- Game Start/End Overlay -->
-            <div id="gameOverlay" class="absolute inset-0 bg-slate-900/80 flex flex-col justify-center items-center text-center p-4 text-white z-10">
-              <h4 id="gameOverlayTitle" class="text-xl font-black text-yellow-300 mb-2">🍎 건강음식 받기 게임! 🍓</h4>
-              <p id="gameOverlayText" class="text-[11px] leading-relaxed text-slate-200 mb-4 px-2">
-                좌우 방향키(←, →) 또는 아래 버튼으로 바구니를 움직이세요.<br>
-                <strong>건강 음식(사과, 바나나, 당근 등)</strong>을 먹으면 <strong>+10점</strong>!<br>
-                <strong>정크 푸드(도넛, 사탕, 햄버거 등)</strong>를 먹으면 <strong>-5점</strong>!<br>
-                제한시간 30초 내에 <strong>100점</strong>을 돌파해 보세요!
+            <!-- 러너 오버레이 -->
+            <div id="runnerOverlay" class="absolute inset-0 bg-slate-900/80 flex flex-col justify-center items-center text-center p-4 text-white z-10">
+              <h4 id="runnerOverlayTitle" class="text-xl font-black text-yellow-300 mb-2">🏃 칼로리 러너 1단계! 💨</h4>
+              <p id="runnerOverlayText" class="text-[12px] leading-relaxed text-slate-200 mb-4 px-2">
+                <strong>점프 버튼</strong>이나 <strong>스페이스바</strong>를 눌러 뛰어오르세요!<br>
+                🍎 <strong>건강 아이템</strong>(과일, 물, 운동화)을 먹으면 <strong>+10점</strong>!<br>
+                🍔 <strong>고칼로리 장애물</strong>(패스트푸드, 소파)에 닿으면 <strong>-5점</strong>!<br>
+                <span id="runnerTargetInfo" class="text-rose-300 font-bold">1단계 목표: 30초 내에 60점 달성!</span>
               </p>
-              <button id="startGameBtn" class="bg-pastelPink text-slate-800 font-black px-6 py-3 rounded-2xl active:scale-95 transition-transform text-sm shadow-md border-2 border-white hover:bg-pastelPink-dark">
-                게임 시작! 🎮
+              <button id="startRunnerBtn" class="bg-[#ffcad4] hover:bg-[#ffb3c1] text-slate-900 font-black px-7 py-3 rounded-2xl active:scale-95 transition-transform text-sm shadow-md border-2 border-white cursor-pointer">
+                달리기 시작! 🎮
               </button>
             </div>
           </div>
 
-          <!-- Mobile Controls -->
-          <div class="flex justify-center gap-4 w-full mt-4">
-            <button id="btnLeft" class="flex-1 bg-pastelPink-light border-2 border-pastelPink text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none">◀ 왼쪽</button>
-            <button id="btnStop" class="flex-1 bg-slate-100 border-2 border-slate-300 text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none">■ 멈춤</button>
-            <button id="btnRight" class="flex-1 bg-pastelPink-light border-2 border-pastelPink text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none">오른쪽 ▶</button>
+          <!-- 모바일 조작 버튼 -->
+          <div class="flex justify-center items-center gap-3 w-full mt-3.5">
+            <button id="btnRunnerPause" class="w-24 bg-slate-100 border-2 border-slate-300 text-slate-700 text-sm font-black py-3.5 rounded-2xl active:scale-95 transition select-none touch-none shadow-sm cursor-pointer">
+              ⏸️ 멈춤
+            </button>
+            <button id="btnJump" class="flex-1 bg-[#ffcad4] border-2 border-[#f7a8b8] text-slate-900 text-base font-black py-3.5 rounded-2xl active:scale-95 transition select-none touch-none shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>🚀 껑충 점프!</span>
+              <span class="text-[11px] font-medium text-slate-600 hidden sm:inline">(Space)</span>
+            </button>
           </div>
+
+          <!-- 러너 성공 메시지 -->
+          <div id="runner-success-message" class="hidden mt-3 bg-emerald-50 border-2 border-emerald-400 rounded-2xl p-2.5 w-full text-center">
+            <h4 class="font-black text-emerald-800 text-sm" id="runnerSuccessBannerTitle">🎉 단계 완주 대성공!</h4>
+            <p class="text-xs text-emerald-600 mt-0.5" id="runnerSuccessBannerSubtitle">장애물을 멋지게 피하고 건강 목표를 달성했어요! 👏</p>
+          </div>
+
         </div>
 
-        <!-- Success Banner -->
-        <div id="game-success-message" class="hidden mt-6 bg-emerald-50 border-2 border-emerald-300 rounded-[32px] p-6 w-full max-w-[440px] text-center animate-bounce">
-          <h4 class="font-bold text-emerald-800 text-lg">🎉 미션 대성공! 🎉</h4>
-          <p class="text-sm text-emerald-600 mt-1.5">오늘의 보너스 <span class="font-bold">+50p</span>가 적립되었습니다!</p>
+        <!-- ==================== [게임 2: 건강 짝꿍 찾기 컨테이너] ==================== -->
+        <div id="gameBoxMemory" class="hidden w-full max-w-[440px] bg-white border-4 border-[#bae6fd] rounded-[36px] p-4 sm:p-5 shadow-xl flex flex-col items-center relative overflow-hidden">
+          
+          <div class="w-full text-center mb-2">
+            <h3 class="text-base sm:text-lg font-black text-slate-800">🃏 건강 음식&운동 짝꿍 찾기</h3>
+            <p class="text-[11px] text-slate-500 font-bold">건강 카드 짝을 기억해서 맞춰보세요!</p>
+          </div>
+
+          <!-- 메모리 단계 선택 탭 (6쌍 / 8쌍 / 10쌍) -->
+          <div class="w-full grid grid-cols-3 gap-1.5 mb-2.5">
+            <button id="stageBtn1" onclick="selectMemoryStage(1)" class="stage-tab bg-sky-500 text-white font-black text-xs py-2 rounded-xl shadow-sm border-2 border-sky-600 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer">
+              <span>🌱 1단계</span>
+              <span class="text-[9px] font-medium opacity-90">6쌍 (12장)</span>
+            </button>
+            <button id="stageBtn2" onclick="selectMemoryStage(2)" class="stage-tab bg-white text-slate-700 font-bold text-xs py-2 rounded-xl border-2 border-slate-200 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer">
+              <span>🌿 2단계</span>
+              <span class="text-[9px] font-medium text-slate-400">8쌍 (16장)</span>
+            </button>
+            <button id="stageBtn3" onclick="selectMemoryStage(3)" class="stage-tab bg-white text-slate-700 font-bold text-xs py-2 rounded-xl border-2 border-slate-200 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer">
+              <span>🌳 3단계</span>
+              <span class="text-[9px] font-medium text-slate-400">10쌍 (20장)</span>
+            </button>
+          </div>
+
+          <!-- 메모리 캔버스 (400x300) -->
+          <div class="relative w-full max-w-[400px] h-[300px] border-2 border-slate-200 rounded-2xl overflow-hidden bg-[#f0f9ff] shadow-inner">
+            <canvas id="memoryCanvas" width="400" height="300" class="w-full h-full block bg-[#f0f9ff] cursor-pointer"></canvas>
+            
+            <!-- 메모리 오버레이 -->
+            <div id="memoryOverlay" class="absolute inset-0 bg-slate-900/80 flex flex-col justify-center items-center text-center p-4 text-white z-10">
+              <h4 id="memoryOverlayTitle" class="text-xl font-black text-yellow-300 mb-1.5">🃏 짝꿍 찾기 1단계! 🌟</h4>
+              <p id="memoryOverlayText" class="text-[12px] leading-relaxed text-slate-200 mb-4 px-2">
+                카드를 터치해서 <strong>같은 건강 카드 2장</strong>을 찾으세요!<br>
+                <span id="memoryPairsInfo" class="text-sky-300 font-bold">1단계: 6쌍 (12장) 맞추기</span><br>
+                제한시간 안에 모든 짝을 완성하면 성공!
+              </p>
+              <button id="startMemoryBtn" class="bg-[#bae6fd] hover:bg-[#93c5fd] text-slate-900 font-black px-7 py-3 rounded-2xl active:scale-95 transition-transform text-sm shadow-md border-2 border-white cursor-pointer">
+                카드 게임 시작! 🎮
+              </button>
+            </div>
+          </div>
+
+          <!-- 하단 조작 컨트롤 -->
+          <div class="flex justify-between items-center w-full mt-3.5 gap-3">
+            <button id="btnMemoryPause" class="w-24 bg-slate-100 border-2 border-slate-300 text-slate-700 text-sm font-black py-3 rounded-2xl active:scale-95 transition select-none touch-none shadow-sm cursor-pointer">
+              ⏸️ 멈춤
+            </button>
+            <div class="flex-1 bg-sky-50 border-2 border-sky-200 rounded-2xl py-2.5 px-3 text-center text-xs font-bold text-sky-900">
+              👉 카드를 터치해 짝을 맞춰보세요!
+            </div>
+          </div>
+
+          <!-- 메모리 성공 메시지 -->
+          <div id="memory-success-message" class="hidden mt-3 bg-emerald-50 border-2 border-emerald-400 rounded-2xl p-2.5 w-full text-center">
+            <h4 class="font-black text-emerald-800 text-sm" id="memorySuccessBannerTitle">🎉 단계 클리어 대성공!</h4>
+            <p class="text-xs text-emerald-600 mt-0.5" id="memorySuccessBannerSubtitle">모든 건강 카드의 짝을 완벽하게 맞췄어요! 👏</p>
+          </div>
+
         </div>
 
         <!-- Video Recommendation Card -->
@@ -1208,6 +1307,11 @@
       document.querySelectorAll('.tab-content').forEach(section => {
         section.classList.add('hidden');
       });
+
+      // Stop playground game loops if switching away from playground
+      if (tabId !== 'playground' && typeof window.stopAllPlaygroundGames === 'function') {
+        window.stopAllPlaygroundGames();
+      }
 
       // Show targeted tab
       document.getElementById('tab-' + tabId).classList.remove('hidden');
@@ -3033,441 +3137,1215 @@
       }
     }
 
-    // Health Catch Game (Playground)
+    // =========================================================================
+    // 신나는 놀이터: 듀얼 게임 엔진 (1. 칼로리 러너 & 2. 건강 짝꿍 찾기)
+    // =========================================================================
     (function() {
-      let canvas, ctx;
-      let startBtn, overlay, overlayTitle, overlayText;
-      let btnLeft, btnStop, btnRight;
-      
-      let gameInterval = null;
-      let timerInterval = null;
-      let isPlaying = false;
-      let isPaused = false; // Add isPaused state
-      
-      let score = 0;
-      let timeLeft = 30;
-      let highScore = parseInt(localStorage.getItem('teunteun_health_game_high') || '0');
-      
-      let basket = {
-        x: 170,
-        y: 250,
-        width: 60,
-        height: 18,
-        speed: 15,
-        color: '#ffcad4' // pastelPink Default
-      };
-      
-      let items = [];
-      const spawnChance = 0.04;
-      
-      const healthyFoodsList = [
-        { emoji: '🍎', score: 10, isHealthy: true },
-        { emoji: '🍌', score: 10, isHealthy: true },
-        { emoji: '🥕', score: 10, isHealthy: true },
-        { emoji: '🍓', score: 10, isHealthy: true },
-        { emoji: '🍉', score: 10, isHealthy: true },
-        { emoji: '🥦', score: 10, isHealthy: true }
-      ];
-      
-      const junkFoods = [
-        { emoji: '🍩', score: -5, isHealthy: false },
-        { emoji: '🍬', score: -5, isHealthy: false },
-        { emoji: '🍫', score: -5, isHealthy: false },
-        { emoji: '🍔', score: -5, isHealthy: false },
-        { emoji: '🍕', score: -5, isHealthy: false },
-        { emoji: '🥤', score: -5, isHealthy: false }
-      ];
-      
-      let keys = {
-        ArrowLeft: false,
-        ArrowRight: false
-      };
-      
-      window.initCardGame = function() {
-        resetGameUI();
-      }
-      
-      function resetGameUI() {
-        canvas = document.getElementById('gameCanvas');
-        if (!canvas) return;
-        ctx = canvas.getContext('2d');
-        
-        startBtn = document.getElementById('startGameBtn');
-        overlay = document.getElementById('gameOverlay');
-        overlayTitle = document.getElementById('gameOverlayTitle');
-        overlayText = document.getElementById('gameOverlayText');
-        
-        btnLeft = document.getElementById('btnLeft');
-        btnStop = document.getElementById('btnStop');
-        btnRight = document.getElementById('btnRight');
-        
-        isPlaying = false;
-        clearInterval(gameInterval);
-        clearInterval(timerInterval);
-        
-        overlay.classList.remove('hidden');
-        document.getElementById('game-success-message').classList.add('hidden');
-        
-        basket.x = canvas.width / 2 - basket.width / 2;
-        drawInitialFrame();
-        
-        if (!window.gameEventsBound) {
-          bindGameEvents();
-          window.gameEventsBound = true;
-        }
+      // -----------------------------------------------------------------------
+      // 1. 공통 사운드 시스템 (Web Audio API)
+      // -----------------------------------------------------------------------
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      let audioCtx = null;
+
+      function initAudio() {
+        try {
+          if (!audioCtx && AudioCtxClass) {
+            audioCtx = new AudioCtxClass();
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+        } catch(e) {}
       }
 
-      function drawInitialFrame() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        grad.addColorStop(0, '#eaf7ff');
-        grad.addColorStop(1, '#ffffff');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#334155';
-        ctx.fillStyle = basket.color;
-        ctx.beginPath();
-        ctx.roundRect(basket.x, basket.y, basket.width, basket.height, 8);
-        ctx.fill();
-        ctx.stroke();
+      function playSound(type) {
+        try {
+          initAudio();
+          if (!audioCtx) return;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          const t = audioCtx.currentTime;
+
+          if (type === 'jump') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(260, t);
+            osc.frequency.exponentialRampToValueAtTime(620, t + 0.15);
+            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.15);
+            osc.start(t);
+            osc.stop(t + 0.15);
+          } else if (type === 'collect') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, t);
+            osc.frequency.setValueAtTime(659.25, t + 0.08);
+            osc.frequency.setValueAtTime(783.99, t + 0.16);
+            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.25);
+            osc.start(t);
+            osc.stop(t + 0.25);
+          } else if (type === 'hit') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, t);
+            osc.frequency.exponentialRampToValueAtTime(80, t + 0.2);
+            gain.gain.setValueAtTime(0.35, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.2);
+            osc.start(t);
+            osc.stop(t + 0.2);
+          } else if (type === 'flip') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(360, t);
+            osc.frequency.exponentialRampToValueAtTime(560, t + 0.08);
+            gain.gain.setValueAtTime(0.18, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.08);
+            osc.start(t);
+            osc.stop(t + 0.08);
+          } else if (type === 'match') {
+            [523.25, 659.25, 783.99].forEach((freq, i) => {
+              const o = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              o.connect(g);
+              g.connect(audioCtx.destination);
+              o.frequency.value = freq;
+              g.gain.setValueAtTime(0.2, t + i * 0.06);
+              g.gain.linearRampToValueAtTime(0.01, t + i * 0.06 + 0.16);
+              o.start(t + i * 0.06);
+              o.stop(t + i * 0.06 + 0.16);
+            });
+          } else if (type === 'mismatch') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(170, t);
+            osc.frequency.setValueAtTime(120, t + 0.09);
+            gain.gain.setValueAtTime(0.22, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.16);
+            osc.start(t);
+            osc.stop(t + 0.16);
+          } else if (type === 'win') {
+            [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+              const noteOsc = audioCtx.createOscillator();
+              const noteGain = audioCtx.createGain();
+              noteOsc.connect(noteGain);
+              noteGain.connect(audioCtx.destination);
+              noteOsc.frequency.value = freq;
+              noteGain.gain.setValueAtTime(0.22, t + i * 0.09);
+              noteGain.gain.linearRampToValueAtTime(0.01, t + i * 0.09 + 0.22);
+              noteOsc.start(t + i * 0.09);
+              noteOsc.stop(t + i * 0.09 + 0.22);
+            });
+          }
+        } catch(e) {}
       }
-      
-      function bindGameEvents() {
-        window.addEventListener('keydown', (e) => {
-          if (e.key in keys) {
-            keys[e.key] = true;
-            e.preventDefault();
-            
-            // Auto-resume if key is pressed while paused
-            if (isPlaying && isPaused) {
-              togglePauseGame();
+
+      // -----------------------------------------------------------------------
+      // 2. 메인 게임 전환 (러너 <-> 짝꿍찾기)
+      // -----------------------------------------------------------------------
+      let currentActiveGame = 'runner';
+
+      window.switchMainGame = function(gameType) {
+        if (currentActiveGame === gameType) return;
+
+        if (currentActiveGame === 'runner') stopRunnerGame();
+        if (currentActiveGame === 'memory') stopMemoryGame();
+
+        currentActiveGame = gameType;
+
+        const tabRunner = document.getElementById('tabBtnRunner');
+        const tabMemory = document.getElementById('tabBtnMemory');
+        const boxRunner = document.getElementById('gameBoxRunner');
+        const boxMemory = document.getElementById('gameBoxMemory');
+
+        if (gameType === 'runner') {
+          if (tabRunner) tabRunner.className = "py-3 rounded-[20px] font-black text-xs sm:text-sm transition duration-150 flex items-center justify-center gap-1.5 bg-white text-rose-600 shadow-sm border border-slate-200 active:scale-98 cursor-pointer";
+          if (tabMemory) tabMemory.className = "py-3 rounded-[20px] font-bold text-xs sm:text-sm transition duration-150 flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 active:scale-98 cursor-pointer";
+          if (boxRunner) boxRunner.classList.remove('hidden');
+          if (boxMemory) boxMemory.classList.add('hidden');
+          resetRunnerUI();
+        } else {
+          if (tabMemory) tabMemory.className = "py-3 rounded-[20px] font-black text-xs sm:text-sm transition duration-150 flex items-center justify-center gap-1.5 bg-white text-sky-600 shadow-sm border border-slate-200 active:scale-98 cursor-pointer";
+          if (tabRunner) tabRunner.className = "py-3 rounded-[20px] font-bold text-xs sm:text-sm transition duration-150 flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 active:scale-98 cursor-pointer";
+          if (boxMemory) boxMemory.classList.remove('hidden');
+          if (boxRunner) boxRunner.classList.add('hidden');
+          resetMemoryUI();
+        }
+      };
+
+      // -----------------------------------------------------------------------
+      // 3. [게임 1: 칼로리 팡팡 러너 로직 (3단계 시스템)]
+      // -----------------------------------------------------------------------
+      let runnerCanvas = null;
+      let rCtx = null;
+      let startRunnerBtn = null;
+      let runnerOverlay = null;
+      let runnerOverlayTitle = null;
+      let runnerOverlayText = null;
+      let runnerTargetInfo = null;
+      let btnRunnerPause = null;
+      let btnJump = null;
+      let runnerSuccessMsg = null;
+      let runnerSuccessBannerTitle = null;
+      let runnerSuccessBannerSubtitle = null;
+
+      const RUNNER_STAGE_CONFIG = {
+        1: { target: 60,  speed: 3.6, time: 30, goodRatio: 0.68, title: '🌱 1단계 초급 러닝 (목표 60점)' },
+        2: { target: 100, speed: 4.3, time: 30, goodRatio: 0.58, title: '🌿 2단계 중급 러닝 (목표 100점)' },
+        3: { target: 140, speed: 5.0, time: 35, goodRatio: 0.50, title: '🌳 3단계 고급 러닝 (목표 140점)' }
+      };
+
+      let rStage = 1;
+      let rIsPlaying = false;
+      let rIsPaused = false;
+      let rGameLoopId = null;
+      let rTimerId = null;
+      let rScore = 0;
+      let rTimeLeft = 30;
+      let rNextStageToSelect = null;
+
+      const GROUND_Y = 240;
+      const player = {
+        x: 50,
+        y: GROUND_Y - 40,
+        width: 36,
+        height: 40,
+        vy: 0,
+        gravity: 0.72,
+        jumpPower: -12.5,
+        isGrounded: true,
+        runFrame: 0,
+        hitFlash: 0
+      };
+
+      let rObjects = [];
+      let rEffects = [];
+      let rGroundOffset = 0;
+
+      const rGoodItems = [
+        { emoji: '🍎', name: '사과', score: 10, type: 'good' },
+        { emoji: '💧', name: '물', score: 10, type: 'good' },
+        { emoji: '🥦', name: '브로콜리', score: 10, type: 'good' },
+        { emoji: '🪢', name: '줄넘기', score: 10, type: 'good' },
+        { emoji: '👟', name: '운동화', score: 10, type: 'good' },
+        { emoji: '🍓', name: '딸기', score: 10, type: 'good' },
+        { emoji: '🍌', name: '바나나', score: 10, type: 'good' }
+      ];
+
+      const rBadObstacles = [
+        { emoji: '🍔', name: '햄버거', score: -5, type: 'bad' },
+        { emoji: '🍩', name: '도넛', score: -5, type: 'bad' },
+        { emoji: '🥤', name: '탄산음료', score: -5, type: 'bad' },
+        { emoji: '🍕', name: '피자', score: -5, type: 'bad' },
+        { emoji: '🛋️', name: '소파', score: -5, type: 'bad' }
+      ];
+
+      const rClouds = [
+        { x: 40, y: 35, speed: 0.6, size: 28 },
+        { x: 220, y: 55, speed: 0.4, size: 22 },
+        { x: 340, y: 25, speed: 0.8, size: 32 }
+      ];
+
+      window.selectRunnerStage = function(stageNum) {
+        if (rIsPlaying) {
+          if (!confirm(`${stageNum}단계로 변경하시겠습니까? 현재 게임은 종료됩니다.`)) return;
+        }
+        rStage = stageNum;
+        rNextStageToSelect = null;
+
+        [1, 2, 3].forEach(s => {
+          const btn = document.getElementById(`rStageBtn${s}`);
+          if (btn) {
+            if (s === stageNum) {
+              btn.className = "stage-tab bg-rose-500 text-white font-black text-xs py-2 rounded-xl shadow-sm border-2 border-rose-600 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer";
+              if (btn.children[1]) btn.children[1].className = "text-[9px] font-medium opacity-90";
+            } else {
+              btn.className = "stage-tab bg-white text-slate-700 font-bold text-xs py-2 rounded-xl border-2 border-slate-200 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer";
+              if (btn.children[1]) btn.children[1].className = "text-[9px] font-medium text-slate-400";
             }
           }
         });
-        
-        window.addEventListener('keyup', (e) => {
-          if (e.key in keys) {
-            keys[e.key] = false;
-          }
-        });
-        
-        let moveLeftInterval = null;
-        let moveRightInterval = null;
-        
-        btnLeft.addEventListener('mousedown', () => { moveLeftInterval = setInterval(() => moveBasket('left'), 20); });
-        btnLeft.addEventListener('mouseup', () => { clearInterval(moveLeftInterval); });
-        btnLeft.addEventListener('mouseleave', () => { clearInterval(moveLeftInterval); });
-        
-        btnRight.addEventListener('mousedown', () => { moveRightInterval = setInterval(() => moveBasket('right'), 20); });
-        btnRight.addEventListener('mouseup', () => { clearInterval(moveRightInterval); });
-        btnRight.addEventListener('mouseleave', () => { clearInterval(moveRightInterval); });
-        
-        btnLeft.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          moveLeftInterval = setInterval(() => moveBasket('left'), 20);
-        });
-        btnLeft.addEventListener('touchend', () => { clearInterval(moveLeftInterval); });
-        
-        btnRight.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          moveRightInterval = setInterval(() => moveBasket('right'), 20);
-        });
-        btnRight.addEventListener('touchend', () => { clearInterval(moveRightInterval); });
-        
-        // Stop button handlers to toggle pause/play state
-        btnStop.addEventListener('click', () => {
-          togglePauseGame();
-        });
-        btnStop.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          togglePauseGame();
-        });
 
-        startBtn.addEventListener('click', () => {
-          playAudio('match');
-          startGame();
-        });
+        resetRunnerUI();
+      };
+
+      function resetRunnerUI() {
+        rIsPlaying = false;
+        rIsPaused = false;
+        clearInterval(rTimerId);
+        cancelAnimationFrame(rGameLoopId);
+
+        const cfg = RUNNER_STAGE_CONFIG[rStage];
+        rTimeLeft = cfg.time;
+        rScore = 0;
+
+        if (runnerOverlayTitle) runnerOverlayTitle.textContent = `🏃 칼로리 러너 ${rStage}단계! 💨`;
+        if (runnerTargetInfo) runnerTargetInfo.textContent = `${cfg.title} 달성!`;
+        if (startRunnerBtn) startRunnerBtn.textContent = `${rStage}단계 달리기 시작! 🎮`;
+
+        if (runnerOverlay) runnerOverlay.classList.remove('hidden');
+        if (runnerSuccessMsg) runnerSuccessMsg.classList.add('hidden');
+        drawRunner();
       }
-      
-      function moveBasket(dir) {
-        if (!isPlaying) return;
-        
-        // Auto-resume if paused and controls are touched
-        if (isPaused) {
-          togglePauseGame();
+
+      function stopRunnerGame() {
+        rIsPlaying = false;
+        rIsPaused = false;
+        clearInterval(rTimerId);
+        cancelAnimationFrame(rGameLoopId);
+      }
+
+      function triggerRunnerJump() {
+        if (currentActiveGame !== 'runner' || !rIsPlaying) return;
+        if (rIsPaused) {
+          toggleRunnerPause();
+          return;
         }
-        
-        if (dir === 'left') {
-          basket.x = Math.max(0, basket.x - basket.speed);
-        } else if (dir === 'right') {
-          basket.x = Math.min(canvas.width - basket.width, basket.x + basket.speed);
+        if (player.isGrounded) {
+          player.vy = player.jumpPower;
+          player.isGrounded = false;
+          playSound('jump');
         }
       }
-      
-      function startGame() {
-        score = 0;
-        timeLeft = 30;
-        items = [];
-        basket.x = canvas.width / 2 - basket.width / 2;
-        isPlaying = true;
-        isPaused = false; // Reset paused state
-        
-        // Reset stop button text and styling
-        if (btnStop) {
-          btnStop.textContent = "■ 멈춤";
-          btnStop.className = "flex-1 bg-slate-100 border-2 border-slate-300 text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none";
+
+      function toggleRunnerPause() {
+        if (!rIsPlaying) return;
+        rIsPaused = !rIsPaused;
+        if (btnRunnerPause) {
+          if (rIsPaused) {
+            btnRunnerPause.textContent = "▶ 재개";
+            btnRunnerPause.className = "w-24 bg-emerald-100 border-2 border-emerald-400 text-emerald-800 text-sm font-black py-3.5 rounded-2xl active:scale-95 transition select-none touch-none shadow-sm cursor-pointer";
+          } else {
+            btnRunnerPause.textContent = "⏸️ 멈춤";
+            btnRunnerPause.className = "w-24 bg-slate-100 border-2 border-slate-300 text-slate-700 text-sm font-black py-3.5 rounded-2xl active:scale-95 transition select-none touch-none shadow-sm cursor-pointer";
+          }
         }
-        
-        overlay.classList.add('hidden');
-        document.getElementById('game-success-message').classList.add('hidden');
-        
-        gameInterval = setInterval(updateGame, 1000 / 60);
-        timerInterval = setInterval(updateTimer, 1000);
       }
-      
-      function togglePauseGame() {
-        if (!isPlaying) return;
-        
-        if (!isPaused) {
-          isPaused = true;
-          clearInterval(gameInterval);
-          gameInterval = null;
-          clearInterval(timerInterval);
-          timerInterval = null;
-          
-          // Clear active mobile moving intervals
-          if (typeof moveLeftInterval !== 'undefined') clearInterval(moveLeftInterval);
-          if (typeof moveRightInterval !== 'undefined') clearInterval(moveRightInterval);
-          keys.ArrowLeft = false;
-          keys.ArrowRight = false;
-          
-          drawPauseOverlay();
-          
-          if (btnStop) {
-            btnStop.textContent = "▶ 재개";
-            btnStop.className = "flex-1 bg-pastelMint border-2 border-pastelMint-dark text-[#1B4332] text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none shadow-sm";
+
+      function handleRunnerStartBtnClick() {
+        if (rNextStageToSelect !== null) {
+          const next = rNextStageToSelect;
+          rNextStageToSelect = null;
+          selectRunnerStage(next);
+        } else {
+          startRunnerGame();
+        }
+      }
+
+      function startRunnerGame() {
+        initAudio();
+        const cfg = RUNNER_STAGE_CONFIG[rStage];
+        rIsPlaying = true;
+        rIsPaused = false;
+        rScore = 0;
+        rTimeLeft = cfg.time;
+        rObjects = [];
+        rEffects = [];
+        player.y = GROUND_Y - player.height;
+        player.vy = 0;
+        player.isGrounded = true;
+        player.hitFlash = 0;
+
+        if (btnRunnerPause) {
+          btnRunnerPause.textContent = "⏸️ 멈춤";
+          btnRunnerPause.className = "w-24 bg-slate-100 border-2 border-slate-300 text-slate-700 text-sm font-black py-3.5 rounded-2xl active:scale-95 transition select-none touch-none shadow-sm cursor-pointer";
+        }
+
+        if (runnerOverlay) runnerOverlay.classList.add('hidden');
+        if (runnerSuccessMsg) runnerSuccessMsg.classList.add('hidden');
+
+        clearInterval(rTimerId);
+        cancelAnimationFrame(rGameLoopId);
+
+        rTimerId = setInterval(() => {
+          if (rIsPlaying && !rIsPaused) {
+            rTimeLeft--;
+            if (rTimeLeft <= 0) endRunnerGame();
+          }
+        }, 1000);
+
+        runnerLoop();
+      }
+
+      function endRunnerGame() {
+        rIsPlaying = false;
+        clearInterval(rTimerId);
+        cancelAnimationFrame(rGameLoopId);
+
+        const cfg = RUNNER_STAGE_CONFIG[rStage];
+        const isSuccess = rScore >= cfg.target;
+
+        if (isSuccess) playSound('win');
+
+        if (runnerOverlayTitle) runnerOverlayTitle.textContent = isSuccess ? `🏆 ${rStage}단계 완주 대성공! 🏆` : "🎮 시간 종료! 🐾";
+        if (runnerOverlayText) {
+          runnerOverlayText.innerHTML = `
+            소모 칼로리: <strong>${rScore} kcal</strong> (목표: ${cfg.target} kcal)<br><br>
+            ${isSuccess ? 
+              `🎉 <strong>${cfg.title}</strong>을 멋지게 완주했습니다! 참 잘했어요! ✨` : 
+              `아쉬워요! 다음엔 ${cfg.target}점을 돌파해 보세요!<br>(건강 아이템 🍎을 먹고 정크푸드 🍔를 피하세요)`
+            }
+          `;
+        }
+
+        if (isSuccess) {
+          if (runnerSuccessBannerTitle) runnerSuccessBannerTitle.textContent = `🎉 ${rStage}단계 완주 대성공!`;
+          if (runnerSuccessMsg) runnerSuccessMsg.classList.remove('hidden');
+
+          handlePlaygroundGameWin('칼로리 러너', rStage);
+
+          if (rStage < 3) {
+            if (startRunnerBtn) startRunnerBtn.textContent = `다음 ${rStage + 1}단계 도전하기! 🚀`;
+            rNextStageToSelect = rStage + 1;
+          } else {
+            if (startRunnerBtn) startRunnerBtn.textContent = `1단계부터 다시 달리기! 🔄`;
+            rNextStageToSelect = 1;
           }
         } else {
-          isPaused = false;
-          gameInterval = setInterval(updateGame, 1000 / 60);
-          timerInterval = setInterval(updateTimer, 1000);
-          
-          if (btnStop) {
-            btnStop.textContent = "■ 멈춤";
-            btnStop.className = "flex-1 bg-slate-100 border-2 border-slate-300 text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none";
-          }
-        }
-      }
-      
-      function drawPauseOverlay() {
-        ctx.fillStyle = "rgba(15, 23, 42, 0.4)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 24px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("⏸️ 일시 정지", canvas.width / 2, canvas.height / 2);
-      }
-      
-      function updateTimer() {
-        timeLeft--;
-        if (timeLeft <= 0) {
-          endGame();
-        }
-      }
-      
-      function spawnItem() {
-        const isHealthy = Math.random() < 0.6;
-        const sourceList = isHealthy ? healthyFoodsList : junkFoods;
-        const template = sourceList[Math.floor(Math.random() * sourceList.length)];
-        
-        items.push({
-          x: Math.random() * (canvas.width - 24) + 12,
-          y: -20,
-          emoji: template.emoji,
-          score: template.score,
-          isHealthy: template.isHealthy,
-          speed: Math.random() * 2 + 2 + (30 - timeLeft) * 0.1,
-          size: 24
-        });
-      }
-      
-      function updateGame() {
-        if (keys.ArrowLeft) moveBasket('left');
-        if (keys.ArrowRight) moveBasket('right');
-        
-        if (Math.random() < spawnChance) spawnItem();
-        
-        for (let i = items.length - 1; i >= 0; i--) {
-          let item = items[i];
-          item.y += item.speed;
-          
-          if (item.y > canvas.height + 20) {
-            items.splice(i, 1);
-            continue;
-          }
-          
-          if (item.y + item.size / 2 >= basket.y &&
-              item.y - item.size / 2 <= basket.y + basket.height &&
-              item.x + item.size / 2 >= basket.x &&
-              item.x - item.size / 2 <= basket.x + basket.width) {
-            
-            score += item.score;
-            if (score < 0) score = 0;
-            
-            playAudio(item.isHealthy ? 'match' : 'mismatch');
-            
-            items.splice(i, 1);
-            continue;
-          }
-        }
-        
-        draw();
-      }
-      
-      function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        grad.addColorStop(0, '#eaf7ff');
-        grad.addColorStop(1, '#ffffff');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#334155';
-        ctx.fillStyle = basket.color;
-        ctx.beginPath();
-        ctx.roundRect(basket.x, basket.y, basket.width, basket.height, 8);
-        ctx.fill();
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(basket.x + 15, basket.y);
-        ctx.lineTo(basket.x + 15, basket.y + basket.height);
-        ctx.moveTo(basket.x + 30, basket.y);
-        ctx.lineTo(basket.x + 30, basket.y + basket.height);
-        ctx.moveTo(basket.x + 45, basket.y);
-        ctx.lineTo(basket.x + 45, basket.y + basket.height);
-        ctx.stroke();
-        
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        items.forEach(item => {
-          ctx.font = `${item.size}px Arial`;
-          ctx.fillText(item.emoji, item.x, item.y);
-        });
-        
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`점수: ${score}`, 15, 25);
-        ctx.fillText(`최고: ${highScore}`, 15, 45);
-        
-        ctx.textAlign = 'right';
-        ctx.fillStyle = timeLeft <= 5 ? '#ef4444' : '#1e293b';
-        ctx.fillText(`시간: ${timeLeft}초`, canvas.width - 15, 25);
-      }
-      
-      function endGame() {
-        isPlaying = false;
-        isPaused = false;
-        clearInterval(gameInterval);
-        clearInterval(timerInterval);
-        
-        if (btnStop) {
-          btnStop.textContent = "■ 멈춤";
-          btnStop.className = "flex-1 bg-slate-100 border-2 border-slate-300 text-slate-800 text-sm font-black py-4 rounded-2xl active:scale-95 transition duration-150 select-none touch-none";
-        }
-        
-        if (score > highScore) {
-          highScore = score;
-          localStorage.setItem('teunteun_health_game_high', highScore.toString());
-        }
-        
-        let isSuccess = score >= 100;
-        
-        overlayTitle.textContent = isSuccess ? "🏆 성공! 대단해요! 🏆" : "🎮 게임 종료! 🐾";
-        overlayText.innerHTML = `
-          획득 점수: <strong>${score}점</strong><br>
-          최고 점수: <strong>${highScore}점</strong><br><br>
-          ${isSuccess ? 
-            `100점을 돌파하여 미션 보너스 <strong>+50p</strong>를 적립했습니다! 🌟` : 
-            `아쉽네요! 다음번엔 100점을 넘어 성공해 보세요!<br>(건강 음식을 먹으면 점수가 오릅니다.)`
-          }
-        `;
-        startBtn.textContent = "다시 도전하기! 🔄";
-        overlay.classList.remove('hidden');
-        
-        playAudio('clear');
-        
-        if (isSuccess) {
-          handleGameWin();
-        }
-      }
-
-      function handleGameWin() {
-        document.getElementById('game-success-message').classList.remove('hidden');
-        triggerConfetti();
-
-        if (!state.studentId) {
-          alert("와아! 건강 음식 받기 게임을 모두 클리어했어요! 🎮\n포인트를 적립하려면 로그인해 주세요! 🐾");
-          return;
+          if (startRunnerBtn) startRunnerBtn.textContent = `다시 달리기! 🔄`;
+          rNextStageToSelect = null;
         }
 
-        const gamePlayDate = localStorage.getItem(`game_clear_${state.studentId}`);
-        if (gamePlayDate === getTodayDateString()) {
-          alert("오늘의 놀이터 게임 클리어! 이미 일일 보너스 점수(50p)를 획득하여 이번 판은 순위 점수가 오르지 않아요! 🎮");
-          return;
-        }
+        if (runnerOverlay) runnerOverlay.classList.remove('hidden');
+      }
 
-        const pointsEarned = 50;
-        const missionName = "[놀이터] 건강음식 받기 성공 🍎";
+      let rSpawnCooldown = 0;
+      function spawnRunnerObjects() {
+        rSpawnCooldown--;
+        if (rSpawnCooldown > 0) return;
 
-        if (state.isOffline) {
-          LocalDB.addMission(state.studentId, missionName, pointsEarned, null);
-          localStorage.setItem(`game_clear_${state.studentId}`, getTodayDateString());
-          
-          setTimeout(() => {
-            alert(`놀이터 게임 완료! 보너스 점수 50p가 적립되었습니다!`);
-            refreshStudentData();
-          }, 500);
-          let todayTotal = 0;
-          const pointsConfig = { 1: 50, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 };
-          for (const [mId, isDone] of Object.entries(state.todayMissions || {})) {
-            if (isDone === true) todayTotal += pointsConfig[mId];
-          }
-          const totalPts = Number(state.student ? state.student.totalPoints : 0) || 0;
-          const dailyStk = todayTotal >= 50 ? 1 : 0;
-          fetch(state.gasUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'log_mission',
-              school: state.school || 'A초',
-              studentId: state.studentId,
-              name: state.student ? state.student.name : '',
-              missionType: "일별스티커",
-              points: pointsEarned,
-              totalPoints: totalPts,
-              stickerCount: Math.floor(totalPts / 100) || getStickerCount(),
-              dailySticker: dailyStk,
-              weight: ""
-            })
-          })
-          .then(() => {
-            localStorage.setItem(`game_clear_${state.studentId}`, getTodayDateString());
-            setTimeout(() => {
-              alert("놀이터 미션 점수를 안전하게 보냈어요! (+50p) 🎮");
-              refreshStudentData();
-            }, 500);
+        const cfg = RUNNER_STAGE_CONFIG[rStage];
+        const isGood = Math.random() < cfg.goodRatio;
+
+        if (isGood) {
+          const item = rGoodItems[Math.floor(Math.random() * rGoodItems.length)];
+          const inAir = Math.random() < 0.5;
+          rObjects.push({
+            x: (runnerCanvas ? runnerCanvas.width : 400) + 25,
+            y: inAir ? GROUND_Y - 95 : GROUND_Y - 42,
+            width: 42,
+            height: 42,
+            emoji: item.emoji,
+            score: item.score,
+            type: 'good'
+          });
+        } else {
+          const obs = rBadObstacles[Math.floor(Math.random() * rBadObstacles.length)];
+          rObjects.push({
+            x: (runnerCanvas ? runnerCanvas.width : 400) + 25,
+            y: GROUND_Y - 42,
+            width: 42,
+            height: 42,
+            emoji: obs.emoji,
+            score: obs.score,
+            type: 'bad'
           });
         }
+
+        const baseCooldown = rStage === 3 ? 42 : (rStage === 2 ? 48 : 55);
+        rSpawnCooldown = Math.floor(Math.random() * 25 + baseCooldown);
       }
+
+      function updateRunner() {
+        const cfg = RUNNER_STAGE_CONFIG[rStage];
+        const currentSpeed = cfg.speed;
+
+        player.vy += player.gravity;
+        player.y += player.vy;
+        if (player.y >= GROUND_Y - player.height) {
+          player.y = GROUND_Y - player.height;
+          player.vy = 0;
+          player.isGrounded = true;
+        }
+        if (player.hitFlash > 0) player.hitFlash--;
+        player.runFrame += 0.2;
+
+        rGroundOffset = (rGroundOffset + currentSpeed) % 40;
+        rClouds.forEach(c => {
+          c.x -= c.speed;
+          if (c.x < -60) c.x = (runnerCanvas ? runnerCanvas.width : 400) + 40;
+        });
+
+        spawnRunnerObjects();
+
+        for (let i = rObjects.length - 1; i >= 0; i--) {
+          const obj = rObjects[i];
+          obj.x -= currentSpeed;
+
+          const pad = 6;
+          const collided = (
+            player.x + pad < obj.x + obj.width - pad &&
+            player.x + player.width - pad > obj.x + pad &&
+            player.y + pad < obj.y + obj.height - pad &&
+            player.y + player.height - pad > obj.y + pad
+          );
+
+          if (collided) {
+            rScore += obj.score;
+            if (rScore < 0) rScore = 0;
+            if (obj.type === 'good') {
+              playSound('collect');
+              rEffects.push({ x: obj.x, y: obj.y, text: `+${obj.score} 쏙!`, color: '#10b981', life: 30 });
+            } else {
+              playSound('hit');
+              player.hitFlash = 18;
+              rEffects.push({ x: obj.x, y: obj.y, text: `${obj.score} 앗!`, color: '#ef4444', life: 30 });
+            }
+            rObjects.splice(i, 1);
+            continue;
+          }
+
+          if (obj.x < -40) rObjects.splice(i, 1);
+        }
+
+        for (let i = rEffects.length - 1; i >= 0; i--) {
+          rEffects[i].y -= 1.2;
+          rEffects[i].life--;
+          if (rEffects[i].life <= 0) rEffects.splice(i, 1);
+        }
+      }
+
+      function runnerLoop() {
+        if (!rIsPlaying) return;
+        if (!rIsPaused) updateRunner();
+        drawRunner();
+        rGameLoopId = requestAnimationFrame(runnerLoop);
+      }
+
+      function drawRunner() {
+        if (!rCtx || !runnerCanvas) return;
+        rCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+
+        const skyGrad = rCtx.createLinearGradient(0, 0, 0, GROUND_Y);
+        skyGrad.addColorStop(0, '#c7eeff');
+        skyGrad.addColorStop(1, '#f0f9ff');
+        rCtx.fillStyle = skyGrad;
+        rCtx.fillRect(0, 0, runnerCanvas.width, GROUND_Y);
+
+        rCtx.fillStyle = "rgba(255, 255, 255, 0.85)";
+        rClouds.forEach(c => {
+          rCtx.beginPath();
+          rCtx.arc(c.x, c.y, c.size * 0.6, 0, Math.PI * 2);
+          rCtx.arc(c.x + c.size * 0.5, c.y - c.size * 0.2, c.size * 0.5, 0, Math.PI * 2);
+          rCtx.arc(c.x + c.size, c.y, c.size * 0.6, 0, Math.PI * 2);
+          rCtx.fill();
+        });
+
+        rCtx.fillStyle = '#86efac';
+        rCtx.fillRect(0, GROUND_Y, runnerCanvas.width, 10);
+        rCtx.fillStyle = '#fde047';
+        rCtx.fillRect(0, GROUND_Y + 10, runnerCanvas.width, runnerCanvas.height - GROUND_Y - 10);
+
+        rCtx.strokeStyle = '#eab308';
+        rCtx.lineWidth = 3;
+        rCtx.setLineDash([20, 20]);
+        rCtx.lineDashOffset = rGroundOffset;
+        rCtx.beginPath();
+        rCtx.moveTo(0, GROUND_Y + 35);
+        rCtx.lineTo(runnerCanvas.width, GROUND_Y + 35);
+        rCtx.stroke();
+        rCtx.setLineDash([]);
+
+        // 오브젝트 버블
+        rObjects.forEach(obj => {
+          const cx = obj.x + obj.width / 2;
+          const cy = obj.y + obj.height / 2;
+          const r = 20;
+
+          rCtx.save();
+          rCtx.shadowColor = 'rgba(15, 23, 42, 0.22)';
+          rCtx.shadowBlur = 6;
+          rCtx.shadowOffsetY = 3;
+
+          rCtx.beginPath();
+          rCtx.arc(cx, cy, r, 0, Math.PI * 2);
+          rCtx.fillStyle = obj.type === 'good' ? '#ffffff' : '#fff5f5';
+          rCtx.fill();
+
+          rCtx.shadowColor = 'transparent';
+          rCtx.lineWidth = 3.5;
+          rCtx.strokeStyle = obj.type === 'good' ? '#059669' : '#dc2626';
+          rCtx.stroke();
+
+          rCtx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+          rCtx.textAlign = 'center';
+          rCtx.textBaseline = 'middle';
+          rCtx.fillText(obj.emoji, cx, cy + 1);
+
+          const badgeText = obj.type === 'good' ? '+10' : '-5';
+          const badgeBg = obj.type === 'good' ? '#059669' : '#dc2626';
+          rCtx.fillStyle = badgeBg;
+          rCtx.beginPath();
+          rCtx.roundRect(cx - 15, cy - r - 6, 30, 13, 6);
+          rCtx.fill();
+
+          rCtx.fillStyle = '#ffffff';
+          rCtx.font = 'bold 9px Pretendard, sans-serif';
+          rCtx.fillText(badgeText, cx, cy - r);
+          rCtx.restore();
+        });
+
+        // 플레이어
+        rCtx.save();
+        rCtx.translate(player.x, player.y);
+        if (player.hitFlash > 0 && Math.floor(player.hitFlash / 3) % 2 === 0) {
+          rCtx.globalAlpha = 0.4;
+        }
+
+        rCtx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        rCtx.beginPath();
+        const shadowScale = Math.max(0.4, 1 - (GROUND_Y - player.height - player.y) / 90);
+        rCtx.ellipse(player.width / 2, GROUND_Y - player.y - 2, 18 * shadowScale, 5 * shadowScale, 0, 0, Math.PI * 2);
+        rCtx.fill();
+
+        const isRun = player.isGrounded;
+        const legPhase = Math.sin(player.runFrame) * 8;
+        rCtx.strokeStyle = '#334155';
+        rCtx.lineWidth = 4;
+        rCtx.lineCap = 'round';
+        rCtx.beginPath();
+        if (isRun) {
+          rCtx.moveTo(player.width / 2 - 4, player.height - 12);
+          rCtx.lineTo(player.width / 2 - 4 - legPhase, player.height);
+          rCtx.moveTo(player.width / 2 + 4, player.height - 12);
+          rCtx.lineTo(player.width / 2 + 4 + legPhase, player.height);
+        } else {
+          rCtx.moveTo(player.width / 2 - 5, player.height - 12);
+          rCtx.lineTo(player.width / 2 - 8, player.height - 3);
+          rCtx.moveTo(player.width / 2 + 5, player.height - 12);
+          rCtx.lineTo(player.width / 2 + 8, player.height - 3);
+        }
+        rCtx.stroke();
+
+        rCtx.fillStyle = '#6ee7b7';
+        rCtx.beginPath();
+        rCtx.roundRect(4, 14, player.width - 8, 18, 6);
+        rCtx.fill();
+        rCtx.strokeStyle = '#334155';
+        rCtx.lineWidth = 2.5;
+        rCtx.stroke();
+
+        rCtx.fillStyle = '#fde047';
+        rCtx.beginPath();
+        rCtx.arc(player.width / 2, 11, 11, 0, Math.PI * 2);
+        rCtx.fill();
+        rCtx.stroke();
+
+        rCtx.fillStyle = '#1e293b';
+        rCtx.beginPath();
+        rCtx.arc(player.width / 2 - 4, 10, 1.8, 0, Math.PI * 2);
+        rCtx.arc(player.width / 2 + 4, 10, 1.8, 0, Math.PI * 2);
+        rCtx.fill();
+
+        rCtx.strokeStyle = '#1e293b';
+        rCtx.lineWidth = 1.5;
+        rCtx.beginPath();
+        rCtx.arc(player.width / 2, 12, 3, 0.1 * Math.PI, 0.9 * Math.PI);
+        rCtx.stroke();
+
+        rCtx.fillStyle = '#f43f5e';
+        rCtx.beginPath();
+        rCtx.arc(player.width / 2, 6, 10, Math.PI, Math.PI * 2);
+        rCtx.fill();
+        rCtx.fillRect(player.width / 2 - 2, 5, 14, 3);
+
+        if (!player.isGrounded) {
+          rCtx.fillStyle = '#38bdf8';
+          rCtx.font = '10px sans-serif';
+          rCtx.fillText('💦', -2, 4);
+        }
+        rCtx.restore();
+
+        // 텍스트 효과
+        rEffects.forEach(ef => {
+          rCtx.font = 'bold 15px Pretendard, sans-serif';
+          rCtx.fillStyle = ef.color;
+          rCtx.fillText(ef.text, ef.x + 12, ef.y);
+        });
+
+        // HUD
+        const cfg = RUNNER_STAGE_CONFIG[rStage];
+        rCtx.textAlign = 'left';
+        rCtx.fillStyle = '#0f172a';
+        rCtx.font = 'bold 14px Pretendard, sans-serif';
+        rCtx.fillText(`${rStage}단계 (${rScore}/${cfg.target} kcal)`, 12, 20);
+
+        const barW = 100;
+        const barH = 6;
+        const progress = Math.min(1, rScore / cfg.target);
+        rCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        rCtx.beginPath();
+        rCtx.roundRect(12, 26, barW, barH, 3);
+        rCtx.fill();
+
+        rCtx.fillStyle = progress >= 1 ? '#10b981' : '#f43f5e';
+        rCtx.beginPath();
+        rCtx.roundRect(12, 26, barW * progress, barH, 3);
+        rCtx.fill();
+
+        rCtx.font = 'bold 10px sans-serif';
+        rCtx.fillStyle = progress >= 1 ? '#047857' : '#e11d48';
+        rCtx.fillText(`${Math.floor(progress * 100)}%`, 118, 32);
+
+        rCtx.textAlign = 'right';
+        rCtx.font = 'bold 14px Pretendard, sans-serif';
+        rCtx.fillStyle = rTimeLeft <= 5 ? '#ef4444' : '#0f172a';
+        rCtx.fillText(`⏱️ ${rTimeLeft}초`, runnerCanvas.width - 12, 20);
+
+        if (rIsPaused) {
+          rCtx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+          rCtx.fillRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+          rCtx.fillStyle = '#ffffff';
+          rCtx.font = 'bold 22px Pretendard, sans-serif';
+          rCtx.textAlign = 'center';
+          rCtx.fillText('⏸️ 일시 정지', runnerCanvas.width / 2, runnerCanvas.height / 2);
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 4. [게임 2: 건강 짝꿍 찾기 로직 (6쌍/8쌍/10쌍)]
+      // -----------------------------------------------------------------------
+      let memoryCanvas = null;
+      let mCtx = null;
+      let startMemoryBtn = null;
+      let memoryOverlay = null;
+      let memoryOverlayTitle = null;
+      let memoryOverlayText = null;
+      let memoryPairsInfo = null;
+      let btnMemoryPause = null;
+      let memorySuccessMsg = null;
+      let memorySuccessBannerTitle = null;
+      let memorySuccessBannerSubtitle = null;
+
+      const mAllCards = [
+        { emoji: '🍎', name: '아침 사과' },
+        { emoji: '💧', name: '수분 충전' },
+        { emoji: '🪢', name: '쌩쌩 줄넘기' },
+        { emoji: '🏃', name: '튼튼 달리기' },
+        { emoji: '🥦', name: '초록 채소' },
+        { emoji: '😴', name: '꿀잠 수면' },
+        { emoji: '🍌', name: '달콤 바나나' },
+        { emoji: '🥕', name: '주황 당근' },
+        { emoji: '🥛', name: '칼슘 우유' },
+        { emoji: '🚲', name: '두바퀴 자전거' }
+      ];
+
+      const M_STAGE_CONFIG = {
+        1: { pairs: 6,  total: 12, cols: 4, rows: 3, time: 35, title: '🌱 1단계 (6쌍 / 12장)' },
+        2: { pairs: 8,  total: 16, cols: 4, rows: 4, time: 45, title: '🌿 2단계 (8쌍 / 16장)' },
+        3: { pairs: 10, total: 20, cols: 5, rows: 4, time: 60, title: '🌳 3단계 (10쌍 / 20장)' }
+      };
+
+      let mStage = 1;
+      let mIsPlaying = false;
+      let mIsPaused = false;
+      let mGameLoopId = null;
+      let mTimerId = null;
+      let mScore = 0;
+      let mTimeLeft = 35;
+      let mCards = [];
+      let mFlippedCards = [];
+      let mLockInput = false;
+      let mEffects = [];
+      let mNextStageToSelect = null;
+
+      window.selectMemoryStage = function(stageNum) {
+        if (mIsPlaying) {
+          if (!confirm(`${stageNum}단계로 변경하시겠습니까? 현재 게임은 종료됩니다.`)) return;
+        }
+        mStage = stageNum;
+        mNextStageToSelect = null;
+
+        [1, 2, 3].forEach(s => {
+          const btn = document.getElementById(`stageBtn${s}`);
+          if (btn) {
+            if (s === stageNum) {
+              btn.className = "stage-tab bg-sky-500 text-white font-black text-xs py-2 rounded-xl shadow-sm border-2 border-sky-600 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer";
+              if (btn.children[1]) btn.children[1].className = "text-[9px] font-medium opacity-90";
+            } else {
+              btn.className = "stage-tab bg-white text-slate-700 font-bold text-xs py-2 rounded-xl border-2 border-slate-200 transition active:scale-95 flex flex-col items-center justify-center cursor-pointer";
+              if (btn.children[1]) btn.children[1].className = "text-[9px] font-medium text-slate-400";
+            }
+          }
+        });
+        resetMemoryUI();
+      };
+
+      function resetMemoryUI() {
+        mIsPlaying = false;
+        mIsPaused = false;
+        clearInterval(mTimerId);
+        cancelAnimationFrame(mGameLoopId);
+
+        const cfg = M_STAGE_CONFIG[mStage];
+        mTimeLeft = cfg.time;
+        mScore = 0;
+
+        if (memoryOverlayTitle) memoryOverlayTitle.textContent = `🃏 짝꿍 찾기 ${mStage}단계! 🌟`;
+        if (memoryPairsInfo) memoryPairsInfo.textContent = `${cfg.title} 맞추기`;
+        if (startMemoryBtn) startMemoryBtn.textContent = `${mStage}단계 시작하기! 🎮`;
+        if (memoryOverlay) memoryOverlay.classList.remove('hidden');
+        if (memorySuccessMsg) memorySuccessMsg.classList.add('hidden');
+
+        initCardsForStage(mStage);
+        drawMemory();
+      }
+
+      function stopMemoryGame() {
+        mIsPlaying = false;
+        mIsPaused = false;
+        clearInterval(mTimerId);
+        cancelAnimationFrame(mGameLoopId);
+      }
+
+      function initCardsForStage(stageNum) {
+        const cfg = M_STAGE_CONFIG[stageNum];
+        const targetItems = mAllCards.slice(0, cfg.pairs);
+        const deck = [];
+        targetItems.forEach((tpl, idx) => {
+          deck.push({ ...tpl, pairId: idx });
+          deck.push({ ...tpl, pairId: idx });
+        });
+
+        for (let i = deck.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+
+        const cols = cfg.cols;
+        const rows = cfg.rows;
+        const availW = 380;
+        const availH = 242;
+        const startX = 10;
+        const startY = 48;
+        const gapX = cols === 4 ? 12 : 8;
+        const gapY = rows === 3 ? 10 : 8;
+
+        const cardW = (availW - (cols - 1) * gapX) / cols;
+        const cardH = (availH - (rows - 1) * gapY) / rows;
+
+        mCards = deck.map((item, index) => {
+          const c = index % cols;
+          const r = Math.floor(index / cols);
+          return {
+            id: index,
+            pairId: item.pairId,
+            emoji: item.emoji,
+            name: item.name,
+            x: startX + c * (cardW + gapX),
+            y: startY + r * (cardH + gapY),
+            w: cardW,
+            h: cardH,
+            isFlipped: false,
+            isMatched: false,
+            flipProgress: 0,
+            targetFlip: 0
+          };
+        });
+
+        mFlippedCards = [];
+        mLockInput = false;
+        mEffects = [];
+      }
+
+      function handleMemoryTap(clientX, clientY) {
+        if (currentActiveGame !== 'memory' || !mIsPlaying || mIsPaused || mLockInput || !memoryCanvas) return;
+        const rect = memoryCanvas.getBoundingClientRect();
+        const scaleX = memoryCanvas.width / rect.width;
+        const scaleY = memoryCanvas.height / rect.height;
+        const tapX = (clientX - rect.left) * scaleX;
+        const tapY = (clientY - rect.top) * scaleY;
+
+        for (let card of mCards) {
+          if (!card.isMatched && !card.isFlipped &&
+              tapX >= card.x && tapX <= card.x + card.w &&
+              tapY >= card.y && tapY <= card.y + card.h) {
+            flipMemoryCard(card);
+            break;
+          }
+        }
+      }
+
+      function flipMemoryCard(card) {
+        playSound('flip');
+        card.isFlipped = true;
+        card.targetFlip = 1;
+        mFlippedCards.push(card);
+
+        if (mFlippedCards.length === 2) {
+          mLockInput = true;
+          const [c1, c2] = mFlippedCards;
+
+          if (c1.pairId === c2.pairId) {
+            setTimeout(() => {
+              c1.isMatched = true;
+              c2.isMatched = true;
+              const ptsPerPair = Math.ceil(100 / M_STAGE_CONFIG[mStage].pairs);
+              mScore += ptsPerPair;
+              playSound('match');
+
+              mEffects.push({
+                x: (c1.x + c2.x) / 2 + c1.w / 2,
+                y: (c1.y + c2.y) / 2 + c1.h / 2,
+                text: `✨ 짝! +${ptsPerPair}`,
+                color: '#0284c7',
+                life: 25
+              });
+
+              mFlippedCards = [];
+              mLockInput = false;
+
+              if (mCards.every(c => c.isMatched)) {
+                setTimeout(() => endMemoryGame(true), 450);
+              }
+            }, 240);
+          } else {
+            setTimeout(() => {
+              playSound('mismatch');
+              c1.isFlipped = false;
+              c2.isFlipped = false;
+              c1.targetFlip = 0;
+              c2.targetFlip = 0;
+              mFlippedCards = [];
+              mLockInput = false;
+            }, 600);
+          }
+        }
+      }
+
+      function toggleMemoryPause() {
+        if (!mIsPlaying) return;
+        mIsPaused = !mIsPaused;
+        if (btnMemoryPause) {
+          if (mIsPaused) {
+            btnMemoryPause.textContent = "▶ 재개";
+            btnMemoryPause.className = "w-24 bg-sky-100 border-2 border-sky-400 text-sky-900 text-sm font-black py-3 rounded-2xl active:scale-95 transition select-none touch-none shadow-sm cursor-pointer";
+          } else {
+            btnMemoryPause.textContent = "⏸️ 멈춤";
+            btnMemoryPause.className = "w-24 bg-slate-100 border-2 border-slate-300 text-slate-700 text-sm font-black py-3 rounded-2xl active:scale-95 transition select-none touch-none shadow-sm cursor-pointer";
+          }
+        }
+      }
+
+      function handleMemoryStartBtnClick() {
+        if (mNextStageToSelect !== null) {
+          const next = mNextStageToSelect;
+          mNextStageToSelect = null;
+          selectMemoryStage(next);
+        } else {
+          startMemoryGame();
+        }
+      }
+
+      function startMemoryGame() {
+        initAudio();
+        mIsPlaying = true;
+        mIsPaused = false;
+        mScore = 0;
+        mTimeLeft = M_STAGE_CONFIG[mStage].time;
+        initCardsForStage(mStage);
+
+        if (btnMemoryPause) {
+          btnMemoryPause.textContent = "⏸️ 멈춤";
+          btnMemoryPause.className = "w-24 bg-slate-100 border-2 border-slate-300 text-slate-700 text-sm font-black py-3 rounded-2xl active:scale-95 transition select-none touch-none shadow-sm cursor-pointer";
+        }
+
+        if (memoryOverlay) memoryOverlay.classList.add('hidden');
+        if (memorySuccessMsg) memorySuccessMsg.classList.add('hidden');
+
+        clearInterval(mTimerId);
+        cancelAnimationFrame(mGameLoopId);
+
+        mTimerId = setInterval(() => {
+          if (mIsPlaying && !mIsPaused) {
+            mTimeLeft--;
+            if (mTimeLeft <= 0) endMemoryGame(false);
+          }
+        }, 1000);
+
+        memoryLoop();
+      }
+
+      function endMemoryGame(isSuccess) {
+        mIsPlaying = false;
+        clearInterval(mTimerId);
+        cancelAnimationFrame(mGameLoopId);
+
+        const cfg = M_STAGE_CONFIG[mStage];
+        const matchedPairs = mCards.filter(c => c.isMatched).length / 2;
+
+        if (isSuccess || matchedPairs === cfg.pairs) {
+          playSound('win');
+          if (memoryOverlayTitle) memoryOverlayTitle.textContent = `🏆 ${mStage}단계 클리어 대성공! 🏆`;
+          if (memoryOverlayText) {
+            memoryOverlayText.innerHTML = `
+              획득 점수: <strong>${mScore}점</strong><br>
+              완성한 짝: <strong>${matchedPairs} / ${cfg.pairs}쌍</strong><br><br>
+              🎉 <strong>${cfg.title}</strong>을 모두 맞췄습니다! 참 잘했어요! ✨
+            `;
+          }
+          if (memorySuccessBannerTitle) memorySuccessBannerTitle.textContent = `🎉 ${mStage}단계 대성공!`;
+          if (memorySuccessMsg) memorySuccessMsg.classList.remove('hidden');
+
+          handlePlaygroundGameWin('건강 짝꿍 찾기', mStage);
+
+          if (mStage < 3) {
+            if (startMemoryBtn) startMemoryBtn.textContent = `다음 ${mStage + 1}단계 도전하기! 🚀`;
+            mNextStageToSelect = mStage + 1;
+          } else {
+            if (startMemoryBtn) startMemoryBtn.textContent = `1단계부터 다시 도전! 🔄`;
+            mNextStageToSelect = 1;
+          }
+        } else {
+          if (memoryOverlayTitle) memoryOverlayTitle.textContent = `🎮 시간 초과! 🐾`;
+          if (memoryOverlayText) {
+            memoryOverlayText.innerHTML = `
+              완성한 짝: <strong>${matchedPairs} / ${cfg.pairs}쌍</strong><br>
+              획득 점수: <strong>${mScore}점</strong><br><br>
+              아쉬워요! 다음엔 시간 내에 모든 짝을 완성해 보세요!
+            `;
+          }
+          if (startMemoryBtn) startMemoryBtn.textContent = `다시 도전하기! 🔄`;
+          mNextStageToSelect = null;
+        }
+
+        if (memoryOverlay) memoryOverlay.classList.remove('hidden');
+      }
+
+      function updateMemory() {
+        mCards.forEach(card => {
+          card.flipProgress += (card.targetFlip - card.flipProgress) * 0.28;
+        });
+        for (let i = mEffects.length - 1; i >= 0; i--) {
+          mEffects[i].y -= 0.9;
+          mEffects[i].life--;
+          if (mEffects[i].life <= 0) mEffects.splice(i, 1);
+        }
+      }
+
+      function memoryLoop() {
+        if (!mIsPlaying) return;
+        if (!mIsPaused) updateMemory();
+        drawMemory();
+        mGameLoopId = requestAnimationFrame(memoryLoop);
+      }
+
+      function drawMemory() {
+        if (!mCtx || !memoryCanvas) return;
+        mCtx.clearRect(0, 0, memoryCanvas.width, memoryCanvas.height);
+
+        const bg = mCtx.createLinearGradient(0, 0, 0, memoryCanvas.height);
+        bg.addColorStop(0, '#f0f9ff');
+        bg.addColorStop(1, '#e0f2fe');
+        mCtx.fillStyle = bg;
+        mCtx.fillRect(0, 0, memoryCanvas.width, memoryCanvas.height);
+
+        mCards.forEach(card => {
+          const cx = card.x + card.w / 2;
+          const cy = card.y + card.h / 2;
+          const scaleX = Math.abs(1 - 2 * card.flipProgress);
+          const isFront = card.flipProgress >= 0.5;
+
+          mCtx.save();
+          mCtx.translate(cx, cy);
+          mCtx.scale(Math.max(0.06, scaleX), 1);
+
+          mCtx.shadowColor = 'rgba(14, 165, 233, 0.16)';
+          mCtx.shadowBlur = 5;
+          mCtx.shadowOffsetY = 2.5;
+
+          const radius = mStage === 1 ? 12 : 10;
+
+          if (isFront || card.isMatched) {
+            mCtx.fillStyle = card.isMatched ? '#ecfdf5' : '#ffffff';
+            mCtx.beginPath();
+            mCtx.roundRect(-card.w / 2, -card.h / 2, card.w, card.h, radius);
+            mCtx.fill();
+
+            mCtx.shadowColor = 'transparent';
+            mCtx.lineWidth = mStage === 1 ? 3 : 2.5;
+            mCtx.strokeStyle = card.isMatched ? '#10b981' : '#38bdf8';
+            mCtx.stroke();
+
+            const emojiSize = mStage === 1 ? 32 : (mStage === 2 ? 27 : 25);
+            mCtx.font = `${emojiSize}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+            mCtx.textAlign = 'center';
+            mCtx.textBaseline = 'middle';
+            
+            const textOffset = mStage === 1 ? -6 : -5;
+            mCtx.fillText(card.emoji, 0, textOffset);
+
+            const nameFontSize = mStage === 1 ? 10 : 9;
+            mCtx.font = `bold ${nameFontSize}px Pretendard, sans-serif`;
+            mCtx.fillStyle = card.isMatched ? '#059669' : '#0369a1';
+            mCtx.fillText(card.name, 0, card.h / 2 - (mStage === 1 ? 11 : 9));
+
+            if (card.isMatched) {
+              mCtx.fillStyle = '#10b981';
+              mCtx.font = `bold ${mStage === 1 ? 12 : 10}px sans-serif`;
+              mCtx.fillText('✓', card.w / 2 - 9, -card.h / 2 + 10);
+            }
+          } else {
+            mCtx.fillStyle = '#38bdf8';
+            mCtx.beginPath();
+            mCtx.roundRect(-card.w / 2, -card.h / 2, card.w, card.h, radius);
+            mCtx.fill();
+
+            mCtx.shadowColor = 'transparent';
+            mCtx.lineWidth = mStage === 1 ? 3 : 2.5;
+            mCtx.strokeStyle = '#0284c7';
+            mCtx.stroke();
+
+            const pawSize = mStage === 1 ? 24 : 20;
+            mCtx.fillStyle = '#ffffff';
+            mCtx.font = `${pawSize}px Pretendard, sans-serif`;
+            mCtx.textAlign = 'center';
+            mCtx.textBaseline = 'middle';
+            mCtx.fillText('🐾', 0, 0);
+          }
+          mCtx.restore();
+        });
+
+        mEffects.forEach(ef => {
+          mCtx.font = 'bold 14px Pretendard, sans-serif';
+          mCtx.fillStyle = ef.color;
+          mCtx.textAlign = 'center';
+          mCtx.fillText(ef.text, ef.x, ef.y);
+        });
+
+        const cfg = M_STAGE_CONFIG[mStage];
+        const matchedPairs = mCards.filter(c => c.isMatched).length / 2;
+
+        mCtx.textAlign = 'left';
+        mCtx.fillStyle = '#0f172a';
+        mCtx.font = 'bold 14px Pretendard, sans-serif';
+        mCtx.fillText(`${mStage}단계 (${matchedPairs}/${cfg.pairs}쌍)`, 12, 20);
+
+        const barW = 100;
+        const barH = 6;
+        const progress = matchedPairs / cfg.pairs;
+        mCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        rCtx.beginPath ? mCtx.beginPath() : null;
+        mCtx.roundRect(12, 26, barW, barH, 3);
+        mCtx.fill();
+
+        mCtx.fillStyle = progress >= 1 ? '#10b981' : '#0284c7';
+        mCtx.beginPath();
+        mCtx.roundRect(12, 26, barW * progress, barH, 3);
+        mCtx.fill();
+
+        mCtx.font = 'bold 10px sans-serif';
+        mCtx.fillStyle = '#0369a1';
+        mCtx.fillText(`${Math.floor(progress * 100)}%`, 118, 32);
+
+        mCtx.textAlign = 'right';
+        mCtx.font = 'bold 14px Pretendard, sans-serif';
+        mCtx.fillStyle = mTimeLeft <= 5 ? '#ef4444' : '#0f172a';
+        mCtx.fillText(`⏱️ ${mTimeLeft}초`, memoryCanvas.width - 12, 20);
+
+        if (mIsPaused) {
+          mCtx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+          mCtx.fillRect(0, 0, memoryCanvas.width, memoryCanvas.height);
+          mCtx.fillStyle = '#ffffff';
+          mCtx.font = 'bold 22px Pretendard, sans-serif';
+          mCtx.textAlign = 'center';
+          mCtx.fillText('⏸️ 일시 정지', memoryCanvas.width / 2, memoryCanvas.height / 2);
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 5. 공통 승리 처리 (순수 게임 즐기기: 축하 효과 및 배너 표시)
+      // -----------------------------------------------------------------------
+      function handlePlaygroundGameWin(gameTitle, stage) {
+        if (typeof triggerConfetti === 'function') {
+          triggerConfetti();
+        }
+
+        const sub1 = document.getElementById('runnerSuccessBannerSubtitle');
+        const sub2 = document.getElementById('memorySuccessBannerSubtitle');
+        if (sub1) sub1.textContent = "장애물을 멋지게 피하고 건강 목표를 달성했어요! 👏";
+        if (sub2) sub2.textContent = "모든 건강 카드의 짝을 완벽하게 맞췄어요! 👏";
+      }
+
+      // -----------------------------------------------------------------------
+      // 6. 외부 탭 전환 및 초기화 연동
+      // -----------------------------------------------------------------------
+      window.stopAllPlaygroundGames = function() {
+        stopRunnerGame();
+        stopMemoryGame();
+      };
+
+      let playgroundEventsBound = false;
+
+      window.initCardGame = function() {
+        runnerCanvas = document.getElementById('runnerCanvas');
+        if (runnerCanvas) rCtx = runnerCanvas.getContext('2d');
+        startRunnerBtn = document.getElementById('startRunnerBtn');
+        runnerOverlay = document.getElementById('runnerOverlay');
+        runnerOverlayTitle = document.getElementById('runnerOverlayTitle');
+        runnerOverlayText = document.getElementById('runnerOverlayText');
+        runnerTargetInfo = document.getElementById('runnerTargetInfo');
+        btnRunnerPause = document.getElementById('btnRunnerPause');
+        btnJump = document.getElementById('btnJump');
+        runnerSuccessMsg = document.getElementById('runner-success-message');
+        runnerSuccessBannerTitle = document.getElementById('runnerSuccessBannerTitle');
+        runnerSuccessBannerSubtitle = document.getElementById('runnerSuccessBannerSubtitle');
+
+        memoryCanvas = document.getElementById('memoryCanvas');
+        if (memoryCanvas) mCtx = memoryCanvas.getContext('2d');
+        startMemoryBtn = document.getElementById('startMemoryBtn');
+        memoryOverlay = document.getElementById('memoryOverlay');
+        memoryOverlayTitle = document.getElementById('memoryOverlayTitle');
+        memoryOverlayText = document.getElementById('memoryOverlayText');
+        memoryPairsInfo = document.getElementById('memoryPairsInfo');
+        btnMemoryPause = document.getElementById('btnMemoryPause');
+        memorySuccessMsg = document.getElementById('memory-success-message');
+        memorySuccessBannerTitle = document.getElementById('memorySuccessBannerTitle');
+        memorySuccessBannerSubtitle = document.getElementById('memorySuccessBannerSubtitle');
+
+        if (!playgroundEventsBound) {
+          playgroundEventsBound = true;
+
+          window.addEventListener('keydown', (e) => {
+            if (currentActiveGame === 'runner' && (e.code === 'Space' || e.code === 'ArrowUp')) {
+              e.preventDefault();
+              triggerRunnerJump();
+            }
+          });
+
+          if (btnJump) {
+            btnJump.addEventListener('mousedown', triggerRunnerJump);
+            btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); triggerRunnerJump(); });
+          }
+          if (runnerCanvas) {
+            runnerCanvas.addEventListener('mousedown', triggerRunnerJump);
+            runnerCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); triggerRunnerJump(); });
+          }
+          if (btnRunnerPause) {
+            btnRunnerPause.addEventListener('click', toggleRunnerPause);
+          }
+          if (startRunnerBtn) {
+            startRunnerBtn.addEventListener('click', handleRunnerStartBtnClick);
+          }
+
+          if (memoryCanvas) {
+            memoryCanvas.addEventListener('mousedown', (e) => handleMemoryTap(e.clientX, e.clientY));
+            memoryCanvas.addEventListener('touchstart', (e) => {
+              e.preventDefault();
+              if (e.touches && e.touches.length > 0) handleMemoryTap(e.touches[0].clientX, e.touches[0].clientY);
+            });
+          }
+          if (btnMemoryPause) {
+            btnMemoryPause.addEventListener('click', toggleMemoryPause);
+          }
+          if (startMemoryBtn) {
+            startMemoryBtn.addEventListener('click', handleMemoryStartBtnClick);
+          }
+        }
+
+        if (currentActiveGame === 'runner') {
+          resetRunnerUI();
+        } else {
+          resetMemoryUI();
+        }
+      };
     })();
 
     // Monthly BMI management functions
