@@ -489,64 +489,48 @@ function parseId(rawId, fallbackSchool) {
 }
 
 /**
- * 학생의 기존 시트 기록(B초/C초/D초 vs A초)을 대조하여,
- * 기기 캐시 초기화나 월 변경(11월 등)으로 인해 school이 기본값 'A초'로 넘어왔더라도
- * 실제 소속 학교(예: B초)를 정확히 찾아 반환합니다.
+ * 각 학교 시트(설문응답, 월별성장, 일일기록)에서 해당 학생(학번+이름)의 기록 가중치 점수를 계산합니다.
+ * - 설문응답 일치: +100점
+ * - 월별성장 일치: +20점/건
+ * - 일일기록 일치: +2점/건
+ * 이를 통해 B초/C초/D초 학생의 기록이 오늘 A초로 1~2건 잘못 넘어왔더라도
+ * 기존 기록이 훨씬 많은 원래 소속 학교(B초, C초, D초)를 100% 정확히 판별합니다.
  */
-function hasStudentInSchoolSheets(SS, schoolName, targetId, targetName, beforeNovOnly) {
+function scoreStudentInSchool(SS, schoolName, targetId, targetName) {
   var cleanId = String(targetId || '').trim().replace(/^'/, '');
   var cleanName = String(targetName || '').trim().replace(/^[Tt]-/, '');
-  if (!cleanId || cleanId === 'guest') return { idAndName: false, idOnly: false };
+  if (!cleanId || cleanId === 'guest') return { idAndNameScore: 0, idOnlyScore: 0 };
 
-  var idAndNameMatch = false;
-  var idOnlyMatch = false;
+  var idAndNameScore = 0;
+  var idOnlyScore = 0;
 
-  var sheetsToCheck = [
-    getGrowthSheet(SS, schoolName),
-    getSurveySheet(SS, schoolName),
-    getDailySheet(SS, schoolName)
+  var sheetWeights = [
+    { sh: getSurveySheet(SS, schoolName), weight: 100 },
+    { sh: getGrowthSheet(SS, schoolName), weight: 20 },
+    { sh: getDailySheet(SS, schoolName), weight: 2 }
   ];
 
-  for (var s = 0; s < sheetsToCheck.length; s++) {
-    var sh = sheetsToCheck[s];
+  for (var s = 0; s < sheetWeights.length; s++) {
+    var sh = sheetWeights[s].sh;
+    var w = sheetWeights[s].weight;
     if (!sh || sh.getLastRow() < 2) continue;
     var lastRow = sh.getLastRow();
     var maxCols = Math.min(7, sh.getLastColumn());
     var data = sh.getRange(2, 1, lastRow - 1, maxCols).getValues();
 
     for (var r = 0; r < data.length; r++) {
-      var row = data[r];
-      if (beforeNovOnly) {
-        var rowDateStr = formatDateStr(row[0]) || formatDateStr(row[1]);
-        if (rowDateStr && rowDateStr.indexOf('2026-11') === 0) continue;
-      }
-
-      var rowHasId = false;
-      var rowHasName = false;
-      for (var c = 0; c < row.length; c++) {
-        var val = String(row[c] || '').trim().replace(/^'/, '');
-        if (!val) continue;
-        if (val === cleanId || val === (schoolName + '-' + cleanId)) {
-          rowHasId = true;
-        }
+      var info = extractRowIdAndName(data[r]);
+      if (info.id === cleanId) {
+        idOnlyScore += w;
         if (cleanName && cleanName !== '참여자' && cleanName !== '탐험대원' && cleanName !== cleanId) {
-          var valNoT = val.replace(/^[Tt]-/, '');
-          if (valNoT === cleanName) {
-            rowHasName = true;
+          if (info.name === cleanName) {
+            idAndNameScore += w;
           }
         }
       }
-
-      if (rowHasId && rowHasName) {
-        idAndNameMatch = true;
-        return { idAndName: true, idOnly: true };
-      }
-      if (rowHasId) {
-        idOnlyMatch = true;
-      }
     }
   }
-  return { idAndName: idAndNameMatch, idOnly: idOnlyMatch };
+  return { idAndNameScore: idAndNameScore, idOnlyScore: idOnlyScore };
 }
 
 function resolveActualSchool(SS, p, givenName) {
@@ -557,89 +541,95 @@ function resolveActualSchool(SS, p, givenName) {
   var cleanName = String(givenName || '').trim().replace(/^[Tt]-/, '');
   var hasMeaningfulName = (cleanName && cleanName !== '참여자' && cleanName !== '탐험대원' && cleanName !== p.id);
 
-  // 1) 이름+개인번호가 B초/C초/D초 기존 기록에 존재하는지 우선 확인
-  if (hasMeaningfulName) {
-    var aCheck = hasStudentInSchoolSheets(SS, 'A초', p.id, cleanName, true);
-    if (!aCheck.idAndName) {
-      var otherSchools = ['B초', 'C초', 'D초'];
-      for (var i = 0; i < otherSchools.length; i++) {
-        var sc = otherSchools[i];
-        var check = hasStudentInSchoolSheets(SS, sc, p.id, cleanName, false);
-        if (check.idAndName) {
-          p.school = sc;
-          p.key = sc + '-' + p.id;
-          return p;
-        }
-      }
+  var aScoreObj = scoreStudentInSchool(SS, 'A초', p.id, cleanName);
+  var bestSchool = 'A초';
+  var bestScore = hasMeaningfulName ? aScoreObj.idAndNameScore : aScoreObj.idOnlyScore;
+
+  var otherSchools = ['B초', 'C초', 'D초'];
+  for (var i = 0; i < otherSchools.length; i++) {
+    var sc = otherSchools[i];
+    var scScoreObj = scoreStudentInSchool(SS, sc, p.id, cleanName);
+    var scScore = hasMeaningfulName ? scScoreObj.idAndNameScore : scScoreObj.idOnlyScore;
+    if (scScore > bestScore) {
+      bestScore = scScore;
+      bestSchool = sc;
     }
-  } else {
-    // 2) 이름 없이 학번만 넘어온 경우(get_student 등): A초(11월 이전)에는 없고 B초/C초/D초에만 존재하는 학번이면 해당 학교로 매핑
-    var aIdCheck = hasStudentInSchoolSheets(SS, 'A초', p.id, '', true);
-    if (!aIdCheck.idOnly) {
-      var otherSchools2 = ['B초', 'C초', 'D초'];
-      for (var j = 0; j < otherSchools2.length; j++) {
-        var sc2 = otherSchools2[j];
-        var check2 = hasStudentInSchoolSheets(SS, sc2, p.id, '', false);
-        if (check2.idOnly) {
-          p.school = sc2;
-          p.key = sc2 + '-' + p.id;
-          return p;
-        }
-      }
-    }
+  }
+
+  if (bestSchool !== 'A초') {
+    p.school = bestSchool;
+    p.key = bestSchool + '-' + p.id;
   }
   return p;
 }
 
 /**
  * A초 시트(일일기록, 월별성장, 설문응답)에 잘못 넘어간 B초/C초/D초 학생 데이터를
- * 원래 소속 학교 시트로 자동 이동 및 복구합니다.
+ * 원래 소속 학교(B초, C초, D초) 시트로 자동 이동 및 복구합니다.
  */
 function relocateMisroutedRecords(SS) {
   SS = SS || getSS();
   var movedCount = 0;
 
-  // 1) A초의 11월 이전 고유 학생(학번|이름) 목록 수집 (A초 원래 학생 보호)
-  var genuineASet = {};
-  var aSheets = [getGrowthSheet(SS, 'A초'), getSurveySheet(SS, 'A초'), getDailySheet(SS, 'A초')];
-  for (var s = 0; s < aSheets.length; s++) {
-    var shA = aSheets[s];
-    if (!shA || shA.getLastRow() < 2) continue;
-    var dataA = shA.getRange(2, 1, shA.getLastRow() - 1, Math.min(7, shA.getLastColumn())).getValues();
-    for (var r = 0; r < dataA.length; r++) {
-      var row = dataA[r];
-      var dStr = formatDateStr(row[0]) || formatDateStr(row[1]);
-      if (dStr && dStr.indexOf('2026-11') === 0) continue; // 11월 데이터는 검사 대상이므로 제외
-      var info = extractRowIdAndName(row);
-      if (info.id && info.name) {
-        genuineASet[info.id + '|' + info.name] = true;
-      }
-    }
-  }
+  // 모든 학교의 성장시트 헤더를 먼저 정렬하여 열 구조 일치 보장
+  SCHOOLS.forEach(function(sc) {
+    cleanAndFixGrowthSheet(getGrowthSheet(SS, sc));
+  });
 
-  // 2) B초, C초, D초에 등록된 학생(학번|이름) 맵 구성
-  var otherStudentMap = {}; // key: "id|name" -> "B초"
-  var otherSchools = ['B초', 'C초', 'D초'];
-  for (var i = 0; i < otherSchools.length; i++) {
-    var sc = otherSchools[i];
-    var scSheets = [getGrowthSheet(SS, sc), getSurveySheet(SS, sc), getDailySheet(SS, sc)];
-    for (var k = 0; k < scSheets.length; k++) {
-      var shO = scSheets[k];
-      if (!shO || shO.getLastRow() < 2) continue;
-      var dataO = shO.getRange(2, 1, shO.getLastRow() - 1, Math.min(7, shO.getLastColumn())).getValues();
-      for (var r2 = 0; r2 < dataO.length; r2++) {
-        var infoO = extractRowIdAndName(dataO[r2]);
-        if (infoO.id && infoO.name && !genuineASet[infoO.id + '|' + infoO.name]) {
-          otherStudentMap[infoO.id + '|' + infoO.name] = sc;
+  // 1) A초, B초, C초, D초 전체에서 각 학생(학번|이름)의 학교별 기록 가중치 점수 집계
+  var studentSchoolScores = {}; // key: "id|name" -> { 'A초': score, 'B초': score, 'C초': score, 'D초': score }
+  var weights = [
+    { getter: getSurveySheet, w: 100 },
+    { getter: getGrowthSheet, w: 20 },
+    { getter: getDailySheet, w: 2 }
+  ];
+
+  for (var i = 0; i < SCHOOLS.length; i++) {
+    var sc = SCHOOLS[i];
+    for (var k = 0; k < weights.length; k++) {
+      var sh = weights[k].getter(SS, sc);
+      var w = weights[k].w;
+      if (!sh || sh.getLastRow() < 2) continue;
+      var data = sh.getRange(2, 1, sh.getLastRow() - 1, Math.min(7, sh.getLastColumn())).getValues();
+      for (var r = 0; r < data.length; r++) {
+        var info = extractRowIdAndName(data[r]);
+        if (info.id && info.name) {
+          var key = info.id + '|' + info.name;
+          if (!studentSchoolScores[key]) {
+            studentSchoolScores[key] = { 'A초': 0, 'B초': 0, 'C초': 0, 'D초': 0 };
+          }
+          studentSchoolScores[key][sc] = (studentSchoolScores[key][sc] || 0) + w;
         }
       }
     }
   }
 
-  // 3) A초_일일기록, A초_월별성장, A초_설문응답에서 오분류 행 탐색 및 이동
+  // 2) B초, C초, D초 점수가 A초 점수보다 높은 학생들을 타학교 소속 맵(otherStudentMap)으로 확정
+  var otherStudentMap = {}; // key: "id|name" -> "B초" | "C초" | "D초"
+  var studentKeys = Object.keys(studentSchoolScores);
+  for (var m = 0; m < studentKeys.length; m++) {
+    var sKey = studentKeys[m];
+    var scMap = studentSchoolScores[sKey];
+    var bestSc = 'A초';
+    var maxScScore = scMap['A초'] || 0;
+    var otherList = ['B초', 'C초', 'D초'];
+    for (var j = 0; j < otherList.length; j++) {
+      var candSc = otherList[j];
+      if ((scMap[candSc] || 0) > maxScScore) {
+        maxScScore = scMap[candSc];
+        bestSc = candSc;
+      }
+    }
+    if (bestSc !== 'A초') {
+      otherStudentMap[sKey] = bestSc;
+    }
+  }
+
+  // 3) A초_일일기록, A초_월별성장, A초_설문응답, A초 사후설문응답에서 오분류 행 탐색 및 원래 학교(B초/C초/D초)로 이동
   movedCount += moveMisroutedFromSheet(SS, getDailySheet(SS, 'A초'), 'daily', otherStudentMap);
   movedCount += moveMisroutedFromSheet(SS, getGrowthSheet(SS, 'A초'), 'growth', otherStudentMap);
   movedCount += moveMisroutedFromSheet(SS, getSurveySheet(SS, 'A초'), 'survey', otherStudentMap);
+  movedCount += moveMisroutedFromSheet(SS, getPostSurveySheet(SS, 'A초'), 'post_survey', otherStudentMap);
   return movedCount;
 }
 
@@ -711,6 +701,7 @@ function moveMisroutedFromSheet(SS, shA, sheetType, otherStudentMap) {
       if (sheetType === 'daily') targetSh = getDailySheet(SS, targetSchool);
       else if (sheetType === 'growth') targetSh = getGrowthSheet(SS, targetSchool);
       else if (sheetType === 'survey') targetSh = getSurveySheet(SS, targetSchool);
+      else if (sheetType === 'post_survey') targetSh = getPostSurveySheet(SS, targetSchool);
 
       if (targetSh) {
         appendOrInsertRow(targetSh, fixedRow);

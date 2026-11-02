@@ -2948,11 +2948,17 @@
             state.student.name = prevName;
           }
 
-          // 서버에서 B초/C초/D초로 소속 학교를 판별해 주었거나 로컬에 B초/C초/D초가 설정된 경우 보존
+          // 서버에서 B초/C초/D초로 소속 학교를 판별해 주었거나 로컬에 B초/C초/D초가 설정된 경우 보존 및 학번 접두어 자동 복구
           const finalSchool = (res.student.school && res.student.school !== 'A초') ? res.student.school : activeSch;
           state.school = finalSchool;
           state.student.school = finalSchool;
           localStorage.setItem('teunteun_school', finalSchool);
+          if (state.studentId && state.studentId !== 'guest') {
+            const healedId = getPrefixedStudentId(state.studentId, finalSchool);
+            state.studentId = healedId;
+            state.student.studentId = healedId;
+            localStorage.setItem('teunteun_student_id', healedId);
+          }
           const inputSchoolEl = document.getElementById('input-school');
           if (inputSchoolEl) inputSchoolEl.value = finalSchool;
           
