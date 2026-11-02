@@ -28,7 +28,8 @@ function getSS() {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('📁 꼬꼬챌린지 관리')
-    .addItem('① 시트 연결 및 헤더 점검 (오분류 자동 복구 포함)', 'setup')
+    .addItem('① 시트 연결 및 헤더 점검 (사후설문 탭 3개 생성 + 오분류 복구)', 'setup')
+    .addItem('🎯 사후설문 탭 3개(A·B·C초 사후설문응답) 즉시 생성', 'createPostSurveyTabsMenu')
     .addItem('🔄 타학교 오분류 데이터 자동 복구 (A초→B·C·D초)', 'relocateMisroutedRecordsMenu')
     .addSeparator()
     .addItem('💾 드라이브에 백업', 'backupToDrive')
@@ -261,10 +262,17 @@ function getPostSurveySheet(SS, school) {
 }
 
 function ensurePostSurveySheets(SS) {
+  SS = SS || getSS();
   POST_SURVEY_SCHOOLS.forEach(function(school) {
     var shPost = getPostSurveySheet(SS, school);
     cleanAndFixSurveySheet(shPost);
   });
+}
+
+function createPostSurveyTabsMenu() {
+  var SS = getSS();
+  ensurePostSurveySheets(SS);
+  SpreadsheetApp.getUi().alert('완료: [A초 사후설문응답], [B초 사후설문응답], [C초 사후설문응답] 탭 3개가 생성/연결되었습니다!');
 }
 
 function setup() {
@@ -1177,13 +1185,6 @@ function saveSurvey(d) {
     p.key = schoolName + '-' + idToSave;
   }
 
-  var isPost = (d.isPostSurvey === true) ||
-               (String(d.surveyType || '').indexOf('사후') >= 0) ||
-               (d.action === 'save_post_survey' || d.action === 'submit_post_survey');
-
-  var sh = isPost ? getPostSurveySheet(SS, schoolName) : getSurveySheet(SS, schoolName);
-  cleanAndFixSurveySheet(sh);
-
   var rawAnswers = d.answers || d.surveyAnswers || [];
   var ansList = [];
   if (Object.prototype.toString.call(rawAnswers) === '[object Array]') {
@@ -1196,6 +1197,16 @@ function saveSurvey(d) {
     });
     ansList = keys.map(function(k) { return rawAnswers[k]; });
   }
+
+  // 사후설문 여부 판별 (action, isPostSurvey, surveyType 또는 문항 수가 13개 이상인 경우 무조건 사후설문 전용 탭으로 분리!)
+  var isPost = (d.isPostSurvey === true) ||
+               (String(d.isPostSurvey) === 'true') ||
+               (String(d.surveyType || '').indexOf('사후') >= 0) ||
+               (d.action === 'save_post_survey' || d.action === 'submit_post_survey') ||
+               (ansList.length > 12);
+
+  var sh = isPost ? getPostSurveySheet(SS, schoolName) : getSurveySheet(SS, schoolName);
+  cleanAndFixSurveySheet(sh);
 
   var row = [stamp(new Date()), p.school, "'" + idToSave, name, p.type];
   var questionCount = isPost ? 16 : 12;
@@ -1211,8 +1222,14 @@ function doGet(e) {
   try {
     var params = (e && e.parameter) || {};
     var action = params.action || '';
+    if (action === 'init_post_survey_tabs') {
+      var SS0 = getSS();
+      ensurePostSurveySheets(SS0);
+      return json({ success: true, message: 'A초/B초/C초 사후설문응답 탭 3개 생성 완료' });
+    }
     if (action === 'get_student') {
       var SS = getSS();
+      ensurePostSurveySheets(SS);
       var studentId = params.studentId || '';
       var school = params.school || 'A초';
       var givenName = params.name || '';

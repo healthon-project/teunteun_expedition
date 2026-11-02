@@ -2567,7 +2567,7 @@
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
-              action: 'submit_survey',
+              action: 'submit_post_survey',
               school: activeSchool,
               studentId: state.studentId,
               name: student.name || '',
@@ -2636,7 +2636,8 @@
         return;
       }
 
-      const activeSchool = state.school || getSchoolFromId(state.studentId) || 'A초';
+      const activeSchool = getActiveSchool();
+      const sidToSend = getPrefixedStudentId(state.studentId, activeSchool);
       const targetUrl = state.gasUrl || DEFAULT_GAS_URL;
 
       fetch(targetUrl, {
@@ -2644,7 +2645,7 @@
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          action: 'submit_survey',
+          action: 'submit_post_survey',
           school: activeSchool,
           studentId: state.studentId,
           name: student.name || '',
@@ -5434,7 +5435,7 @@
           mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
-            action: 'submit_survey',
+            action: isPost ? 'submit_post_survey' : 'submit_survey',
             school: activeSchool,
             studentId: sidToSend,
             name: state.student ? state.student.name : '',
