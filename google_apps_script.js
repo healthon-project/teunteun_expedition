@@ -15,7 +15,7 @@ const HEADERS = {
   '일별기록': ['중복키','일시','학교','학생키','개인번호','이름','구분','날짜','포인트','스티커'],
   '월별성장': ['측정일시','학교','개인번호','이름','측정월','키(cm)','몸무게(kg)','BMI','총스티커','레벨'],
   '설문응답': ['응답일시','학교','개인번호','이름','구분','문항1','문항2','문항3','문항4','문항5','문항6','문항7','문항8','문항9','문항10','문항11','문항12'],
-  '사후설문응답': ['응답일시','학교','개인번호','이름','구분','문항1','문항2','문항3','문항4','문항5','문항6','문항7','문항8','문항9','문항10','문항11','문항12']
+  '사후설문응답': ['응답일시','학교','개인번호','이름','구분','문항1','문항2','문항3','문항4','문항5','문항6','문항7','문항8','문항9','문항10','문항11','문항12','문항13','문항14','문항15','문항16']
 };
 
 function getSS() {
@@ -255,7 +255,7 @@ function getPostSurveySheet(SS, school) {
   }
 
   var newSh = SS.insertSheet(name + ' 사후설문응답');
-  newSh.getRange(1, 1, 1, 17).setValues([HEADERS['사후설문응답']]).setFontWeight('bold').setBackground('#d9ead3');
+  newSh.getRange(1, 1, 1, HEADERS['사후설문응답'].length).setValues([HEADERS['사후설문응답']]).setFontWeight('bold').setBackground('#d9ead3');
   newSh.setFrozenRows(1);
   return newSh;
 }
@@ -377,12 +377,15 @@ function cleanAndFixGrowthSheet(sh) {
 function cleanAndFixSurveySheet(sh) {
   if (!sh) return;
   
-  var expectedHeaders = HEADERS['설문응답'];
+  var isPostSheet = String(sh.getName() || '').indexOf('사후') >= 0;
+  var expectedHeaders = isPostSheet ? HEADERS['사후설문응답'] : HEADERS['설문응답'];
+  var expectedColCount = expectedHeaders.length; // 사전 17열(문항1~12), 사후 21열(문항1~16)
+  var headerBg = isPostSheet ? '#d9ead3' : '#fff2cc';
   var lastRow = sh.getLastRow();
   
   if (lastRow === 0) {
-    sh.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders])
-      .setFontWeight('bold').setBackground('#fff2cc');
+    sh.getRange(1, 1, 1, expectedColCount).setValues([expectedHeaders])
+      .setFontWeight('bold').setBackground(headerBg);
     sh.setFrozenRows(1);
     return;
   }
@@ -391,18 +394,18 @@ function cleanAndFixSurveySheet(sh) {
 
   if (firstCell !== '응답일시') {
     sh.insertRowBefore(1);
-    sh.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders])
-      .setFontWeight('bold').setBackground('#fff2cc');
+    sh.getRange(1, 1, 1, expectedColCount).setValues([expectedHeaders])
+      .setFontWeight('bold').setBackground(headerBg);
     sh.setFrozenRows(1);
     lastRow = sh.getLastRow();
   } else {
-    sh.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders])
-      .setFontWeight('bold').setBackground('#fff2cc');
+    sh.getRange(1, 1, 1, expectedColCount).setValues([expectedHeaders])
+      .setFontWeight('bold').setBackground(headerBg);
     sh.setFrozenRows(1);
   }
 
   if (lastRow >= 2) {
-    var maxCols = Math.max(18, sh.getLastColumn());
+    var maxCols = Math.max(expectedColCount + 1, sh.getLastColumn());
     var dataRange = sh.getRange(2, 1, lastRow - 1, maxCols);
     var rows = dataRange.getValues();
     var modified = false;
@@ -410,7 +413,7 @@ function cleanAndFixSurveySheet(sh) {
     for (var r = 0; r < rows.length; r++) {
       var row = rows[r];
       var foundIdx = -1;
-      for (var c = 0; c < row.length; c++) {
+      for (var c = 0; c < Math.min(7, row.length); c++) {
         var cellTxt = String(row[c] || '').trim();
         if (cellTxt === '사전설문' || cellTxt === '사후설문') {
           foundIdx = c;
@@ -419,14 +422,14 @@ function cleanAndFixSurveySheet(sh) {
       }
       if (foundIdx !== -1) {
         row.splice(foundIdx, 1);
-        while (row.length < 17) row.push('');
-        rows[r] = row.slice(0, 17);
+        while (row.length < expectedColCount) row.push('');
+        rows[r] = row.slice(0, expectedColCount);
         modified = true;
       }
     }
 
     if (modified) {
-      sh.getRange(2, 1, rows.length, 17).setValues(rows);
+      sh.getRange(2, 1, rows.length, expectedColCount).setValues(rows);
     }
   }
 }
@@ -1195,7 +1198,8 @@ function saveSurvey(d) {
   }
 
   var row = [stamp(new Date()), p.school, "'" + idToSave, name, p.type];
-  for (var i = 0; i < 12; i++) {
+  var questionCount = isPost ? 16 : 12;
+  for (var i = 0; i < questionCount; i++) {
     row.push((ansList[i] !== undefined && ansList[i] !== null) ? String(ansList[i]) : '');
   }
 

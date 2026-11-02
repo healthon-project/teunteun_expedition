@@ -1022,6 +1022,11 @@
         </button>
       </div>
 
+      <!-- Subjective Input (for Post-Survey Q15 ~ Q16) -->
+      <div class="hidden mb-5" id="survey-subjective-container">
+        <textarea id="survey-subjective-input" rows="4" oninput="handleSubjectiveInput(this.value)" placeholder="여기에 나의 생각을 자유롭게 적어 주세요 ✏️" class="w-full bg-white border-2 border-slate-200 focus:border-teal-400 focus:outline-none rounded-2xl p-4 text-sm font-bold text-slate-700 leading-relaxed shadow-sm resize-none"></textarea>
+      </div>
+
       <!-- Navigation -->
       <div class="grid grid-cols-2 gap-2">
         <button id="survey-prev-btn" onclick="prevSurveyQuestion()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-black py-4 px-4 rounded-2xl active:scale-95 transition-transform flex justify-center items-center gap-1 cursor-pointer">
@@ -5117,7 +5122,7 @@
       requestAnimationFrame(loopConfetti);
     }
 
-    // ==================== IN-APP PRE-SURVEY LOGIC ====================
+    // ==================== IN-APP PRE & POST SURVEY LOGIC ====================
     const SURVEY_QUESTIONS = [
       "1. 일주일에 3번 이상 땀이 날 정도로 운동한다(체육포함).",
       "2. 매일 아침밥을 먹는다.",
@@ -5133,6 +5138,29 @@
       "12. 나는 내가 잘 지키고 있는지 가끔 스스로 점검한다."
     ];
 
+    const POST_SURVEY_QUESTIONS = [
+      ...SURVEY_QUESTIONS,
+      "13. 이 프로그램이 나의 건강관리에 도움이 되었다.",
+      "14. 프로그램이 끝나도 건강 습관을 스스로 계속 지킬 것이다.",
+      "15. 프로그램을 하면서 나에게 달라진 점(식습관, 운동, 몸의 변화 등)을 한 가지 써 보세요.",
+      "16. 프로그램 활동 중 가장 좋았던 점이나 앞으로 더 바라는 점을 써 보세요."
+    ];
+
+    function getActiveSurveyQuestions() {
+      return (state.currentSurveyMode === 'post') ? POST_SURVEY_QUESTIONS : SURVEY_QUESTIONS;
+    }
+
+    function isSubjectiveSurveyQuestion(qIndex) {
+      return state.currentSurveyMode === 'post' && qIndex >= 14;
+    }
+
+    function getSurveyOptionLabels(qIndex) {
+      if (state.currentSurveyMode === 'post' && (qIndex === 12 || qIndex === 13)) {
+        return ["그렇다 😀", "보통이다 😐", "아니다 🙁"];
+      }
+      return ["그렇다(5-7회) 😀", "보통이다(3-4회) 😐", "아니다(0-2회) 🙁"];
+    }
+
     // Open Survey Modal ('pre' for 사전설문, 'post' for 사후설문)
     function openSurveyModal(mode = 'pre') {
       if (!state.studentId) {
@@ -5143,25 +5171,21 @@
       
       state.currentSurveyMode = (mode === 'post') ? 'post' : 'pre';
       const isPost = (state.currentSurveyMode === 'post');
+      const questions = getActiveSurveyQuestions();
+      const totalLen = questions.length;
 
       const titleEl = document.getElementById('survey-modal-title');
-      const subtitleEl = document.getElementById('survey-modal-subtitle');
       const submitBtn = document.getElementById('survey-submit-btn');
 
       if (titleEl) {
         titleEl.innerText = isPost ? "🎯 사후 설문조사" : "📝 사전 설문조사";
       }
-      if (subtitleEl) {
-        subtitleEl.innerText = isPost
-          ? "프로그램 참여 후 나의 건강 습관 변화 알아보기 (최근 1주일 기준)"
-          : "나의 평소 건강 습관 알아보기 (최근 1주일 기준)";
-      }
       if (submitBtn) {
         submitBtn.innerText = isPost ? "사후설문 완료 및 제출하기 🐾" : "설문 완료 및 제출하기 🐾";
       }
 
-      // Initialize survey state
-      state.surveyAnswers = Array(12).fill(null);
+      // Initialize survey state (12 for pre, 16 for post)
+      state.surveyAnswers = Array(totalLen).fill(null);
       state.currentSurveyIndex = 0;
       
       // Load previously saved survey progress if it exists
@@ -5169,19 +5193,51 @@
       const savedAnswers = localStorage.getItem(storageKey);
       if (savedAnswers) {
         try {
-          state.surveyAnswers = JSON.parse(savedAnswers);
+          const parsed = JSON.parse(savedAnswers);
+          if (Array.isArray(parsed)) {
+            for (let i = 0; i < Math.min(parsed.length, totalLen); i++) {
+              state.surveyAnswers[i] = parsed[i];
+            }
+          }
         } catch(e) {}
+      } else if (isPost && state.student && Array.isArray(state.student.postSurveyAnswers) && state.student.postSurveyAnswers.length < totalLen) {
+        // 기존 12문항만 제출했던 경우 1~12번 응답 복원 후 13번부터 이어서 응답 가능하도록 지원
+        state.student.postSurveyAnswers.forEach((txt, idx) => {
+          if (idx < 12 && typeof txt === 'string') {
+            if (txt.indexOf('그렇다') === 0) state.surveyAnswers[idx] = 0;
+            else if (txt.indexOf('보통이다') === 0) state.surveyAnswers[idx] = 1;
+            else if (txt.indexOf('아니다') === 0) state.surveyAnswers[idx] = 2;
+          }
+        });
+        state.currentSurveyIndex = 12;
       }
 
       renderSurveyQuestion();
       toggleModal('survey-modal');
     }
 
-    // Render current survey question and choices
+    // Render current survey question and choices / subjective input
     function renderSurveyQuestion() {
       const qIndex = state.currentSurveyIndex;
-      const total = SURVEY_QUESTIONS.length;
+      const questions = getActiveSurveyQuestions();
+      const total = questions.length;
+      const isPost = (state.currentSurveyMode === 'post');
+      const isSubjective = isSubjectiveSurveyQuestion(qIndex);
       
+      // Update subtitle dynamically by section
+      const subtitleEl = document.getElementById('survey-modal-subtitle');
+      if (subtitleEl) {
+        if (!isPost) {
+          subtitleEl.innerText = "나의 평소 건강 습관 알아보기 (최근 1주일 기준)";
+        } else if (qIndex < 12) {
+          subtitleEl.innerText = "나의 평소 건강 습관 알아보기 (최근 1주일 기준)";
+        } else if (qIndex < 14) {
+          subtitleEl.innerText = "프로그램 참여 돌아보기 (지난 2달 동안을 떠올리며)";
+        } else {
+          subtitleEl.innerText = "생각 써 보기 (나의 생각을 자유롭게 적어 주세요 ✏️)";
+        }
+      }
+
       // Update progress bar & progress text
       const progressPercent = Math.round(((qIndex + 1) / total) * 100);
       const progressBar = document.getElementById('survey-progress-bar');
@@ -5195,19 +5251,52 @@
       // Update question text
       const qNumEl = document.getElementById('survey-q-num');
       const qTextEl = document.getElementById('survey-q-text');
-      if (qNumEl) qNumEl.innerText = `질문 ${qIndex + 1}`;
-      if (qTextEl) qTextEl.innerText = SURVEY_QUESTIONS[qIndex];
+      if (qNumEl) {
+        if (isPost && qIndex >= 14) {
+          qNumEl.innerText = `주관식 질문 ${qIndex + 1}`;
+        } else if (isPost && qIndex >= 12) {
+          qNumEl.innerText = `참여 돌아보기 · 질문 ${qIndex + 1}`;
+        } else {
+          qNumEl.innerText = `질문 ${qIndex + 1}`;
+        }
+      }
+      if (qTextEl) qTextEl.innerText = questions[qIndex];
       
-      // Update choices styles (highlight selected option)
-      const selectedAns = state.surveyAnswers[qIndex];
-      for (let i = 0; i < 3; i++) {
-        const btn = document.getElementById(`survey-opt-${i}`);
-        if (btn) {
-          btn.className = "w-full border-2 rounded-2xl py-3.5 px-6 text-sm font-black transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-sm";
-          if (selectedAns === i) {
-            btn.classList.add('bg-pastelPink', 'border-pastelPink-dark', 'text-pink-700', 'scale-[1.02]');
-          } else {
-            btn.classList.add('bg-white', 'border-slate-200', 'hover:border-pastelPink', 'text-slate-700');
+      const choicesContainer = document.getElementById('survey-choices-container');
+      const subjectiveContainer = document.getElementById('survey-subjective-container');
+      const subjectiveInput = document.getElementById('survey-subjective-input');
+
+      if (isSubjective) {
+        if (choicesContainer) choicesContainer.classList.add('hidden');
+        if (subjectiveContainer) subjectiveContainer.classList.remove('hidden');
+        if (subjectiveInput) {
+          subjectiveInput.value = (state.surveyAnswers[qIndex] !== null && state.surveyAnswers[qIndex] !== undefined)
+            ? String(state.surveyAnswers[qIndex])
+            : '';
+          subjectiveInput.placeholder = (qIndex === 14)
+            ? "예: 아침밥을 잘 먹게 되었어요 / 물을 자주 마셔요 / 운동하는 습관이 생겼어요 등 자유롭게 적어 보세요 ✏️"
+            : "예: 스티커 모으기와 게임이 재미있었어요 / 친구들과 함께 해서 좋았어요 등 자유롭게 적어 보세요 ✏️";
+          setTimeout(() => {
+            try { subjectiveInput.focus(); } catch(e) {}
+          }, 50);
+        }
+      } else {
+        if (choicesContainer) choicesContainer.classList.remove('hidden');
+        if (subjectiveContainer) subjectiveContainer.classList.add('hidden');
+
+        // Update choices labels & styles (highlight selected option)
+        const optLabels = getSurveyOptionLabels(qIndex);
+        const selectedAns = state.surveyAnswers[qIndex];
+        for (let i = 0; i < 3; i++) {
+          const btn = document.getElementById(`survey-opt-${i}`);
+          if (btn) {
+            btn.innerText = optLabels[i];
+            btn.className = "w-full border-2 rounded-2xl py-3.5 px-6 text-sm font-black transition active:scale-95 text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-sm";
+            if (selectedAns === i) {
+              btn.classList.add('bg-pastelPink', 'border-pastelPink-dark', 'text-pink-700', 'scale-[1.02]');
+            } else {
+              btn.classList.add('bg-white', 'border-slate-200', 'hover:border-pastelPink', 'text-slate-700');
+            }
           }
         }
       }
@@ -5231,6 +5320,7 @@
         if (qIndex === total - 1) {
           nextBtn.classList.add('hidden');
           submitBtn.classList.remove('hidden');
+          submitBtn.className = "col-span-1 bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white text-sm font-black py-4 px-3 rounded-2xl active:scale-95 transition-transform flex justify-center items-center gap-1 shadow-lg cursor-pointer";
         } else {
           nextBtn.classList.remove('hidden');
           submitBtn.classList.add('hidden');
@@ -5238,9 +5328,21 @@
       }
     }
 
+    // Handle subjective text input (Post-survey Q15 ~ Q16)
+    function handleSubjectiveInput(val) {
+      const qIndex = state.currentSurveyIndex;
+      if (!isSubjectiveSurveyQuestion(qIndex)) return;
+      state.surveyAnswers[qIndex] = val;
+      const storageKey = (state.currentSurveyMode === 'post')
+        ? `post_survey_answers_${state.studentId}`
+        : `survey_answers_${state.studentId}`;
+      localStorage.setItem(storageKey, JSON.stringify(state.surveyAnswers));
+    }
+
     // Handle selecting an answer option (0, 1, or 2)
     function selectSurveyAnswer(optIndex) {
       const qIndex = state.currentSurveyIndex;
+      const questions = getActiveSurveyQuestions();
       state.surveyAnswers[qIndex] = optIndex;
       
       // Auto-save progress in localStorage
@@ -5253,7 +5355,7 @@
       renderSurveyQuestion();
       
       // Auto advance to next question after a brief delay
-      if (state.currentSurveyIndex < SURVEY_QUESTIONS.length - 1) {
+      if (state.currentSurveyIndex < questions.length - 1) {
         setTimeout(() => {
           if (state.currentSurveyIndex === qIndex) {
             nextSurveyQuestion();
@@ -5272,7 +5374,8 @@
 
     // Navigate to next question
     function nextSurveyQuestion() {
-      if (state.currentSurveyIndex < SURVEY_QUESTIONS.length - 1) {
+      const questions = getActiveSurveyQuestions();
+      if (state.currentSurveyIndex < questions.length - 1) {
         state.currentSurveyIndex++;
         renderSurveyQuestion();
       }
@@ -5280,13 +5383,27 @@
 
     // Submit Survey Responses
     function submitSurvey() {
+      const isPost = (state.currentSurveyMode === 'post');
+      const questions = getActiveSurveyQuestions();
       const unanswered = [];
-      state.surveyAnswers.forEach((ans, idx) => {
-        if (ans === null) unanswered.push(idx + 1);
-      });
+
+      for (let idx = 0; idx < questions.length; idx++) {
+        const ans = state.surveyAnswers[idx];
+        if (isPost && idx >= 14) {
+          if (ans === null || ans === undefined || String(ans).trim() === '') {
+            unanswered.push(idx + 1);
+          }
+        } else {
+          if (ans === null || ans === undefined || ans === '') {
+            unanswered.push(idx + 1);
+          }
+        }
+      }
       
       if (unanswered.length > 0) {
         alert(`답변하지 않은 문항이 있습니다: ${unanswered.join(', ')}번\n모든 질문에 답해 주세요! 📝`);
+        state.currentSurveyIndex = unanswered[0] - 1;
+        renderSurveyQuestion();
         return;
       }
       
@@ -5296,9 +5413,13 @@
         submitBtn.innerText = "제출 중... ⏳";
       }
       
-      const isPost = (state.currentSurveyMode === 'post');
-      const SURVEY_OPTIONS = ["그렇다(5-7회) 😀", "보통이다(3-4회) 😐", "아니다(0-2회) 🙁"];
-      const answersText = state.surveyAnswers.map(ans => SURVEY_OPTIONS[ans]);
+      const answersText = state.surveyAnswers.map((ans, idx) => {
+        if (isPost && idx >= 14) {
+          return String(ans || '').trim();
+        }
+        const opts = getSurveyOptionLabels(idx);
+        return (typeof ans === 'number' && opts[ans]) ? opts[ans] : String(ans || '');
+      });
       
       if (state.isOffline) {
         setTimeout(() => {
@@ -5384,7 +5505,7 @@
       updateSurveyButtonUI();
       triggerConfetti();
       if (isPost) {
-        alert("사후 설문조사가 성공적으로 제출되었습니다! 그동안 꼬꼬챌린지에 멋지게 참여해 주셔서 감사합니다! 🐾🎉");
+        alert("사후 설문조사(총 16문항)가 성공적으로 제출되었습니다! 그동안 꼬꼬챌린지에 멋지게 참여해 주셔서 감사합니다! 🐾🎉");
       } else {
         alert("사전 설문조사가 성공적으로 제출되었습니다! 이제 꼬꼬챌린지 미션을 시작해 볼까요? 🐾🚀");
       }
@@ -5400,21 +5521,27 @@
 
       if (state.student) {
         if (state.student.preSurveyDone) isPreDone = true;
-        if (state.student.postSurveyDone) isPostDone = true;
+        if (state.student.postSurveyDone && Array.isArray(state.student.postSurveyAnswers) && state.student.postSurveyAnswers.length >= 16) {
+          isPostDone = true;
+        }
       }
       if (state.studentId) {
         try {
           const cached = JSON.parse(localStorage.getItem('teunteun_student_cached') || '{}');
           if (cached && (cached.id === state.studentId || cached.studentId === state.studentId)) {
             if (cached.preSurveyDone) isPreDone = true;
-            if (cached.postSurveyDone) isPostDone = true;
+            if (cached.postSurveyDone && Array.isArray(cached.postSurveyAnswers) && cached.postSurveyAnswers.length >= 16) {
+              isPostDone = true;
+            }
           }
         } catch(e){}
         try {
           const students = JSON.parse(localStorage.getItem('mock_students') || '{}');
           if (students[state.studentId]) {
             if (students[state.studentId].preSurveyDone) isPreDone = true;
-            if (students[state.studentId].postSurveyDone) isPostDone = true;
+            if (students[state.studentId].postSurveyDone && Array.isArray(students[state.studentId].postSurveyAnswers) && students[state.studentId].postSurveyAnswers.length >= 16) {
+              isPostDone = true;
+            }
           }
         } catch(e){}
       }
